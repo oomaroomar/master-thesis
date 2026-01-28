@@ -1,0 +1,111 @@
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{example}{Example}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\newcommand{\tekija}{{Omar Mayani}} %Author
+\newcommand{\titteli}{{BSc}} % title of the author (can be empty)
+\newcommand{\otsikko}{{Peepoo Robot Language}}   %Title of the Thesis
+\newcommand{\tutkielma}{{MSc }}   %MSc or BSc Thesis
+\newcommand{\aika}{{June 2026}}   %Month and year
+\newcommand{\paaaine}{{Mathematics}} % Subject Mathematics/Statistics
+\newcommand{\ohjaaja}{{Prof. H. H.}} %Supervisor (Prof./Doc./PhD) and name
+\newcommand{\tarkastaja}{{PhD D.D. }} %Reviewer (Prof./Doc./PhD) and Name
+
+\pagestyle{empty}  % No page number
+
+\begin{center}
+  \includegraphics[width=10cm]{media/UTU_logo_EN} % save the picture in your thesis folder
+\end{center}
+
+\vspace{3.0cm}
+\begin{center}\large
+  {\sc \otsikko}
+\end{center}
+
+\vspace{0.5cm}
+\begin{center}
+  \titteli\,  \tekija
+\end{center}
+
+\vspace{0.5cm}
+\begin{center}
+  \tutkielma thesis\\
+  \aika
+\end{center}
+\vspace{2.5cm}
+
+\vspace{2.5cm}
+\begin{center}
+  MATEMATIIKAN JA TILASTOTIETEEN LAITOS
+\end{center}
+
+\newpage%\null
+
+\noindent
+\begin{tabular}{l}
+  {\bf Reviewers:}\\
+  \ohjaaja \\
+  \tarkastaja
+\end{tabular}
+
+\vspace{20cm}
+
+% Obligatory announcement on Turnitin system:
+\noindent The originality of this thesis has been checked in accordance with the University of Turku quality assurance system using the Turnitin OriginalityCheck service
+\cleardoublepage
+
+\noindent
+UNIVERSITY OF TURKU,  Department of Mathematics and Statistics\\
+\\
+\tutkielma Thesis \\
+{\bf Subject:} \paaaine \\
+{\bf Author:} \tekija  \\
+{\bf Title:} \otsikko \\
+{\bf Supervisor:} \ohjaaja \\
+{\bf Pages:} xx pages + xx appendix pages \\ %täytä sivumäärät!
+{\bf Month and year:} \aika \\
+\rule{\textwidth}{.2mm}\\
+\\
+
+\vspace{4mm}\noindent Write the abstract here. Insert the $\backslash${noindent} instruction in the beginning of the paragraph to prevent the first line indention in \LaTeX .
+
+\vspace{4mm}\noindent Command $\backslash$vspace leaves space between the paragraphs, 4mm looks good.
+
+\vspace{4mm}\noindent Write the abstract compactly, avoiding unnecessary repetition.
+
+\vspace{4mm}\noindent Keywords: Abstract, MSc thesis, \LaTeX\, system.
+
+\cleardoublepage
+
+\tableofcontents
+% Recompile the LaTeX compilation to update the table of contents
+
+\cleardoublepage
+
+\pagestyle{plain}
+\pagenumbering{arabic}
+
+\section{Introduction}
+
+This section includes general despription of the field and the topic of the MSc thesis.
+
+Note that if you have used AI in your writing, you must mention it. Check for guidelines \href{https://utuguides.fi/artificialintelligence}{https://utuguides.fi/artificialintelligence}.  Good place to mention that AI tolls have been used is  here, for example, in the following form:
+
+The ChatGPT AI  has been used to enhance the language of the thesis.
+\section{Integral Calculus}
+
+In this section, we present so-called Newton-Leibniz formula \cite{NewtLeib}.
+
+\begin{theorem} Assume that in interval $[a,b]$ $F'(x)=f(x)$ holds and that $f$ is continuous.\footnote{The continuity is essential here.} Then
+  \[
+    \int_a^bf(x)\,dx=F(b)-F(a).
+  \]
+\end{theorem}

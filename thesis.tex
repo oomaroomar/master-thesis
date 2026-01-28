@@ -1,0 +1,25 @@
+\documentclass[a4paper,12pt,twoside]{article} % two-sided
+\usepackage[utf8]{inputenc}                    % utf-8 encoding
+\usepackage{amsthm}                            % theorems etc environments
+\usepackage{amsmath}                          % AMS mathematics
+\usepackage{graphicx}                         % pictures
+% \usepackage[a-3b]{pdfx}                        % Lähtökohtana pdf/a-3b
+\usepackage[hidelinks]{hyperref}
+\usepackage{lipsum}
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  total={150mm,237mm},
+  left=30mm,
+  top=30mm,
+}
+\pagenumbering{roman} %For accessibility
+% your preamble here
+\begin{document}
+\include{src/intro}
+\include{src/foundations_of_statistical_learning_for_nlp}
+\begin{thebibliography}{99}
+  \bibitem{NewtLeib} Newton and Leibniz
+  \bibitem{Riemann} Riemann
+\end{thebibliography}
+\end{document}

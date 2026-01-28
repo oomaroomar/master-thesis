@@ -1,0 +1,7 @@
+\contentsline {section}{\numberline {1}Introduction}{1}{section.1}%
+\contentsline {section}{\numberline {2}Integral Calculus}{1}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Analytic Number Theory}{1}{subsection.2.1}%
+\contentsline {subsubsection}{\numberline {2.1.1}Matrix Calculus}{1}{subsubsection.2.1.1}%
+\contentsline {section}{\numberline {3}Accessibility and figures}{1}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Text in the figure captions}{1}{subsection.3.1}%
+\contentsline {section}{\numberline {4}Chapter Two}{2}{section.4}%
