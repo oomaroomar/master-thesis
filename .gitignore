@@ -1,5 +1,6 @@
 # Cache files
 **/cache/
+**/src/*pdf
 
 # Compressed files
-*.gz
+**.gz
