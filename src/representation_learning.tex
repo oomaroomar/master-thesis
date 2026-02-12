@@ -30,8 +30,9 @@ The difficulty of symbolic representation is solved by the distributed represent
 \subsubsection{Matrix Factorization-based Approaches}
 \paragraph{Latent Semantic Analysis (LSA)} The idea of LSA is to perform singular value decomposition (SVD) on the word-document matrix $M=U\Sigma V^{\T}$, and use the rows of the left singular matrix $U$ as the word representations. We justify this by the following observation: the $i$-th row of $M$ is the symbolic representation of the word $w_{i}$. We get the dot product similarity between words $w_{i}$ and $w_{j}$ by the following calculation
 \begin{align*}
-  \mathbf{M}_{i}  (\mathbf{M}_{j})^{\T} = (U\Sigma V^{\T})_{i} \cdot (U\Sigma V^{\T})_{j}^{\T} = U_{i} \Sigma^{2} U_{j}^{\T}.
+  \mathbf{M}_{i}  \mathbf{M}_{:,j}^{\T} &= (U\Sigma V^{\T})_{i} (U\Sigma V^{\T})_{:,j}^{\T} \\ &= (U\Sigma V^{\T})_{i}  (V\Sigma U^{\T})_{:,j} = U_{i} \Sigma^{2} U_{j}^{\T}.
 \end{align*}
+We could take either $U_{i}$ or $U_{i}\Sigma$ as the representation of word $w_{i}$ as multiplying by $\Sigma$ just stretches a vector by $\Sigma_{j,j}$ in each dimension $j$.
 
 \paragraph{Probabilistic LSA}
 plsaplsa
