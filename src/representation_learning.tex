@@ -1,6 +1,4 @@
 \section{Representation Learning}
-
-\subsection{Introduction}
 Machines need to understand each word first so as to master the sophisticated meanings of human languages. Hence, effective word representations are essential for natural language processing (NLP), and it is also a good start for introducing representation learning
 in NLP.
 
@@ -10,6 +8,7 @@ Symbolic representations are easy to implement and interpret, but they suffer fr
 
 In distributed word representation, each dimension in isolation is meaningless because semantics is distributed over all dimensions of the vector. Distributed representation can be obtained by factorizing the matrices of symbolic representations, such as in Latent Semantic Analysis LSA, or by optimizing the word vectors with gradient descent to predict the context words, such as in Word2Vec. Glove is a hybrid method that factorizes the co-occurrence matrix of words while also optimizing the word vectors to predict the co-occurrence counts.
 
+\subsection{Symbolic Representations}
 One-hot
 \begin{align*}
   \mathbf{w_{j}^{(i)}}=
@@ -18,6 +17,10 @@ One-hot
     0, & \text{otherwise},
   \end{cases}
 \end{align*}
+Bag of Words (BoW) $\mathbf{W} \in\Re^{|D|\times |V|}$ document x word matrix where $D$ is the set of documents, and V is the vocabulary.
+\begin{align*}
+  \mathbf{W}_{i}=\sum_{k=0}^{|D_{i}|}\mathbf{w}(D_{i}^{(k)})
+\end{align*}
 
 \subsection{Distributed Word Representations}
 Although simple and interpretable, symbolic representations are not the best choice for computation. For example, the very sparse nature of the symbolic representation makes it difficult to compute word-to-word similarities.
@@ -25,8 +28,11 @@ Although simple and interpretable, symbolic representations are not the best cho
 The difficulty of symbolic representation is solved by the distributed representation. Distributed representation represents a subject (a word in our case) as a fixed-length real-valued vector, where no clear meaning is assigned to any single dimension of the vector. More specifically, semantics is scattered over all (or a large portion) of the dimensions of the representation, and one dimension contributes to the semantics of all (or a large proportion) of the words
 
 \subsubsection{Matrix Factorization-based Approaches}
-\paragraph{Latent Semantic Analysis (LSA)}
-lsalsa
+\paragraph{Latent Semantic Analysis (LSA)} The idea of LSA is to perform singular value decomposition (SVD) on the word-document matrix $M=U\Sigma V^{\T}$, and use the rows of the left singular matrix $U$ as the word representations. We justify this by the following observation: the $i$-th row of $M$ is the symbolic representation of the word $w_{i}$. We get the dot product similarity between words $w_{i}$ and $w_{j}$ by the following calculation
+\begin{align*}
+  \mathbf{M}_{i}  (\mathbf{M}_{j})^{\T} = (U\Sigma V^{\T})_{i} \cdot (U\Sigma V^{\T})_{j}^{\T} = U_{i} \Sigma^{2} U_{j}^{\T}.
+\end{align*}
+
 \paragraph{Probabilistic LSA}
 plsaplsa
 \paragraph{Latent Dirichlet Allocation (LDA) IF APPLIED LATER}
