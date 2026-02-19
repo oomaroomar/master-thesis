@@ -5,6 +5,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{graphicx}                         % pictures
+\usepackage[toc, title, header]{appendix}
 % \usepackage[a-3b]{pdfx}                        % Lähtökohtana pdf/a-3b
 \usepackage[hidelinks]{hyperref}
 \usepackage{lipsum}
@@ -18,6 +19,8 @@
 \renewcommand{\Re}{\mathbb{R}}
 \renewcommand{\L}{\mathcal{L}}
 \newcommand{\T}{\intercal}
+\newcommand{\M}[1]{\mathbf{#1}}
+\newcommand{\tfidf}{\operatorname{tfidf}}
 \pagenumbering{roman} %For accessibility
 % your preamble here
 \begin{document}
@@ -27,6 +30,7 @@
 \include{src/intro}
 \include{src/foundations_of_statistical_learning_for_nlp}
 \include{src/representation_learning}
+\include{src/appendix}
 \begin{thebibliography}{99}
   \bibitem{NewtLeib} Newton and Leibniz
   \bibitem{Riemann} Riemann

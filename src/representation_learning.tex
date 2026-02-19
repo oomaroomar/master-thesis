@@ -11,40 +11,61 @@ In distributed word representation, each dimension in isolation is meaningless b
 \subsection{Symbolic Representations}
 One-hot
 \begin{align*}
-  \mathbf{w_{j}^{(i)}}=
+  \M{w_{j}^{(i)}}=
   \begin{cases}
     1, & \text{if } j=i, \\
     0, & \text{otherwise},
   \end{cases}
 \end{align*}
-Bag of Words (BoW) $\mathbf{W} \in\Re^{|D|\times |V|}$ document x word matrix where $D$ is the set of documents, and V is the vocabulary.
+Given a vocabulary $\mathcal{V}$ of size $n$ and a corpus $\mathcal{D}=\{d_1,d_2,\ldots,d_m\}$ of $m$ documents, the Bag of Words (BoW) representation of this data is the word--document matrix $\M{M} \in\Re^{n\times m}$  where $\M{M}_{i,j}$ is the count of word $w_i$ in document $d_j$. Often one would also scale these counts by the length of the document so that $\M{M}_{i,j} = \frac{\text{count of } w_i \text{ in } d_j}{|d_j|}$.
+
+While frequency captures how often a word appears, it fails to capture how \textbf{informative} a word is. Common words such as "the" and "is" will be frequent across all documents but no document is distinguished by the presence of these words. To address this we multiply the term frequency (tf) by the inverse document frequency (idf).
+
+The term frequency of a word $w_i$ in document $d_j$ is defined as
 \begin{align*}
-  \mathbf{W}_{i}=\sum_{k=0}^{|D_{i}|}\mathbf{w}(D_{i}^{(k)})
+  \operatorname{tf}(w_i,d_j) = \frac{\text{count of } w_i \text{ in } d_j}{|d_j|}.
+\end{align*}
+
+The inverse document frequency of a word $w_i$ is defined as
+\begin{align*}
+  \operatorname{idf}(w_i) = \log\left(\frac{|\mathcal{D}|}{|\{d \in \mathcal{D} : w_i \in d\}|}\right)
 \end{align*}
 
 \subsection{Distributed Word Representations}
-Although simple and interpretable, symbolic representations are not the best choice for computation. For example, the very sparse nature of the symbolic representation makes it difficult to compute word-to-word similarities.
+\textbf{REWRITE} Although simple and interpretable, symbolic representations are not the best choice for computation. For example, the very sparse nature of the symbolic representation makes it difficult to compute word-to-word similarities.
 
 The difficulty of symbolic representation is solved by the distributed representation. Distributed representation represents a subject (a word in our case) as a fixed-length real-valued vector, where no clear meaning is assigned to any single dimension of the vector. More specifically, semantics is scattered over all (or a large portion) of the dimensions of the representation, and one dimension contributes to the semantics of all (or a large proportion) of the words
 
 \subsubsection{Matrix Factorization-based Approaches}
-\paragraph{Latent Semantic Analysis (LSA)} The idea of LSA is to perform singular value decomposition (SVD) on the word-document matrix $M=U\Sigma V^{\T}$, and use the rows of the left singular matrix $U$ as the word representations. We justify this by the following observation: the $i$-th row of $M$ is the symbolic representation of the word $w_{i}$. We get the dot product similarity between words $w_{i}$ and $w_{j}$ by the following calculation
-\begin{align*}
-  \mathbf{M}_{i}  \mathbf{M}_{:,j}^{\T} &= (U\Sigma V^{\T})_{i} (U\Sigma V^{\T})_{:,j}^{\T} \\ &= (U\Sigma V^{\T})_{i}  (V\Sigma U^{\T})_{:,j} = U_{i} \Sigma^{2} U_{j}^{\T}.
-\end{align*}
-We could take either $U_{i}$ or $U_{i}\Sigma$ as the representation of word $w_{i}$ as multiplying by $\Sigma$ just stretches a vector by $\Sigma_{j,j}$ in each dimension $j$.
+We briefly introduce three matrix factorization-based approaches for learning distributed word representations: Latent Semantic Analysis (LSA), Probabilistic LSA, and Latent Dirichlet Allocation (LDA).
 
-\paragraph{Probabilistic LSA}
-plsaplsa
-\paragraph{Latent Dirichlet Allocation (LDA) IF APPLIED LATER}
-\subsubsection{Word2Vec and GloVe}
+\paragraph{Latent Semantic Analysis (LSA)} Before the era of prediction-based neural models, the dominant paradigm for extracting semantic information from text was statistical count-based modeling. The most prominent of these methods is Latent Semantic Analysis (LSA), which rests on the hypothesis that words with similar meanings will occur in similar text segments. Mathematically, LSA is an application of low-rank matrix approximation using Singular Value Decomposition (SVD).
+
+Let $\mathcal{V}$ be a vocabulary of size $|\mathcal{V}|=n$ and let $\mathcal{D}$ be a corpus of $|\mathcal{D}|=m$ documents. We construct a word-document matrix $\M{M}\in\Re^{n\times m}$, where $\M{M}_{i,j}=\tfidf(w_i,d_j,\mathcal{D})$. We can then apply SVD to factorize $\M{M}$ into three matrices
+\begin{align*}
+  \M{M} = \M{U}\Sigma \M{V}^{\T},
+\end{align*} where $\M{U}\in\Re^{n\times n}$ and $\M{V}\in\Re^{m\times m}$ are orthonormal and $\Sigma\in\Re^{n\times m}$ is a diagonal matrix containing singular values in descending order.
+
+Since $n$ and $m$ are large preserving the full decomposition is computationally expensive and retains noise. We are motivated to take a low rank approximation by truncating the decomposition to the $k$ largest singular values (with $k$ being much smaller than both $n$ and $m$)
+\begin{align*}
+  \M{\hat{M}} = \M{\hat{U}}\hat{\Sigma} \M{\hat{V}}^{\T},
+\end{align*} where $\M{\hat{U}}\in\Re^{n\times k}$, $\M{\hat{V}}\in\Re^{m\times k}$ and $\hat{\Sigma}\in\Re^{k\times k}$.
+
+We can calculate the dot product similarity between two words $w_i$ and $w_j$ as
+\begin{align*}
+  \M{M}_{i}  (\M{M}_{:,j})^{\T} &\approx (\M{\hat{U}}\hat{\Sigma} \M{\hat{V}}^{\T})_{i} (\M{\hat{U}}\hat{\Sigma} \M{\hat{V}}^{\T})_{:,j}^{\T} \\ &= (\M{\hat{U}}\hat{\Sigma} \M{\hat{V}}^{\T})_{i}  (\M{\hat{V}}\hat{\Sigma} \M{\hat{U}}^{\T})_{:,j} = \M{\hat{U}}_{i} \hat{\Sigma}^2 (\M{\hat{U}}_{j})^{\T}.
+\end{align*}
+The above calculation shows us that the row vectors of $\M{\hat{U}}\hat{\Sigma}$ (or $\M{\hat{U}}$) can be used as word representations.
+
+\subsubsection{Neural Network-based Approaches}
+Neural network-based approaches have in recent years become the dominant method for learning distributed word representations. Instead of factorizing the symbolic representation, neural network-based approaches directly optimize the word vectors with gradient descent. The most popular neural network-based approach is Word2Vec, which was introduced by Mikolov et al. in 2013. Word2Vec is based on the distributional hypothesis, which states that words that occur in similar contexts tend to have similar meanings.
 \paragraph{Word2Vec} Word2Vec adopts the distributional hypothesis but does not take a count-based approach. It directly uses gradient descent to optimize the representations of a word toward tis neighbors' representations. There are two main architectures for Word2Vec: Continuous Bag of Words (CBOW) and Skip-Gram. The difference is that CBOW predicts the target word based on multiple context words, while Skip-Gram predicts the context words based on the center word.
 
 Formally, CBOW predicts the word $w_{i}$ as
 \begin{align*}
-  P(w_{i}|w_{i-l}, \dots, w_{i-1}, w_{i+1}, \dots, w_{i+l}) = \sigma\left(\mathbf{W} \sum_{\substack{j=i-l \\ j \neq i}}^{i+l} \mathbf{w}_{j}\right),
+  P(w_{i}|w_{i-l}, \dots, w_{i-1}, w_{i+1}, \dots, w_{i+l}) = \sigma\left(\M{W} \sum_{\substack{j=i-l \\ j \neq i}}^{i+l} \M{w}_{j}\right),
 \end{align*}
-where $2l+1$ is the context size, $\sigma$ is the softmax function, $\mathbf{W}\in\Re^{|V|\times m}$ is the weight matrix and $\mathbf{w}_{j}$ is the embedding of word $w_{j}$.
+where $2l+1$ is the context size, $\sigma$ is the softmax function, $\M{W}\in\Re^{|V|\times m}$ is the weight matrix and $\M{w}_{j}$ is the embedding of word $w_{j}$.
 
 The CBOW model is optimized by minimizing the sum of the negative log probabilities:
 \begin{align*}
@@ -53,7 +74,7 @@ The CBOW model is optimized by minimizing the sum of the negative log probabilit
 
 Contrary to CBOW, Skip-Gram predicts the context words based on the center word. Formally, given a word $w_{i}$, Skip-Gram predicts the context words as
 \begin{align*}
-  P(w_{j}|w_{i}) = \sigma\left(\mathbf{W} \mathbf{w}_{i}^{\T}\right), \quad j \in \{i-l, \dots, i-1, i+1, \dots, i+l\}.
+  P(w_{j}|w_{i}) = \sigma\left(\M{W} \M{w}_{i}^{\T}\right), \quad j \in \{i-l, \dots, i-1, i+1, \dots, i+l\}.
 \end{align*}
 
 \paragraph{GloVe}
