@@ -1,24 +1,13 @@
-% \begin{filecontents*}{\jobname.xmpdata}
-%   \Title{Pro gradu -tutkielma}
-%   \Author{Ewert Kupiainen}
-% \end{filecontents*}
-
-\documentclass[a4paper,12pt,twoside]{article}
-\usepackage[finnish]{babel}
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage{amsthm}
-\usepackage{amsmath}
+\documentclass[a4paper,12pt,twoside]{article} % two-sided
+\usepackage[utf8]{inputenc}                    % utf-8 encoding
+\usepackage{amsthm}                            % theorems etc environments
+\usepackage{amsmath}                          % AMS mathematics
 \usepackage{amsfonts}
 \usepackage{amssymb}
-\usepackage{graphicx}
-\usepackage{iftex}
-\ifPDFTeX
-\usepackage[tagpdf]{axessibility}
-\fi
-\usepackage[a-3b]{pdfx}
+\usepackage{graphicx}                         % pictures
 \usepackage[toc, title, header]{appendix}
-\usepackage[pdfa]{hyperref}
+% \usepackage[a-3b]{pdfx}                        % Lähtökohtana pdf/a-3b
+\usepackage[hidelinks]{hyperref}
 \usepackage{lipsum}
 \usepackage{geometry}
 \geometry{
@@ -33,7 +22,7 @@
 \newcommand{\M}[1]{\mathbf{#1}}
 \newcommand{\tfidf}{\operatorname{tfidf}}
 \pagenumbering{roman} %For accessibility
-
+% your preamble here
 \begin{document}
 \include{src/cover}
 \include{src/notes_on_notation_and_terminology}
@@ -43,7 +32,7 @@
 \include{src/representation_learning}
 \include{src/appendix}
 \begin{thebibliography}{99}
-  \bibitem{NewtLeib} Newton ja Leibniz
+  \bibitem{NewtLeib} Newton and Leibniz
   \bibitem{Riemann} Riemann
 \end{thebibliography}
 \end{document}

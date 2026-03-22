@@ -1,28 +1,33 @@
+%Suomenkieliset ympäristöt:
+
 \theoremstyle{plain}
-\newtheorem{theorem}{Theorem}
+\newtheorem{theorem}{Lause}
 \newtheorem{lemma}{Lemma}
-\newtheorem{corollary}{Corollary}
-
+\newtheorem{corollary}{Seuraus}
+%
 \theoremstyle{definition}
-\newtheorem{definition}{Definition}
-\newtheorem{example}{Example}
-
+\newtheorem{definition}{M\"a\"aritelm\"a}
+\newtheorem{example}{Esimerkki}
+%
 \theoremstyle{remark}
-\newtheorem{remark}{Remark}
+\newtheorem{remark}{Huomautus}
 
-\newcommand{\tekija}{{Omar Mayani}} %Author
-\newcommand{\titteli}{{BSc}} % title of the author (can be empty)
-\newcommand{\otsikko}{{Peepoo Robot Language}}   %Title of the Thesis
-\newcommand{\tutkielma}{{MSc }}   %MSc or BSc Thesis
-\newcommand{\aika}{{June 2026}}   %Month and year
-\newcommand{\paaaine}{{Mathematics}} % Subject Mathematics/Statistics
-\newcommand{\ohjaaja}{{Prof. H. H.}} %Supervisor (Prof./Doc./PhD) and name
-\newcommand{\tarkastaja}{{PhD D.D. }} %Reviewer (Prof./Doc./PhD) and Name
+%Määrittele tässä aika, työn, kirjoittajan ja ohjaajien tiedot
 
-\pagestyle{empty}  % No page number
+\newcommand{\tekija}{{Omar Mayani}} %tekijän nimi
+\newcommand{\titteli}{{}} %voi jättää tyhjäksi
+\newcommand{\otsikko}{{Joku otsikko}}   %Gradun otsikko
+\newcommand{\tutkielma}{{Pro gradu }}   %Pro Gardu tai LuK. Huom kirjoitusasu, välilyönti lopussa graduille
+\newcommand{\aika}{{Kesäkuu 2020}}   %Kuukausi ja vuosi
+\newcommand{\paaaine}{{Matematiikka}} %tai Tilastotiede
+\newcommand{\ohjaaja}{{Prof. Ion Petre}} %Ohjaajan titteli (Prof./Dos./FT) ja nimi
+\newcommand{\tarkastaja}{{Markus Ylikojola}} %Toisen tarkastajan titteli (Prof./Dos./FT) ja nimi
+
+\pagenumbering{roman} %Saavuttavuuden takija alussa sivunurot roomalaisittain, tutkielman alusta arabialaisittain.
+\pagestyle{empty}  %ei sivunumeroa sivun alareunaan
 
 \begin{center}
-  \includegraphics[width=10cm]{media/UTU_logo_EN} % save the picture in your thesis folder
+  \includegraphics[width=10cm]{media/UTU_logo_FI.jpg} %talleta kuva linkistä omaan hakemistoosi
 \end{center}
 
 \vspace{3.0cm}
@@ -32,14 +37,15 @@
 
 \vspace{0.5cm}
 \begin{center}
-  \titteli\,  \tekija
+  \titteli \tekija
 \end{center}
 
 \vspace{0.5cm}
 \begin{center}
-  \tutkielma thesis\\
+  \tutkielma -tutkielma\\
   \aika
 \end{center}
+
 \vspace{2.5cm}
 
 \vspace{2.5cm}
@@ -51,43 +57,47 @@
 
 \noindent
 \begin{tabular}{l}
-  {\bf Reviewers:}\\
+  {\bf Tarkastajat:}\\
   \ohjaaja \\
   \tarkastaja
 \end{tabular}
 
 \vspace{20cm}
 
-% Obligatory announcement on Turnitin system:
-\noindent The originality of this thesis has been checked in accordance with the University of Turku quality assurance system using the Turnitin OriginalityCheck service
+%Pakollinen ilmoitus Turnitin-järjestelmän käytöstä:
+\noindent Turun yliopiston laatujärjestelmän mukaisesti tämän julkaisun alkuperäisyys on tarkastettu
+Turnitin OriginalityCheck-järjestelmällä
+
 \cleardoublepage
 
 \noindent
-UNIVERSITY OF TURKU,  Department of Mathematics and Statistics\\
+TURUN YLIOPISTO, Matematiikan ja tilastotieteen laitos\\
 \\
-\tutkielma Thesis \\
-{\bf Subject:} \paaaine \\
-{\bf Author:} \tekija  \\
-{\bf Title:} \otsikko \\
-{\bf Supervisor:} \ohjaaja \\
-{\bf Pages:} xx pages + xx appendix pages \\ %täytä sivumäärät!
-{\bf Month and year:} \aika \\
+\tutkielma -tutkielma \\
+{\bf Pääaine:} \paaaine \\
+{\bf Tekijä:}  \tekija \\
+{\bf Otsikko:} \otsikko \\
+{\bf Ohjaaja:} \ohjaaja \\
+{\bf Sivumäärä:} xx sivua + liitteet xx sivua \\ %täytä sivumäärät!
+{\bf Aika:} \aika \\
 \rule{\textwidth}{.2mm}\\
 \\
 
-\vspace{4mm}\noindent Write the abstract here. Insert the $\backslash${noindent} instruction in the beginning of the paragraph to prevent the first line indention in \LaTeX .
+\vspace{4mm}\noindent Kirjoita tähän tiivistelmä. Laita $\backslash${noindent}-komento kappaleen
+alkuun, niin \LaTeX\, ei sisennä ensimmäistä riviä.
 
-\vspace{4mm}\noindent Command $\backslash$vspace leaves space between the paragraphs, 4mm looks good.
+\vspace{4mm}\noindent Komento $\backslash$vspace taasen jättää sopivan välin kappaleiden väliin - 4mm näyttää aika hyvältä.
 
-\vspace{4mm}\noindent Write the abstract compactly, avoiding unnecessary repetition.
+\vspace{4mm}\noindent Kirjoita tiivistelmä napakasti ja kaikenlaista toistoa välttäen.
 
-\vspace{4mm}\noindent Keywords: Abstract, MSc thesis, \LaTeX\, system.
+\vspace{4mm}\noindent Asiasanat: tiivistelmäsivu, Pro gradu -tutkielma, \LaTeX-ladontajärjestelmä.
 
 \cleardoublepage
 
-% Recompile the LaTeX compilation to update the table of contents
+\tableofcontents
+%Aja laTeX-käännös uudelleen saadaksesi ajantasaisen sisällysluettelon
 
 \cleardoublepage
 
 \pagestyle{plain}
-\pagenumbering{arabic}
+\pagenumbering{arabic} % Saavutettavuus: Aloitetaan arabialaisilla numeroilla tältä sivulta
