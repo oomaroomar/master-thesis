@@ -1,0 +1,8 @@
+\section{Cortex Analyst}
+bla
+\section{Internal Consistency}
+Kielimallit ovat autoregressiivisiä funktioita, jotka tuottavat syötetylle tekstille seuraavan sanan. Kielimallia voidaan iteroida syöttämällä mallin tuottama sana uudestaan mallille, jolloin saadaan seuraava sana. Näin voidaan tuottaa mielivaltaisen pitkä teksti. Yleensä määritetään jokin lopetusmerkki, jonka kielimalli voi ennustaa kuten minkä tahansa muun sanan, jonka jälkeen tämä iteraatio lopetetaan.
+
+Voidaan siis vaihtoehtoisesti nähdä, että kielimallit tuottavat syötetystä tekstistä mielivaltaisen suuren vastauksen. Tällä ajattelumallilla on helpompi puhua mallin tulosteesta.
+
+Kielimallin sanakirjaan voidaan lisätä sanoja kuten \texttt{<tool\_call>}, \texttt{<tool\_name>} ja \texttt{<arguments>}, jolloin ympäristö, jossa ohjelmaa suoritetaan voi tulkita näitä komentoina ja suorittaa niihin liitettyjä toimintoja. Näin saadaan kielimallit käyttämään työkaluja, kuten laskinta, verkkohakua, tai toista kielimallia.
