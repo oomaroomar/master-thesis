@@ -21,12 +21,36 @@
 \usepackage[pdfa]{hyperref}
 \usepackage{caption}
 \usepackage{lipsum}
+\usepackage{listings}
+\usepackage{xcolor} % Optional: for color customization
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single
+}
 \usepackage{geometry}
 \geometry{
   a4paper,
   total={150mm,237mm},
   left=30mm,
   top=30mm,
+}
+\lstdefinelanguage{yaml}{
+  % Tell listings that underscore is a valid part of a word
+  alsoletter={-},
+  keywords={true,false,null,y,n},
+  keywordstyle=\color{darkgray}\bfseries,
+  comment=[l]{\#},
+  commentstyle=\color{gray}\ttfamily,
+  stringstyle=\color{teal}\ttfamily,
+  morestring=[b]',
+  morestring=[b]",
+  % Add both identifiers here
+  keywords=[2]{name, description, tables, base_table, database, schema, table,
+    dimensions, expr, data_type, facts, access_modifier, metrics,
+  primary_key, columns},
+  keywordstyle=[2]\color{blue}\bfseries,
 }
 \renewcommand{\Re}{\mathbb{R}}
 \renewcommand{\L}{\mathcal{L}}

@@ -1,0 +1,396 @@
+\begin{lstlisting}[language=yaml]
+name: SEM_VERBOSE
+description: |-
+  Semantic model that models conversations data from Genesys Cloud contact center software.
+  This semantic model is more verbose and detailed than sem_conv_minimal and is designed to
+  be used when the user wants to have more detailed information about conversations, queues, agents and
+  wrap-up codes. For a more minimalistic model with only the most essential metrics and dimensions,
+  see sem_conv_minimal.
+tables:
+  - name: AGENTS
+    description: |-
+      Employees/Agents in Genesys that handle conversations. Agents are divided to teams that are
+              shown by their division_name field. Agents can have different attributes such as department, title, etc.
+    base_table:
+      database: DEV
+      schema: DBT_OM
+      table: DIM_GENESYS__USERS_STANDARD
+    dimensions:
+      - name: A_DEPARTMENT
+        description: |-
+          The department of the agent. Departments corralate to physcial locations
+                  Moment Digital has offices at.
+        expr: agents.department
+        data_type: VARCHAR(16777216)
+      - name: A_DIVISION_NAME
+        description: The division name of the agent. Can also be called team in some contexts.
+        expr: agents.division_name
+        data_type: VARCHAR(16777216)
+      - name: A_EMAIL
+        description: The email address of the agent
+        expr: agents.email
+        data_type: VARCHAR(16777216)
+      - name: A_NAME
+        description: The name of the agent
+        expr: agents.name
+        data_type: VARCHAR(16777216)
+      - name: A_TITLE
+        description: |-
+          The title of the agent. Agents are tittled "Asiakasneuvoja" other titels are
+                  experts or supervisors
+        expr: agents.title
+        data_type: VARCHAR(16777216)
+    primary_key:
+      columns:
+        - ID
+  - name: CALE
+    description: Calendar table for date dimensions
+    base_table:
+      database: DEV
+      schema: DBT_OM
+      table: DIM_CALENDAR
+    dimensions:
+      - name: CAL_DATE_DAY
+        description: The date of the contact connected
+        expr: cale.date_day
+        data_type: DATE
+      - name: CAL_DAY_OF_MONTH
+        description: Day of the month (1-31)
+        expr: cale.day_of_month
+        data_type: NUMBER(2,0)
+      - name: CAL_DAY_OF_WEEK_NAME
+        description: The name of the day of the week (e.g., Monday, Tuesday)
+        expr: cale.day_of_week_name
+        data_type: VARCHAR(134217728)
+      - name: CAL_MONTH_NAME
+        description: Full name of the month (e.g., January, February)
+        expr: cale.month_name
+        data_type: VARCHAR(134217728)
+      - name: CAL_MONTH_OF_YEAR
+        description: Month number of the year (1-12)
+        expr: cale.month_of_year
+        data_type: NUMBER(38,0)
+      - name: CAL_QUARTER_OF_YEAR
+        description: Quarter number of the year (1-4)
+        expr: cale.quarter_of_year
+        data_type: NUMBER(38,0)
+      - name: CAL_WEEK_OF_YEAR
+        description: Week number of the year
+        expr: cale.week_of_year
+        data_type: NUMBER(38,0)
+      - name: CAL_YEAR_NUMBER
+        description: The year number
+        expr: cale.year_number
+        data_type: NUMBER(38,0)
+    primary_key:
+      columns:
+        - DATE_DAY
+  - name: CONV
+    description: |-
+      All Genesys conversations. Includes one record per agent participant per conversation,
+              so conversations with multiple agent participants will have multiple records. Conversation
+              can be a call, a callback, an email or message depending on the media type. And they have
+              initial direction (inbound or outbound) and a current direction which can change over
+              the course of the conversation.
+    base_table:
+      database: DEV
+      schema: DBT_OM
+      table: FACT_GENESYS__CONVERSATIONS_STANDARD
+    dimensions:
+      - name: C_ADDRESS_FROM
+        description: Source address for the interaction. Only present in email contacts..
+        expr: conv.address_from
+        data_type: VARCHAR(16777216)
+      - name: C_ADDRESS_TO
+        description: Destination address for the interaction. Only present in email contacts..
+        expr: conv.address_to
+        data_type: VARCHAR(16777216)
+      - name: C_ANSWERED
+        description: |-
+          Whether the contact was answered or whether the customer answered the call
+                  in case of outbound calls. 1 if answered, 0 if not answered.
+        expr: conv.answered
+        data_type: NUMBER(38,0)
+      - name: C_CALL_ANSWERED_DATETIME
+        description: The datetime when the contact was answered. Null if the contact was not answered
+        expr: conv.call_answered_datetime
+        data_type: TIMESTAMP_NTZ(9)
+      - name: C_CALL_DISCONNECTED_DATETIME
+        description: The datetime when the contact was disconnected. Null if the contact was not answered
+        expr: conv.call_disconnected_datetime
+        data_type: TIMESTAMP_NTZ(9)
+      - name: C_CALLER
+        description: |-
+          Originating caller address/ANI for the interaction.
+                  Only present for phone interactions this is the caller phone number
+        expr: conv.callers
+        data_type: VARCHAR(16777216)
+      - name: C_CONTACT_CLOSED_DATETIME
+        description: The datetime when the contact was closed
+        expr: conv.contact_closed_datetime
+        data_type: TIMESTAMP_NTZ(9)
+      - name: C_CONTACT_CLOSED_REASON
+        description: |-
+          The reason the interaction was closed. Most relevant are "client" which means the agent
+                  closed the interaction and "peer" which means the customer closed the interaction.
+        expr: conv.contact_closed_reason
+        data_type: VARCHAR(16777216)
+      - name: C_CONTACT_CONNECTED_DATETIME
+        description: The datetime when the contact was connected
+        expr: conv.contact_connected_datetime
+        data_type: TIMESTAMP_NTZ(9)
+      - name: C_DIRECTION
+        description: |-
+          The current direction of the conversation, either inbound or outbound. Usually both
+                  current and original direction are the same, but in callbacks the original direction is inbound
+                  and current direction is outbound.
+        expr: conv.direction
+        data_type: VARCHAR(16777216)
+      - name: C_DIRECTION_ORIGINAL
+        description: |-
+          The original direction of the conversation, either inbound or outbound. By default most
+                  metrics should be calculated using only originally inbound contacts, unless otherwise specified.
+        expr: conv.direction_original
+        data_type: VARCHAR(16777216)
+      - name: C_MEDIA_TYPE
+        description: |-
+          The type of media. Ether call, callback, email, voice or message. Call is legacy
+                  type that can include both calls and callbacks, but callbacks can be identified by their direction fields.
+                  Voice is the current media type for calls that are not callbacks.
+        expr: conv.media_type
+        data_type: VARCHAR(16777216)
+      - name: C_SUBJECT
+        description: The subject of the conversation. Only present in email contacts.
+        expr: conv.subject
+        data_type: VARCHAR(16777216)
+      - name: C_WRAPUPID
+        description: Wrap-up code identifier applied to the interaction (if any).
+        expr: conv.wrapupid
+        data_type: VARCHAR(16777216)
+    facts:
+      - name: CALL_DURATION
+        description: Duration of the actual call in seconds. The time the customer speaks to an agent
+        expr: conv.call_duration
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+      - name: CONTACT_DURATION
+        description: Total duration of the contact in seconds. call_duration + wrapup_duration
+        expr: conv.contact_duration
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+      - name: QUEUE_DURATION
+        description: Duration the contact spent in queue in seconds
+        expr: conv.queue_duration
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+      - name: WRAPUP_DURATION
+        description: |-
+          Duration of the wrap-up time in seconds. Duration of the after call work.
+                  Should not be included when calculating email durations
+        expr: conv.wrapup_duration
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+    metrics:
+      - name: ANSWER_PERCENTAGE
+        description: |-
+          Ratio of answered contacts to total inbound contacts, excluding short-abandons (default X=0).
+                  Often queried only for calls
+                  in that case the media type should be filtered to include only call and voice and current
+                  direction should be also inbound.
+        expr: |-
+          conv.answered_contacts /
+                  nullif(
+                  (
+                      conv.inbound_contacts -
+                      sum(case when conv.queue_duration <= 0
+                                    and conv.answered = 0
+                                    and conv.direction_original = 'inbound'
+                               then 1 else 0 end)
+                  ),0)
+        access_modifier: public_access
+      - name: ANSWERED_CONTACTS
+        description: |-
+          Total number of answered inbound contacts. Often queried only for calls
+                  in that case the media type should be filtered to include only call and voice and current
+                  direction should be also inbound.
+        expr: |-
+          count(distinct case when conv.answered = 1
+                                           and conv.direction_original = 'inbound'
+                                      then conv.identifier end)
+        access_modifier: public_access
+      - name: ANSWERED_CONTACTS_UNIQUE
+        description: Total number of unique answered inbound callers
+        expr: |-
+          count(distinct case when conv.answered = 1
+                                           and conv.direction_original = 'inbound'
+                                      then conv.c_caller end)
+        access_modifier: public_access
+      - name: AVERAGE_CALL_DURATION
+        description: Average call duration in seconds
+        expr: sum(conv.call_duration)
+        access_modifier: public_access
+      - name: AVERAGE_QUEUE_DURATION
+        description: Average queue duration in seconds
+        expr: avg(conv.queue_duration)
+        access_modifier: public_access
+      - name: AVERAGE_WRAPUP_DURATION
+        description: Average wrap-up duration in seconds
+        expr: sum(conv.wrapup_duration)
+        access_modifier: public_access
+      - name: INBOUND_CONTACTS
+        description: |-
+          Total number of inbound contacts. Often queried only for calls
+                  in that case the media type should be filtered to include only call, callbacks and voice.
+        expr: |-
+          count(distinct case when conv.direction_original = 'inbound'
+                                      then conv.identifier end)
+        access_modifier: public_access
+      - name: REJECT_PERCENTAGE
+        description: Ratio of rejected contacts to total inbound contacts, including short-abandons
+        expr: conv.rejected_contacts / nullif(conv.inbound_contacts, 0)
+        access_modifier: public_access
+      - name: REJECTED_CONTACTS
+        description: Total number of rejected inbound contacts, including short-abandons
+        expr: |-
+          count(distinct case when conv.answered = 0
+                      and conv.direction_original = 'inbound' then conv.identifier end)
+        access_modifier: public_access
+      - name: REJECTED_INCOMING_UNIQUE
+        description: Total number of rejected inbound contacts
+        expr: conv.total_incoming_unique - conv.answered_contacts_unique
+        access_modifier: public_access
+      - name: SERVICE_LEVEL_PERCENTAGE
+        description: |-
+          Service level percentage: ratio of inbound contacts answered within service
+                  level target to total eligible inbound contacts. Includes only inbound calls. Never callbacks
+                  or emails or outbound contacts.
+        expr: |-
+          count(distinct case when conv.queue_duration <= queu.q_call_service_level_duration_seconds
+                                           and conv.answered = 1
+                                           and conv.c_direction = 'inbound'
+                                           and conv.c_media_type in ('call', 'voice')
+                                      then conv.identifier end)
+                  /
+                  nullif(
+                  (
+                      count(distinct case when conv.c_direction = 'inbound'
+                                               and conv.answered = 1
+                                          then conv.identifier end)
+                      + count(distinct case when conv.queue_duration > queu.q_call_service_level_duration_seconds
+                                                 and conv.answered = 0
+                                                 and conv.c_direction = 'inbound'
+                                                 and conv.c_media_type in ('call', 'voice')
+                                            then conv.identifier end)
+                  ),0)
+        access_modifier: public_access
+      - name: TOTAL_CALL_DURATION
+        description: Total call duration in seconds
+        expr: sum(conv.call_duration)
+        access_modifier: public_access
+      - name: TOTAL_CONTACT_DURATION
+        description: Total contact duration in seconds
+        expr: sum(conv.contact_duration)
+        access_modifier: public_access
+      - name: TOTAL_CONTACTS
+        description: Total number of contacts
+        expr: count(*)
+        access_modifier: public_access
+      - name: TOTAL_INCOMING_UNIQUE
+        description: Total number of unique incoming contacts
+        expr: count(distinct case when conv.direction_original = 'inbound' then conv.callers end)
+        access_modifier: public_access
+      - name: TOTAL_QUEUE_DURATION
+        description: Total queue duration in seconds
+        expr: sum(conv.queue_duration)
+        access_modifier: public_access
+      - name: TOTAL_WRAPUP_DURATION
+        description: Total wrap-up duration in seconds
+        expr: sum(conv.wrapup_duration)
+        access_modifier: public_access
+    primary_key:
+      columns:
+        - PARTICIPANTS_ID
+        - IDENTIFIER
+  - name: QUEU
+    description: |-
+      All Genesys queues. One service can have multiple queues.
+              This is usually evident by similarities in queue names.
+    base_table:
+      database: DEV
+      schema: DBT_OM
+      table: DIM_GENESYS__QUEUES_STANDARD
+    dimensions:
+      - name: Q_CALL_SERVICE_LEVEL_DURATION_SECONDS
+        description: Call service level target duration in seconds
+        expr: queu.call_service_level_duration_seconds
+        data_type: NUMBER(38,6)
+      - name: Q_CALL_SERVICE_LEVEL_PERCENTAGE
+        description: Call service level target percentage
+        expr: queu.call_service_level_percentage
+        data_type: NUMBER(38,0)
+      - name: Q_DIVISION_NAME
+        description: |-
+          Division name associated with the queue. These are loosely correlated with agents
+                  teams, but not always. This is because some services require their own division for technical reasons.
+        expr: queu.division_name
+        data_type: VARCHAR(16777216)
+      - name: Q_EMAIL_SERVICE_LEVEL_DURATION_SECONDS
+        description: Email service level target duration in seconds
+        expr: queu.email_service_level_duration_seconds
+        data_type: NUMBER(38,6)
+      - name: Q_EMAIL_SERVICE_LEVEL_PERCENTAGE
+        description: Email service level target percentage
+        expr: queu.email_service_level_percentage
+        data_type: NUMBER(38,0)
+      - name: Q_NAME
+        description: The name of the queue
+        expr: queu.name
+        data_type: VARCHAR(16777216)
+    primary_key:
+      columns:
+        - ID
+  - name: WRAP
+    description: |-
+      Wrap up codes. Wrap up codes are not used in every queue/service,
+              but when they are used they are applied to conversations after they are finished to
+              categorize the reason for the contact or any other relevant categorization.
+              Not all conversations will have wrap up codes, but when they do they can be used
+              for filtering and analysis.
+    base_table:
+      database: DEV
+      schema: DBT_OM
+      table: DIM_GENESYS__WRAPUP_CODES_STANDARD
+    dimensions:
+      - name: W_NAME
+        description: The name of the wrap-up code
+        expr: wrap.name
+        data_type: VARCHAR(16777216)
+    primary_key:
+      columns:
+        - ID
+relationships:
+  - name: CONVERSATIONS_CONNECTED_TO_CALENDAR
+    left_table: CONV
+    right_table: CALE
+    relationship_columns:
+      - left_column: CONTACT_CONNECTED_DATE
+        right_column: DATE_DAY
+  - name: CONVERSATIONS_TO_AGENTS
+    left_table: CONV
+    right_table: AGENTS
+    relationship_columns:
+      - left_column: AGENTID
+        right_column: ID
+  - name: CONVERSATIONS_TO_QUEUES
+    left_table: CONV
+    right_table: QUEU
+    relationship_columns:
+      - left_column: QUEUEID
+        right_column: ID
+  - name: CONVERSATIONS_TO_WRAPUP
+    left_table: CONV
+    right_table: WRAP
+    relationship_columns:
+      - left_column: WRAPUPID
+        right_column: ID
+\end{lstlisting}

@@ -1,5 +1,5 @@
 \section{LLM Preamble}
-Kielimallit ovat autoregressiivisiä funktioita, jotka tuottavat syötetylle tekstille seuraavan sanan. Kielimallia voidaan iteroida syöttämällä mallin tuottama sana uudestaan mallille, jolloin saadaan seuraava sana. Näin voidaan tuottaa mielivaltaisen pitkä teksti. Yleensä määritetään jokin lopetusmerkki, jonka kielimalli voi ennustaa kuten minkä tahansa muun sanan, jonka jälkeen tämä iteraatio lopetetaan.
+Kielimallit ovat autoregressiivisiä funktioita, jotka ennustavat kontekstista seuraavan sanan. Kielimallia voidaan iteroida syöttämällä mallin tuottama sana uudestaan mallille, jolloin saadaan seuraava sana. Näin voidaan tuottaa mielivaltaisen pitkä teksti. Yleensä määritetään jokin lopetusmerkki, jonka kielimalli voi ennustaa kuten minkä tahansa muun sanan, jonka jälkeen tämä iteraatio lopetetaan.
 
 Voidaan siis vaihtoehtoisesti nähdä, että kielimallit tuottavat syötetystä tekstistä mielivaltaisen suuren vastauksen. Tällä ajattelumallilla on helpompi puhua mallin tulosteesta.
 
@@ -8,16 +8,55 @@ Kielimallin sanakirjaan voidaan lisätä sanoja kuten \texttt{<tool\_call>}, \te
 Toteutusmenetelmiä ei tarkalleen tiedetä nykyajan käytetyimmille kielimalleille, sillä nämä omistavat yritykset eivät julkaise toteutustietoja. Mutta kykeneväisyyksiä voidaan empiirisesti testata, joka on tämän osion tarkoitus.
 
 \section{Cortex Analyst}
-Cortex Analyst on kielimalleja soveltava työkalu, joka toimii kuten ChatGPT palvelu, mutta pystyy myös suorittamaan SQL kyselyjä tietokantaa vastaan tarjoakseen käyttäjille perusteellisia vastauksia heidän kysymyksiin. Tarkoitus on mahdollistaa nopeampi ja intuitiivisempi pääsy tietokantatietoihin, ilman että käyttäjien tarvitsee osata SQL:ää tai tuntea tietokannan rakennetta.
+Cortex Analyst (CA) on kielimalleja soveltava työkalu, joka toimii kuten ChatGPT, mutta CA pystyy myös suorittamaan SQL kyselyitä tietokantaa vastaan tarjotakseen käyttäjille perusteellisia vastauksia heidän kysymyksiin. Cortex Analystin tarkoitus on mahdollistaa nopeampi ja helpompi pääsy tietokantatietoihin, ilman että käyttäjien tarvitsee osata SQL:ää tai tuntea tietokannan rakennetta.
 
 Sovelletaan Cortex Analystia puhelinkeskusdataan tapaustutkimuksena kielimallien kyvykkyyksistä. On huomioitava, että malli jota Cortex Analyst käyttää on Anthropicin Claude Sonnet 4 (https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst), joten tulokset eivät välttämättä yleisty muihin malleihin, mutta tarjoavat silti hyödyllistä tietoa siitä, mitä nykyaikaiset kielimallit kykenevät tekemään.
 
-\paragraph{Defining our problem} Tarkasteltavana on pääasiassa yksi taulu, joka sisältää keskusteludataa, ja 3 sitä ympäröivää taulua, josta saa tarkempaa tietoa tietyistä kentistä (kuva \ref{fig:data_spec}).
+\paragraph{Defining our problem} Tarkasteltavana on pääasiassa yksi taulu, joka sisältää keskusteludataa, ja 3 sitä ympäröivää taulua, josta saa tarkempaa tietoa tietyistä kentistä (kuva \ref{fig:table_spec}).
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=1\textwidth]{media/data_spec.png}
+    \includegraphics[width=1\textwidth]{media/table_spec.png}
     \caption{Käytettävän datan rakenne. Keskustelutiedot ovat päätaulussa, ja niihin liittyviä tietoja voidaan hakea liittyvistä tauluista.}
-    \label{fig:data_spec}
+    \label{fig:table_spec}
   \end{center}
+\end{figure}
+
+\paragraph{Semanttinen näkymä} Jotta CA pystyy tekemään syntaktisesti valideja SQL kyselyitä, määritellään semanttinen näkymä, jossa taulut ja niiden kentät on kuvattu YAML formaattiin. Kun semanttinen näkymä lisätään kielimallin kontekstiin, niin kielimalli ymmärtää tietokannan rakenteen ja osaa muodostaa oikeanlaisia SQL kyselyitä. Semanttinen näkymä on esitetty kuvassa
+\begin{figure}
+\begin{lstlisting}[language=yaml]
+name: SEM_VERBOSE
+description: |-
+  Semantic model that models conversations data from Genesys Cloud contact center software.
+tables:
+  - name: CONV
+    description: |-
+      All Genesys conversations.
+    base_table:
+      database: DEV
+      schema: DBT_OM
+      table: FACT_GENESYS__CONVERSATIONS_STANDARD
+    dimensions:
+      - name: C_ADDRESS_FROM
+        description: Source address for the interaction. Only present in email contacts..
+        expr: conv.address_from
+        data_type: VARCHAR(16777216)
+    facts:
+      - name: CALL_DURATION
+        description: Duration of the actual call in seconds. The time the customer speaks to an agent
+        expr: conv.call_duration
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+    metrics:
+      - name: AVERAGE_CALL_DURATION
+        description: Average call duration in seconds
+        expr: sum(conv.call_duration)
+        access_modifier: public_access
+    primary_key:
+      columns:
+        - PARTICIPANTS_ID
+        - IDENTIFIER
+\end{lstlisting}
+  \caption{Esimerkki semanttisesta näkymästä, joka kuvaa tietokannan rakennetta ja kenttien merkityksiä. }
+  \label{fig:example_semantic_view}
 \end{figure}
