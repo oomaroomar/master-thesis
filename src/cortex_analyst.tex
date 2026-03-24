@@ -22,7 +22,7 @@ Sovelletaan Cortex Analystia puhelinkeskusdataan tapaustutkimuksena kielimallien
   \end{center}
 \end{figure}
 
-\paragraph{Semanttinen näkymä} Jotta CA pystyy tekemään syntaktisesti valideja SQL kyselyitä, määritellään semanttinen näkymä, jossa taulut ja niiden kentät on kuvattu YAML formaattiin. Kun semanttinen näkymä lisätään kielimallin kontekstiin, niin kielimalli ymmärtää tietokannan rakenteen ja osaa muodostaa oikeanlaisia SQL kyselyitä. Semanttinen näkymä on esitetty kuvassa
+\paragraph{Semanttinen näkymä} Jotta CA pystyy tekemään syntaktisesti valideja SQL kyselyitä, määritellään semanttinen näkymä, jossa taulut ja niiden kentät on kuvattu YAML formaattiin. Kun semanttinen näkymä syötetään kielimallin kontekstiin, niin kielimalli ymmärtää tietokannan rakenteen ja osaa muodostaa oikeanlaisia SQL kyselyitä. Esimerkin semanttisesta näkymästä saa kuvasta \ref{fig:example_semantic_view}.
 \begin{figure}
 \begin{lstlisting}[language=yaml]
 name: SEM_VERBOSE
@@ -57,6 +57,13 @@ tables:
         - PARTICIPANTS_ID
         - IDENTIFIER
 \end{lstlisting}
-  \caption{Esimerkki semanttisesta näkymästä, joka kuvaa tietokannan rakennetta ja kenttien merkityksiä. }
+  \caption{Lyhennetty esimerkki käytetystä semanttisesta näkymästä, joka kuvaa tietokannan rakennetta ja kenttien merkityksiä}
   \label{fig:example_semantic_view}
 \end{figure}
+
+\section{Kokeet}
+Vertaillaan Cortex Analystin tuottamia SQL kyselyitä, eikä kyselyiden tuottamia vastauksia. Vastaukset sisältävät kaupallista tietoa, jota ei sovi julkistaa. Lisäksi huomioidaan, että virheellisen \texttt{where}-lauseen käytön muutos vastaukseen riippuu tietokannan sisällöstä, joka lisää syyn siihen, miksi vertaillaan kyselyitä eikä vastauksia.
+
+\paragraph{Konsistenssi} Statistisina malleina kielimallit voivat tuottaa eri ulostuloja eri suorituksilla, vaikka nämä suoritukset ajettaisiin samalla kontekstilla. Tämä voi olla ongelma, koska haluamme mallin olevan luotettava ja tuottavan johdonmukaisia vastauksia. Voidaan mitata, kuinka usein malli tuottaa saman vastauksen, kun sama kysymys esitetään useamman kerran.
+
+\paragraph{Sensitivity to insignificant changes}
