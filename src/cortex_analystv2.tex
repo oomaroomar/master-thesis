@@ -1,0 +1,86 @@
+\section{Johdanto}
+
+Suuret kielimallit ovat viime vuosina kehittyneet pelkistä tekstin tuottajista järjestelmiksi, jotka kykenevät myös hyödyntämään ulkoisia työkaluja. Kielimallia voidaan tarkastella autoregressiivisena mallina, joka ennustaa seuraavan sanan tai tokenin aiemman kontekstin perusteella. Kun mallin tuottamaa ulostuloa syötetään takaisin osaksi uutta kontekstia, malli voi tuottaa pitkiä tekstijaksoja. Jos ympäristö lisäksi tulkitsee tiettyjä mallin tuottamia merkintöjä työkalukutsuina, kielimalli voi käyttää esimerkiksi laskentaa, verkkohakua tai tietokantakyselyitä osana vastaustaan.
+
+Luonnollisen kielen käyttö tietokantojen rajapintana on kiinnostava sovelluskohde, koska se voi madaltaa datan hyödyntämisen kynnystä. Tällöin käyttäjän ei tarvitse osata SQL-kieltä eikä tuntea tietokannan rakennetta yksityiskohtaisesti, vaan hän voi esittää tiedontarpeensa tavallisella kielellä. Käytännön hyöty riippuu kuitenkin siitä, kuinka luotettavasti järjestelmä kykenee tulkitsemaan käyttäjän tarkoituksen ja muuntamaan sen oikeaksi SQL-kyselyksi.
+
+Tässä tutkielmassa tarkastellaan Snowflaken Cortex Analyst -järjestelmää tapaustutkimuksena. Cortex Analyst on kielimallipohjainen työkalu, joka muodostaa käyttäjän luonnollisen kielen kysymyksistä SQL-kyselyitä ja voi suorittaa niitä tietokantaa vasten. Tutkimuskohteena on puhelinkeskusdataa sisältävä tietokanta, jossa analyysin keskiössä on yksi keskusteludataa sisältävä päätason taulu sekä kolme sitä täydentävää taulua (ks. kuva 1). Järjestelmän toiminta perustuu semanttiseen näkymään, jossa taulut, kentät ja niiden merkitykset kuvataan YAML-muodossa (ks. kuva 2). Tämä näkymä toimii linkkinä käyttäjän luonnollisen kielen kysymyksen ja tietokannan rakenteen välillä.
+
+Tutkielman tavoitteena on arvioida, kuinka hyvin Cortex Analyst soveltuu luonnollisen kielen tietokantakyselyihin ja millaisia rajoituksia sen käyttöön liittyy. Koska nykyaikaisten kaupallisten kielimallien tarkat toteutustiedot eivät yleensä ole julkisia, järjestelmän arviointi perustuu empiiriseen tarkasteluun. Tässä työssä vertaillaan nimenomaan Cortex Analystin tuottamia SQL-kyselyitä eikä niiden palauttamia vastauksia. Rajaus on perusteltu sekä aineiston luottamuksellisuuden vuoksi että siksi, että virheellisen kyselyn vaikutus lopulliseen vastaukseen riippuu myös tietokannan sisällöstä.
+
+Tutkimusta ohjaavat seuraavat tutkimuskysymykset: Kuinka konsistentisti Cortex Analyst tuottaa SQL-kyselyitä, kun sama kysymys esitetään useita kertoja? Kuinka herkkä Cortex Analyst on sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä? Millaisia virhe- ja vaihtelutyyppejä järjestelmän tuottamissa SQL-kyselyissä esiintyy?
+
+Tutkielma etenee siten, että ensin kuvataan tutkimusasetelma, aineisto ja arviointitapa. Tämän jälkeen esitellään kokeet, joissa tarkastellaan järjestelmän konsistenssia ja herkkyyttä merkitykseltään vähäisille muutoksille. Lopuksi esitetään tulokset, johtopäätökset ja tutkimuksen keskeiset rajoitukset.
+
+\section{Metodologia}
+
+\subsection{Tutkimusasetelma}
+Tutkimus toteutetaan empiirisenä tapaustutkimuksena, jossa arvioidaan yhden kielimallipohjaisen järjestelmän toimintaa rajatussa sovelluskontekstissa. Tavoitteena ei ole rakentaa uutta mallia tai vertailla useita eri järjestelmiä keskenään, vaan tarkastella, miten Cortex Analyst suoriutuu käytännöllisestä tehtävästä, jossa luonnollisen kielen kysymykset muunnetaan SQL-kyselyiksi. Tapaustutkimus soveltuu tähän tarkoitukseen hyvin, koska se mahdollistaa järjestelmän toiminnan yksityiskohtaisen tarkastelun todellista käyttötilannetta muistuttavassa ympäristössä.
+
+Tutkimuksen analyysiyksikkönä on yksittäinen käyttäjän luonnollisen kielen kysymys ja sitä vastaava Cortex Analystin tuottama SQL-kysely. Arviointi kohdistuu siihen, vastaako muodostettu kysely käyttäjän tarkoitusta, hyödyntääkö se oikeita tauluja ja kenttiä sekä noudattaako se tietokannan rakennetta. Näin tutkimus keskittyy suoraan siihen vaiheeseen, jossa kielimallin tulkinta muuttuu koneellisesti suoritettavaksi tietokantakyselyksi.
+
+\subsection{Tutkimusaineisto}
+Tutkimuksen aineistona toimii puhelinkeskusdataa sisältävä tietokanta. Tarkastelun keskiössä on yksi keskusteludataa sisältävä päätason taulu, jota täydentävät kolme liitännäistaulua. Liitännäistaulujen avulla voidaan tarkentaa päätason taulun yksittäisten kenttien sisältöä ja merkitystä. Tietokannan rakenne on siten riittävän monipuolinen, jotta voidaan tarkastella sekä yksinkertaisia että vaativampia kyselytilanteita, kuten taululiitoksia, suodatuksia ja aggregaatioita.
+
+Aineisto sisältää kaupallisesti arkaluonteista tietoa, minkä vuoksi varsinaisia kyselytuloksia ei julkaista. Tästä syystä tutkimuksessa vertaillaan järjestelmän tuottamia SQL-kyselyitä eikä niiden palauttamia tietosisältöjä. Ratkaisu tukee myös analyysin johdonmukaisuutta, koska virheellisen kyselyn vaikutus lopputulokseen ei ole aina pääteltävissä pelkästään syntaksista, vaan riippuu osittain tietokannan sisällöstä.
+
+\subsection{Cortex Analyst ja semanttinen näkymä}
+Tutkimuksessa käytettävä järjestelmä on Snowflaken Cortex Analyst. Järjestelmän tarkoituksena on mahdollistaa tietokantatiedon hyödyntäminen luonnollisen kielen kautta siten, että käyttäjän ei tarvitse tuntea SQL-kieltä tai tietokannan skeemaa yksityiskohtaisesti. Cortex Analyst muodostaa käyttäjän kysymyksestä SQL-kyselyn ja voi suorittaa sen tietokantaa vasten.
+
+Cortex Analystin toiminta perustuu semanttiseen näkymään, jossa tietokannan taulut, kentät ja niiden merkitykset kuvataan YAML-muotoisena määrittelynä. Semanttinen näkymä tarjoaa kielimallille rakenteellisen kuvauksen siitä, mitä tietoa tietokannassa on saatavilla ja miten eri taulut liittyvät toisiinsa. Näin järjestelmä pystyy muodostamaan syntaktisesti valideja SQL-kyselyitä ja kohdistamaan kyselyn oikeisiin tietokannan osiin. Semanttisen näkymän laatu on keskeinen osa järjestelmän toimivuutta, koska kielimallin tulkinta perustuu olennaisesti siihen, miten skeema on kuvattu.
+
+Cortex Analyst hyödyntää taustallaan Anthropicin Claude Sonnet 4 -mallia. Tästä seuraa, että tutkimuksen tulokset kuvaavat ensisijaisesti juuri tämän järjestelmän ja mallin yhdistelmän toimintaa. Tuloksia ei siksi voida sellaisenaan yleistää kaikkiin kielimalleihin tai muihin luonnollisen kielen tietokantarajapintoihin.
+
+\subsection{Arviointiperusteet}
+Tuotettuja SQL-kyselyitä arvioidaan useiden toisiaan täydentävien kriteerien avulla. Ensinnäkin tarkastellaan kyselyn syntaktista validiutta eli sitä, muodostuuko kyselystä teknisesti suorituskelpoinen SQL-lause. Toiseksi arvioidaan, valitseeko järjestelmä oikeat taulut ja käyttääkö se oikeita liitoksia silloin, kun käyttäjän kysymys edellyttää useamman taulun yhdistämistä. Kolmanneksi tarkastellaan suodatusehtoja, erityisesti where-lauseiden sisältöä, koska pienikin virhe niissä voi muuttaa kyselyn merkitystä olennaisesti. Lisäksi huomioidaan aggregaatiot, ryhmittelyt ja sarakevalinnat, jotta voidaan arvioida, vastaako kyselyn rakenne käyttäjän esittämää tiedontarvetta.
+
+Arvioinnissa erotetaan toisistaan kaksi poikkeamatyyppiä. Ensimmäisessä tapauksessa SQL-kyselyt eroavat toisistaan syntaktisesti, mutta ovat sisällöllisesti käytännössä ekvivalentteja. Toisessa tapauksessa erot muuttavat kyselyn semanttista merkitystä, jolloin myös mahdollinen vastaus tietokannasta voisi muuttua. Tämä erottelu on tärkeä, koska kaikki kyselyiden väliset erot eivät ole tutkimuskysymysten kannalta yhtä merkittäviä.
+
+\section{Kokeet}
+
+\subsection{Konsitenssikoe}
+Ensimmäisessä kokeessa tarkastellaan Cortex Analystin konsistenssia. Koska kielimallit ovat tilastollisia järjestelmiä, sama syöte ei välttämättä aina johda täsmälleen samaan tulosteeseen. Tietokantakyselyiden tapauksessa tämä on olennainen kysymys, koska käyttäjät odottavat järjestelmältä ennustettavaa ja toistettavaa toimintaa erityisesti silloin, kun samaa analyysia tehdään useamman kerran.
+
+Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmälle useita kertoja. Jokaisesta suorituksesta tallennetaan järjestelmän tuottama SQL-kysely. Näitä kyselyitä verrataan sekä merkkijonotasolla että sisällöllisesti. Merkkijonotason vertailu osoittaa, tuottaako järjestelmä täsmälleen saman SQL-lauseen, kun taas sisällöllinen vertailu paljastaa, ovatko mahdolliset erot merkityksellisiä esimerkiksi taulujen, suodatusten tai aggregaatioiden näkökulmasta.
+
+Konsistenssikoe voidaan toteuttaa käyttäen [N] erilaista kysymystä, joista kukin toistetaan [M] kertaa. Kysymykset kannattaa valita siten, että mukana on sekä yksinkertaisia että monimutkaisempia tapauksia. Tällöin voidaan arvioida, kasvaako vaihtelu kysymyksen rakenteellisen vaativuuden myötä.
+
+\subsection{Herkkyys merkitykseltään vähäisille muutoksille}
+Toisessa kokeessa tarkastellaan järjestelmän herkkyyttä sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä. Käytännössä tämä tarkoittaa sitä, että samasta tiedontarpeesta muodostetaan useita eri sanamuotoja. Muutokset voivat liittyä esimerkiksi sanajärjestykseen, synonyymien käyttöön, täytesanoihin tai kysymyksen yleiseen muotoiluun.
+
+Kokeen tavoitteena on arvioida, tulkitseeko Cortex Analyst semanttisesti saman sisältöiset kysymykset johdonmukaisesti vai johtavatko pienetkin kielelliset erot erilaisiin SQL-kyselyihin. Jos järjestelmä on hyvin herkkä muotoilun vaihtelulle, luonnollisen kielen käyttö rajapintana muuttuu käyttäjän kannalta epävarmaksi. Jos taas järjestelmä tuottaa olennaisesti saman kyselyn eri sanamuodoista huolimatta, tämä tukee sen käytettävyyttä käytännön työssä.
+
+Tämä koe voidaan toteuttaa muodostamalla kustakin alkuperäisestä kysymyksestä [K] vaihtoehtoista versiota. Sen jälkeen vertaillaan, pysyvätkö käytetyt taulut, liitokset, suodatuslogiikka ja aggregaatiot samoina vai muuttuuko kyselyn semanttinen sisältö. Erityistä huomiota kannattaa kiinnittää tilanteisiin, joissa näennäisen vähäinen muutos johtaa erilaiseen where-ehtoon tai aggregaatioon, koska juuri tällaiset erot voivat olla käytännössä merkittäviä.
+
+\subsection{Kyselyiden vertailu ja luokittelu}
+Molempien kokeiden tuottamat SQL-kyselyt analysoidaan systemaattisesti. Vertailussa käytetään seuraavia luokkia:
+\begin{enumerate}
+  \item Täsmälleen sama SQL-kysely
+  \item Syntaktisesti erilainen mutta semanttisesti ekvivalentti kysely
+  \item Semanttisesti virheellinen kysely, jossa taulu, suodatus, liitos tai aggregaatio ei vastaa alkuperäistä kysymystä
+\end{enumerate}
+
+Tällainen luokittelu tekee tuloksista helpommin tulkittavia ja auttaa tunnistamaan, missä kohdissa vaihtelu on harmitonta ja missä se heikentää järjestelmän luotettavuutta.
+
+\section{Tulokset}
+
+\subsection{Konsistenssikoe}
+Konsistenssikokeissa sama kysymys esitettiin järjestelmälle [M] kertaa kutakin kysymystä kohden. Tulosten perusteella Cortex Analyst tuotti täsmälleen saman SQL-kyselyn [X] tapauksessa [Y:stä], mikä vastaa [P] prosenttia kaikista toistoista. Lisäksi [Q] tapauksessa kyselyt erosivat syntaktisesti, mutta niiden semanttinen sisältö pysyi olennaisesti samana. Semanttisesti merkittäviä poikkeamia havaittiin [R] tapauksessa.
+
+Kyselyiden välinen vaihtelu kohdistui erityisesti [where-ehtoihin / liitoksiin / aggregaatioihin / sarakevalintoihin]. Tämä viittaa siihen, että järjestelmä on [hyvin / kohtalaisesti / heikosti] konsistentti tilanteissa, joissa syöte pysyy samana. Mikäli vaihtelu keskittyi lähinnä syntaktisiin yksityiskohtiin, voidaan järjestelmää pitää käytännössä melko vakaana. Jos taas erot muuttivat kyselyiden semanttista sisältöä, tulos osoittaa, että järjestelmän tuottamiin kyselyihin on suhtauduttava varauksella myös silloin, kun käyttäjän kysymys ei muutu.
+
+\subsection{Herkkyyskoe}
+Merkitykseltään vähäisiä muutoksia koskevassa kokeessa kustakin alkuperäisestä kysymyksestä muodostettiin [K] vaihtoehtoista sanamuotoa. Näiden perusteella havaittiin, että Cortex Analyst reagoi muotoilun muutoksiin [vähän / jonkin verran / merkittävästi]. [X] tapauksessa eri sanamuodot johtivat täsmälleen samaan tai semanttisesti ekvivalenttiin SQL-kyselyyn, kun taas [Y] tapauksessa muotoilun muutos vaikutti kyselyn rakenteeseen tai sisältöön.
+
+Havaitut erot liittyivät useimmin [suodatusehtoihin / ajanrajausten tulkintaan / ryhmittelyyn / taulujen valintaan]. Tulokset osoittavat, että luonnollisen kielen muotoilulla voi olla käytännössä merkitystä myös silloin, kun käyttäjän tiedontarve pysyy samana. Tämä on tärkeä havainto järjestelmän käytettävyyden kannalta, koska käyttäjä ei välttämättä osaa ennakoida, millaiset kielelliset erot ovat mallille merkityksellisiä.
+
+\section{Rajoitukset}
+Tutkimukseen liittyy useita rajoituksia, jotka on huomioitava tuloksia tulkittaessa. Ensinnäkin tutkimus kohdistuu yhteen järjestelmään, Snowflaken Cortex Analystiin, jonka taustalla toimii Anthropicin Claude Sonnet 4 -malli. Tulokset kuvaavat siis yhtä tiettyä toteutusta eivätkä ole suoraan yleistettävissä muihin kielimalleihin, SQL-avustajiin tai luonnollisen kielen analytiikkatyökaluihin.
+
+Toiseksi tutkimus perustuu yhteen sovellusalueeseen eli puhelinkeskusdataan. Tämän tietokannan rakenne, sanasto ja analyysitarpeet voivat poiketa merkittävästi muiden toimialojen vastaavista ympäristöistä. On mahdollista, että järjestelmä suoriutuisi eri tavalla esimerkiksi talousdatan, lokidatan tai asiakastietojen yhteydessä.
+
+Kolmanneksi tutkimuksessa tarkastellaan mallin tuottamia SQL-kyselyitä eikä kyselyiden palauttamia varsinaisia vastauksia. Tämä rajaus on perusteltu aineiston luottamuksellisuuden vuoksi, mutta samalla se tarkoittaa, että tutkimus ei suoraan mittaa liiketoiminnallisen lopputuloksen oikeellisuutta. Kysely voi olla rakenteeltaan puutteellinen tai vaihtoehtoisesti syntaktisesti erilainen mutta käytännössä toimiva, eikä tätä eroa voida aina arvioida täysin ilman varsinaista tulosaineistoa.
+
+Neljänneksi semanttisen näkymän laatu vaikuttaa suoraan siihen, miten hyvin Cortex Analyst kykenee muodostamaan kyselyitä. Jos näkymässä on epäselvyyksiä, puutteita tai monitulkintaisia kuvauksia, osa havaituista ongelmista voi johtua itse määrittelystä eikä pelkästään kielimallin rajoituksista. Tämän vuoksi tutkimus arvioi samalla myös sitä, kuinka hyvin kyseinen semanttinen näkymä tukee luonnollisen kielen ja tietokantarakenteen välistä tulkintaa.
+
+Viidenneksi kielimallien toimintaa luonnehtii tietty epädeterministisyys, minkä vuoksi tulokset voivat vaihdella eri suorituskerroilla tai järjestelmäversioiden välillä. Tästä syystä tutkimuksen havainnot kuvaavat järjestelmän toimintaa tiettynä ajankohtana ja tietyssä konfiguraatiossa, eivät välttämättä pysyvää ominaisuutta.
