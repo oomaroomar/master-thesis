@@ -37,30 +37,28 @@ Tuotettuja SQL-kyselyitä arvioidaan useiden toisiaan täydentävien kriteerien 
 Arvioinnissa erotetaan toisistaan kaksi poikkeamatyyppiä. Ensimmäisessä tapauksessa SQL-kyselyt eroavat toisistaan syntaktisesti, mutta ovat sisällöllisesti käytännössä ekvivalentteja. Toisessa tapauksessa erot muuttavat kyselyn semanttista merkitystä, jolloin myös mahdollinen vastaus tietokannasta voisi muuttua. Tämä erottelu on tärkeä, koska kaikki kyselyiden väliset erot eivät ole tutkimuskysymysten kannalta yhtä merkittäviä.
 
 \section{Kokeet}
-Ensimmäisessä kokeessa tarkastellaan Cortex Analystin konsistenssia, eli sitä, tuottaako järjestelmä saman SQL-kyselyn, kun sama luonnollisen kielen kysymys esitetään useita kertoja. Toisessa kokeessa tarkastellaan järjestelmän herkkyyttä sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä. Näissä kokeissa muodostetaan useita eri sanamuotoja samasta tiedontarpeesta ja arvioidaan, tuottaako järjestelmä niistä olennaisesti saman SQL-kyselyn.
+Ensimmäisessä kokeessa tarkastellaan Cortex Analystin konsistenssia, eli sitä, tuottaako järjestelmä saman SQL-kyselyn, kun sama luonnollisen kielen kysymys esitetään useita kertoja.
 
-Käytetyt kyselyt konsistenssikokeessa ovat seuraavat
+Toisessa kokeessa tarkastellaan järjestelmän herkkyyttä sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä. Näissä kokeissa muodostetaan useita eri sanamuotoja samasta tiedontarpeesta ja arvioidaan, tuottaako järjestelmä niistä olennaisesti saman SQL-kyselyn.
+
+\paragraph{Konsistenssikoe}
+Koska kielimallit ovat tilastollisia järjestelmiä, sama syöte ei välttämättä aina johda täsmälleen samaan tulosteeseen. Tietokantakyselyiden tapauksessa tämä on olennainen kysymys, koska käyttäjät odottavat järjestelmältä ennustettavaa ja toistettavaa toimintaa erityisesti silloin, kun samaa analyysia tehdään useamman kerran.
+
+Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmälle 5 kertaa. Jokaisesta suorituksesta tallennetaan järjestelmän tuottama SQL-kysely, joita verrataan keskenään. Käytetyt kysymykset ovat seuraavat:
 \begin{enumerate}
   \item How many total contacts did we handle in January 2026?
   \item What's our answer rate for calls in February 2026?
-  \item Give me the average queue duration for callbacks last month
-  \item What was our service level percentage by queue in Q4 of 2025?
+  \item What percentage of contacts that were answered within our service level target were closed by the customer versus closed by the agent?
   \item What was our peak contact hours by day of week? Show me the distribution of when contacts arrive throughout the day, broken down by hour and weekday.
-\end{enumerate} Herkkyyskokeessa käytetään samoja kyselyjä ja niistä muodostettuja vaihtoehtoisia muotoja.
+  \item What's the success rate of our callbacks? Show me how many callbacks resulted in a conversation versus no answer, and what the average time between the original inbound contact and the callback was.
+\end{enumerate}
 
-\subsection{Konsistenssikoe}
-Ensimmäisessä kokeessa tarkastellaan Cortex Analystin konsistenssia. Koska kielimallit ovat tilastollisia järjestelmiä, sama syöte ei välttämättä aina johda täsmälleen samaan tulosteeseen. Tietokantakyselyiden tapauksessa tämä on olennainen kysymys, koska käyttäjät odottavat järjestelmältä ennustettavaa ja toistettavaa toimintaa erityisesti silloin, kun samaa analyysia tehdään useamman kerran.
+Määritellyssä semanttisessa näkymässä on kuvattu metriikoihin SQL-kyselyt, jotka vastavat suoraan kysymyksiin 1 ja 2. Kysymykset 3-5 ovat huomattavasti monimutkaisempia, ja niihin ei ole ennalta validoituja SQL-kyselyitä. Kysymys 4 vaatii, että kentästä \texttt{CONTACT\_CONNECTED\_DATETIME} erotetaan kellonaika tunnin tarkkuudella, ja viikonpäivä pitää hakea kalenteritaulusta. Kysymys 5 vaatii, että malli suodattaa takaisinsoitot oikein \texttt{direction\_original = 'inbound' AND direction = 'outbound'} -ehdon perusteella sekä osaa yhdistää tietokannasta rivit, jotka vastaavat alkuperäistä soittoa ja takaisinsoittoa.
 
-Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmälle useita kertoja. Jokaisesta suorituksesta tallennetaan järjestelmän tuottama SQL-kysely. Näitä kyselyitä verrataan sekä merkkijonotasolla että sisällöllisesti. Merkkijonotason vertailu osoittaa, tuottaako järjestelmä täsmälleen saman SQL-lauseen, kun taas sisällöllinen vertailu paljastaa, ovatko mahdolliset erot merkityksellisiä esimerkiksi taulujen, suodatusten tai aggregaatioiden näkökulmasta.
+\paragraph{Herkkyys merkitykseltään vähäisille muutoksille}
+Kokeen tavoitteena on arvioida, tulkitseeko Cortex Analyst semanttisesti saman sisältöiset kysymykset johdonmukaisesti vai johtavatko kielelliset erot erilaisiin SQL-kyselyihin. Jos järjestelmä on hyvin herkkä muotoilun vaihtelulle, luonnollisen kielen käyttö rajapintana muuttuu käyttäjän kannalta epävarmaksi. Jos taas järjestelmä tuottaa olennaisesti saman kyselyn eri sanamuodoista huolimatta, tämä tukee sen käytettävyyttä käytännön työssä.
 
-Konsistenssikoe voidaan toteuttaa käyttäen [N] erilaista kysymystä, joista kukin toistetaan [M] kertaa. Kysymykset kannattaa valita siten, että mukana on sekä yksinkertaisia että monimutkaisempia tapauksia. Tällöin voidaan arvioida, kasvaako vaihtelu kysymyksen rakenteellisen vaativuuden myötä.
-
-\subsection{Herkkyys merkitykseltään vähäisille muutoksille}
-Toisessa kokeessa tarkastellaan järjestelmän herkkyyttä sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä. Käytännössä tämä tarkoittaa sitä, että samasta tiedontarpeesta muodostetaan useita eri sanamuotoja. Muutokset voivat liittyä esimerkiksi sanajärjestykseen, synonyymien käyttöön, täytesanoihin tai kysymyksen yleiseen muotoiluun.
-
-Kokeen tavoitteena on arvioida, tulkitseeko Cortex Analyst semanttisesti saman sisältöiset kysymykset johdonmukaisesti vai johtavatko pienetkin kielelliset erot erilaisiin SQL-kyselyihin. Jos järjestelmä on hyvin herkkä muotoilun vaihtelulle, luonnollisen kielen käyttö rajapintana muuttuu käyttäjän kannalta epävarmaksi. Jos taas järjestelmä tuottaa olennaisesti saman kyselyn eri sanamuodoista huolimatta, tämä tukee sen käytettävyyttä käytännön työssä.
-
-Tämä koe voidaan toteuttaa muodostamalla kustakin alkuperäisestä kysymyksestä [K] vaihtoehtoista versiota. Sen jälkeen vertaillaan, pysyvätkö käytetyt taulut, liitokset, suodatuslogiikka ja aggregaatiot samoina vai muuttuuko kyselyn semanttinen sisältö. Erityistä huomiota kannattaa kiinnittää tilanteisiin, joissa näennäisen vähäinen muutos johtaa erilaiseen where-ehtoon tai aggregaatioon, koska juuri tällaiset erot voivat olla käytännössä merkittäviä.
+Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyksestä 3 vaihtoehtoista versiota, joissa pyritään säilyttämään kysymyksen merkitys, mutta muokkaamaan sanamuotoa. Järjestelmän tuottamat SQL-kyselyt tallennetaan ja vertaillaan keskenään.
 
 \subsection{Kyselyiden vertailu ja luokittelu}
 Molempien kokeiden tuottamat SQL-kyselyt analysoidaan systemaattisesti. Kysleyt luokitellaan korrektiksi, jos ne ovat semanttisesti ekvivalentteja halutun kyselyn kanssa, vaikka ne eivät olisikaan merkkijonotasolla identtisiä. Kyselyt luokitellaan virheellisiksi, jos ne eivät ole semanttisesti ekvivalentteja halutun kyselyn kanssa.
