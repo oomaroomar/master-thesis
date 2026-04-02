@@ -130,7 +130,7 @@ Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyk
     \begin{enumerate}[label=\arabic*.]
       \item For each weekday, what were our peak contact hours, and how are contacts distributed across the day (by hour)?
       \item Show the hourly contact-arrival distribution for every day of the week, highlighting which hours were highest on each weekday.
-      \item What times during the day (hour-by-hour) drive the most contacts, split by weekday—please summarize peak hours and the overall distribution.
+      \item What times during the day (hour-by-hour) drive the most contacts, split by weekday. Please summarize peak hours and the overall distribution.
       \item Across the week, when do contacts arrive most often? Provide an hour-by-hour breakdown for each weekday and identify the peak contact hours.
     \end{enumerate}
   \item Variaatioita kysymyksestä E:
@@ -146,14 +146,17 @@ Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyk
 Molempien kokeiden tuottamat SQL-kyselyt analysoidaan systemaattisesti. Kysleyt luokitellaan korrektiksi, jos ne ovat semanttisesti ekvivalentteja halutun kyselyn kanssa, vaikka ne eivät olisikaan merkkijonotasolla identtisiä. Kyselyt luokitellaan virheellisiksi, jos ne eivät ole semanttisesti ekvivalentteja halutun kyselyn kanssa.
 
 \section{Tulokset}
+Merkitään konsistenssikokeen kysymykset A-E ja herkkyyskokeen variaatiot A1-A4, B1-B4, C1-C4, D1-D4 ja E1-E4. Kokeiden tulokset on esitetty taulukoissa \ref{tb:consistency}, \ref{tb:sensitivity1}, \ref{tb:sensitivity2}, \ref{tb:sensitivity3}, \ref{tb:sensitivity4} ja \ref{tb:sensitivity5}. Taulukot kuvaavat kunkin kysymyksen osalta sitä, kuinka monta kertaa järjestelmä tuotti semanttisesti korrektin SQL-kyselyn, kuinka monta kertaa kysely oli buginen (eli syntaktisesti virheellinen) ja kuinka monta kertaa kysely oli väärin (eli semanttisesti virheellinen).
+
+Lisäksi konsistenssikokeen taulukossa on sarake uniikkien SQL-kyselyiden määrästä, joka kuvaa, kuinka monella eri tavalla järjestelmä muotoili SQL-kyselyn kyseiselle luonnollisen kielen kysymykselle. Herkkyyskokeen taulukoissa ollaan listattu kumulatiivinen uniikkien SQL-kyselyiden määrä, koska niissä tarkastellaan nimenomaan sitä, tuottaako järjestelmä saman SQL-kyselyn eri variaatioista.
 
 \renewcommand{\arraystretch}{1.25}
-\begin{table}[h]
+\begin{table}[ht]
   \centering
   \caption{Konsistenssikokeen tulokset. Jokainen kysymys (kts. lista \ref{it:q_consistency}) esitettiin 10 kertaa, ja taulukkoon on koottu jakauma siitä, kuinka monta kertaa järjestelmä tuotti semanttisesti korrektin SQL-kyselyn.}
   \label{tab:results}
   \small
-  \begin{tabular}{ccccc}
+  \begin{tabular}{ccccc}\label{tb:consistency}
     \toprule
     Kysymys & Korrekti & Buginen & Väärin & Uniikkien SQL-kyselyiden määrä \\
     \midrule
@@ -164,11 +167,76 @@ Molempien kokeiden tuottamat SQL-kyselyt analysoidaan systemaattisesti. Kysleyt 
     E & 0 & 0 & 10 & 1\\
     \bottomrule
   \end{tabular}
+
 \end{table}
 
-\paragraph{Konsistenssikoe}
+\begin{table}[ht]\label{tb:sensitivity1}
+  \centering
+  \caption{Herkkyystestin 1 tulokset. Jokainen kysymys esitettiin 10 kertaa, ja taulukkoon on koottu jakauma siitä, kuinka monta kertaa järjestelmä tuotti semanttisesti korrektin SQL-kyselyn.}
+  \small
+  \begin{tabular}{ccccc}
+    \toprule
+    Kysymys & Korrekti & Buginen & Väärin & Uniikkien SQL-kyselyiden määrä \\
+    \midrule
+    A & 10 & 0 & 0 & 1\\
+    A1 & 10 & 0 & 0 & 1\\
+    A2 & 10 & 0 & 0 & 1 \\
+    A3 & 10 & 0 & 0 & 1\\
+    A4 & 0 & 10 & 0 & 1\\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-\paragraph{Sensitiivisyyskoe}
+\begin{table}[ht]\label{tb:sensitivity3}
+  \centering
+  \caption{Herkkyystestin 3 tulokset. Jokainen kysymys esitettiin 10 kertaa, ja taulukkoon on koottu jakauma siitä, kuinka monta kertaa järjestelmä tuotti semanttisesti korrektin SQL-kyselyn.}
+  \small
+  \begin{tabular}{ccccc}
+    \toprule
+    Kysymys & Korrekti & Buginen & Väärin & Uniikkien SQL-kyselyiden määrä \\
+    \midrule
+    C & 7 & 0 & 3 & 2\\
+    C1 & 8 & 0 & 2 & 2\\
+    C2 & 10 & 0 & 0 & 1 \\
+    C3 & 0 & 0 & 10 & 2\\
+    C4 & 8 & 0 & 2 & 4\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]\label{tb:sensitivity4}
+  \centering
+  \caption{Herkkyystestin 4 tulokset. Jokainen kysymys esitettiin 10 kertaa, ja taulukkoon on koottu jakauma siitä, kuinka monta kertaa järjestelmä tuotti semanttisesti korrektin SQL-kyselyn.}
+  \small
+  \begin{tabular}{ccccc}
+    \toprule
+    Kysymys & Korrekti & Buginen & Väärin & Uniikkien SQL-kyselyiden määrä \\
+    \midrule
+    D & 0 & 10 & 0 & 1\\
+    D1 & 0 & 0 & 10 & 2\\
+    D2 & 10 & 0 & 0 & 1 \\
+    D3 & 0 & 0 & 10 & 2\\
+    D4 & 0 & 0 & 10 & 2\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]\label{tb:sensitivity5}
+  \centering
+  \caption{Herkkyystestin 5 tulokset. Jokainen kysymys esitettiin 10 kertaa, ja taulukkoon on koottu jakauma siitä, kuinka monta kertaa järjestelmä tuotti semanttisesti korrektin SQL-kyselyn.}
+  \small
+  \begin{tabular}{ccccc}
+    \toprule
+    Kysymys & Korrekti & Buginen & Väärin & Uniikkien SQL-kyselyiden määrä \\
+    \midrule
+    E & 0 & 0 & 10 & 1\\
+    E1 & 0 & 0 & 10 & 1\\
+    E2 & 0 & 0 & 10 & 2 \\
+    E3 & 0 & 0 & 10 & 1\\
+    E4 & 0 & 0 & 10 & 1\\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \section{Rajoitukset}
 Tutkimukseen liittyy useita rajoituksia, jotka on huomioitava tuloksia tulkittaessa. Ensinnäkin tutkimus kohdistuu yhteen järjestelmään, Snowflaken Cortex Analystiin, jonka taustalla toimii Anthropicin Claude Sonnet 4 -malli. Tulokset kuvaavat siis yhtä tiettyä toteutusta eivätkä ole suoraan yleistettävissä muihin kielimalleihin, SQL-avustajiin tai luonnollisen kielen analytiikkatyökaluihin.
