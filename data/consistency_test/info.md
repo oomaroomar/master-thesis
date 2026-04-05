@@ -12,7 +12,7 @@
 
 ## Q4: What was our peak contact hours by day of week? Show me the distribution of when contacts arrive throughout the day, broken down by hour and weekday.
 
-10/10 Incorrect. The model filters based on direction_origianl = inbound instead of direction.
+10/10 Correct. The model filters based on direction_origianl = inbound instead of direction.
 
 ## Q5: What’s the success rate of our callbacks? Show me how many callbacks resulted in a conversation versus no answer, and what the average time between the original inbound contact and the callback was.
 
