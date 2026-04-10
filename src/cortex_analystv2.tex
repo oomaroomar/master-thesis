@@ -13,11 +13,47 @@ Tässä tutkielmassa tarkastellaan Snowflaken Cortex Analyst -järjestelmää ta
   \label{fig:table_spec}
 \end{figure}
 
+\begin{table}[ht]
+  \centering
+  \small
+  \begin{tabularx}{0.8\textwidth}{l X}
+    \toprule
+    \textbf{Attribute} & \textbf{Value} \\
+    \midrule
+    PARTICIPANTS\_ID & ea0a918f \\
+    IDENTIFIER & 63c44469 \\
+    QUEUEID & 3b10a230 \\
+    CALLERS & +123456789012 \\
+    AGENTID & b7e632de \\
+    SUBJECT & Null \\
+    ADDRESS\_TO & Null \\
+    ADDRESS\_FROM & Null \\
+    CONTACT\_DURATION & 363 \\
+    DIRECTION & inbound \\
+    DIRECTION\_ORIGINAL & inbound \\
+    ANSWERED & 1 \\
+    QUEUE\_DURATION & 2 \\
+    CALL\_DURATION & 316 \\
+    WRAPUPID & dd91b10d \\
+    WRAPUP\_DURATION & 47 \\
+    CONTACT\_CLOSED\_REASON & client \\
+    CONTACT\_CONNECTED\_DATETIME & 2025-08-23 13:41:13.000 \\
+    CONTACT\_CLOSED\_DATETIME & 2025-08-23 13:47:28.000 \\
+    CALL\_ANSWERED\_DATETIME & 2025-08-23 13:41:25.000 \\
+    CALL\_DISCONNECTED\_DATETIME & 2025-08-23 13:46:41.000 \\
+    MEDIA\_TYPE & call \\
+    CONTACT\_CONNECTED\_DATE & 2025-08-23 00:00:00.000 \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Esimerkki yhdestä tietokannan rivistä. Osa kentistä on anonymisoitu tietosuoja- ja luottamuksellisuussyistä.}
+  \label{tb:example_record}
+\end{table}
+
 Tutkielman tavoitteena on arvioida, kuinka hyvin Cortex Analyst soveltuu luonnollisen kielen tietokantakyselyihin ja millaisia rajoituksia sen käyttöön liittyy. Koska nykyaikaisten kaupallisten kielimallien tarkat toteutustiedot eivät yleensä ole julkisia, järjestelmän arviointi perustuu empiiriseen tarkasteluun. Tässä työssä vertaillaan nimenomaan Cortex Analystin tuottamia SQL-kyselyitä eikä niiden palauttamia vastauksia. Rajaus on perusteltu sekä aineiston luottamuksellisuuden vuoksi että siksi, että virheellisen kyselyn vaikutus lopulliseen vastaukseen riippuu myös tietokannan sisällöstä.
 
 tutkimust ohjaavat seuraavat tutkimuskysymykset: Kuinka konsistentisti Cortex Analyst tuottaa SQL-kyselyitä, kun sama kysymys esitetään useita kertoja? Kuinka herkkä Cortex Analyst on sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä? Millaisia virhe- ja vaihtelutyyppejä järjestelmän tuottamissa SQL-kyselyissä esiintyy?
 
-Tutkielm etenee siten, että ensin kuvataan tutkimusasetelma, aineisto ja arviointitapa. Tämän jälkeen esitellään kokeet, joissa tarkastellaan järjestelmän konsistenssia ja herkkyyttä merkitykseltään vähäisille muutoksille. Lopuksi esitetään tulokset, johtopäätökset ja tutkimuksen keskeiset rajoitukset.
+Tutkielma etenee siten, että ensin kuvataan tutkimusasetelma, aineisto ja arviointitapa. Tämän jälkeen esitellään kokeet, joissa tarkastellaan järjestelmän konsistenssia ja herkkyyttä merkitykseltään vähäisille muutoksille. Lopuksi esitetään tulokset, johtopäätökset ja tutkimuksen keskeiset rajoitukset.
 
 \section{Metodologia}
 
@@ -27,7 +63,7 @@ Tutkimus toteutetaan empiirisenä tapaustutkimuksena, jossa arvioidaan yhden kie
 Tutkimuksen analyysiyksikkönä on yksittäinen käyttäjän luonnollisen kielen kysymys ja sitä vastaava Cortex Analystin tuottama SQL-kysely. Arviointi kohdistuu siihen, vastaako muodostettu kysely käyttäjän tarkoitusta, hyödyntääkö se oikeita tauluja ja kenttiä sekä noudattaako se tietokannan rakennetta. Näin tutkimus keskittyy suoraan siihen vaiheeseen, jossa kielimallin tulkinta muuttuu koneellisesti suoritettavaksi tietokantakyselyksi.
 
 \subsection{Tutkimusaineisto}
-Tutkimuksen aineistona toimii puhelinkeskusdataa sisältävä tietokanta. Tarkastelun keskiössä on yksi keskusteludataa sisältävä päätason taulu, jota täydentävät kolme liitännäistaulua. Liitännäistaulujen avulla voidaan tarkentaa päätason taulun yksittäisten kenttien sisältöä ja merkitystä. Tietokannan rakenne on siten riittävän monipuolinen, jotta voidaan tarkastella sekä yksinkertaisia että vaativampia kyselytilanteita, kuten taululiitoksia, suodatuksia ja aggregaatioita.
+Tutkimuksen aineistona toimii puhelinkeskusdataa sisältävä tietokanta, joka noudattaa kuvassa \ref{fig:table_spec} esitettyä rakennetta. Tarkastelun keskiössä on yksi keskusteludataa sisältävä päätason taulu, jota täydentävät kolme liitännäistaulua. Liitännäistaulujen avulla voidaan tarkentaa päätason taulun yksittäisten kenttien sisältöä ja merkitystä. Tietokannan rakenne on siten riittävän monipuolinen, jotta voidaan tarkastella sekä yksinkertaisia että vaativampia kyselytilanteita, kuten taululiitoksia, suodatuksia ja aggregaatioita.
 
 Aineisto sisältää kaupallisesti arkaluonteista tietoa, minkä vuoksi varsinaisia kyselytuloksia ei julkaista. Tästä syystä tutkimuksessa vertaillaan järjestelmän tuottamia SQL-kyselyitä eikä niiden palauttamia tietosisältöjä. Ratkaisu tukee myös analyysin johdonmukaisuutta, koska virheellisen kyselyn vaikutus lopputulokseen ei ole aina pääteltävissä pelkästään syntaksista, vaan riippuu osittain tietokannan sisällöstä.
 
@@ -90,7 +126,8 @@ Toisessa kokeessa tarkastellaan järjestelmän herkkyyttä sellaisille syötteen
 Koska kielimallit ovat tilastollisia järjestelmiä, sama syöte ei välttämättä aina johda täsmälleen samaan tulosteeseen. Tietokantakyselyiden tapauksessa tämä on olennainen kysymys, koska käyttäjät odottavat järjestelmältä ennustettavaa ja toistettavaa toimintaa.
 
 Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmälle 10 kertaa. Jokaisesta suorituksesta tallennetaan järjestelmän tuottama SQL-kysely, joita verrataan keskenään. Käytetyt kysymykset ovat seuraavat:
-\begin{enumerate}[label=\Alph*.]\label{it:q_consistency}
+\begin{enumerate}[label=\Alph*.]
+    \label{it:q_consistency}
   \item How many total contacts did we handle in January 2026?
   \item What's our answer rate for calls in February 2026?
   \item What percentage of contacts that were answered within our service level target were closed by the customer versus closed by the agent?
@@ -104,7 +141,8 @@ Määritellyssä semanttisessa näkymässä on kuvattu metriikoihin SQL-kyselyt,
 Kokeen tavoitteena on arvioida, tulkitseeko Cortex Analyst semanttisesti saman sisältöiset kysymykset johdonmukaisesti vai johtavatko kielelliset erot erilaisiin SQL-kyselyihin. Jos järjestelmä on hyvin herkkä muotoilun vaihtelulle, luonnollisen kielen käyttö rajapintana muuttuu käyttäjän kannalta epävarmaksi. Jos taas järjestelmä tuottaa olennaisesti saman kyselyn eri sanamuodoista huolimatta, tämä tukee sen käytettävyyttä käytännön työssä.
 
 Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyksestä 4 vaihtoehtoista versiota, joissa pyritään säilyttämään kysymyksen merkitys, mutta muokkaamaan sanamuotoa. Järjestelmän tuottamat SQL-kyselyt tallennetaan ja vertaillaan keskenään. Käytetyt kysymykset ovat seuraavat:
-\begin{enumerate}[label=\Alph*.]\label{it:q_sensitivity}
+\begin{enumerate}[label=\Alph*.]
+    \label{it:q_sensitivity}
   \item Variaatioita kysymyksestä A:
     \begin{enumerate}[label=\arabic*.]
       \item What was the total number of contacts we handled in January 2026?
@@ -142,41 +180,39 @@ Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyk
     \end{enumerate}
 \end{enumerate}
 
-\subsection{Kyselyiden vertailu ja luokittelu}
-Molempien kokeiden tuottamat SQL-kyselyt analysoidaan systemaattisesti. Kysleyt luokitellaan korrektiksi, jos ne ovat semanttisesti ekvivalentteja halutun kyselyn kanssa, vaikka ne eivät olisikaan merkkijonotasolla identtisiä. Kysely merkitään omaavan pienen virheen, jos generoitu SQL vastaa kysymykseen, mutta ei ole ekvivalentti halutun kyselyn kanssa. Esimerkiksi kysely jossa on puuttuva \texttt{NULLIF} avainsana, jonka tarkoitus on estää nollalla jakaminen, vastaa olennaisesti samaan kysymykseen. Kyselyt luokitellaan virheellisiksi, jos ne eivät vastaa kysymykseen merkityksellisesti, esimerkiksi jos niissä on väärä suodatus, puuttuu olennainen taulu tai kenttä.
-
 \section{Tulokset}
-Merkitään konsistenssikokeen kysymykset A-E ja herkkyyskokeen variaatiot A1-A4, B1-B4, C1-C4, D1-D4 ja E1-E4. Kokeiden tulokset on esitetty taulukoissa \ref{tb:consistency} ja \ref{tb:sensitivity_all}. Taulukot kuvaavat kunkin kysymyksen osalta sitä, kuinka monta kertaa järjestelmä tuotti semanttisesti korrektin SQL-kyselyn, kuinka monta kertaa kysely oli Pieni virhe (eli syntaktisesti virheellinen) ja kuinka monta kertaa kysely oli väärin (eli semanttisesti virheellinen).
+Merkitään konsistenssikokeen kysymykset A-E ja herkkyyskokeen variaatiot A1-A4, B1-B4, C1-C4, D1-D4 ja E1-E4 listojen \ref{it:q_consistency} ja \ref{it:q_sensitivity} mukaisesti. Kokeiden tulokset on esitetty taulukoissa \ref{tb:consistency} ja \ref{tb:sensitivity_all}. Taulukot kuvaavat kunkin kysymyksen osalta, kuinka monta kertaa järjestelmän tuottama SQL-kysely oli korrekti, virheellinen tai melkein korrekti sisältäen pienen virheen.
 
-Lisäksi konsistenssikokeen taulukossa on sarake uniikkien SQL-kyselyiden määrästä, joka kuvaa, kuinka monella eri tavalla järjestelmä muotoili SQL-kyselyn kyseiselle luonnollisen kielen kysymykselle. Herkkyyskokeen taulukoissa ollaan listattu kumulatiivinen uniikkien SQL-kyselyiden määrä, koska niissä tarkastellaan nimenomaan sitä, tuottaako järjestelmä saman SQL-kyselyn eri variaatioista.
+Kysely luokitellaan korrektiksi, jos se vastaa esitettyyn luonnollisen kielen kysymykseen oikein huomioiden implisiittiset taustaoletukset. Kysely merkitään melkein korrektiksi, jos generoitu SQL vastaa kysymykseen, mutta sisältää teknisiä puutteita. Esimerkiksi kysely jossa on puuttuva \texttt{NULLIF} avainsana, jonka tarkoitus on estää nollalla jakaminen, vastaa olennaisesti samaan kysymykseen kuin \texttt{NULLIF} avainsanan sisältävä kysely, mutta erikoistapauksessa kysely voi tuottaa virheen. Tällainen kysely merkitaan "melkein korrektiksi". Kysely luokitellaan virheellisiksi, jos se ei vastaa kysymykseen merkityksellisesti. Esimerkiksi kysely joka käyttää väärää suodatusta tai kysely josta puuttuu olennainen taulu tai kenttä merkitään virheelliseksi.
 
-\renewcommand{\arraystretch}{1.25}
+Konsistenssikokeen taulukossa on sarake uniikkien SQL-kyselyiden määrästä, joka kuvaa, kuinka monella eri tavalla järjestelmä muotoili SQL-kyselyn kyseiselle luonnollisen kielen kysymykselle. Herkkyyskokeen taulukoissa ollaan listattu kumulatiivinen uniikkien SQL-kyselyiden määrä, koska niissä tarkastellaan tuottaako järjestelmä saman SQL-kyselyn eri variaatioista. Jokaisessa herkkyyskokeen taulussa ensimmäinen rivi vastaa alkuperäistä kyselyä, jota käytettiin konsistenssikokeessa.
+
+\renewcommand{\arraystretch}{1.1}
 \begin{table}[h]
   \centering
   \caption{Konsistenssikokeen tulokset.}
   \label{tb:consistency}
-  \small
   \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{lcccc}
-    \toprule
-    Kysymys & Oikein & \makecell{Pieni\\virhe} & Väärin &
-    \makecell{Erilaisten SQL-\\kyselyiden määrä} \\
-    \midrule
-    A & 10 & 0 & 0  & 1 \\
-    B & 10 & 0 & 0  & 2 \\
-    C & 7  & 0 & 3  & 2 \\
-    D & 10 & 0 & 0  & 1 \\
-    E & 0  & 0 & 10 & 1 \\
-    \bottomrule
-  \end{tabular}
+  {\small
+    \begin{tabular}{lcccc}
+      \toprule
+      Kysymys & Oikein & \makecell{Pieni\\virhe} & Väärin &
+      \makecell{Erilaisten SQL-\\kyselyiden määrä} \\
+      \midrule
+      A & 10 & 0 & 0  & 1 \\
+      B & 10 & 0 & 0  & 2 \\
+      C & 7  & 0 & 3  & 2 \\
+      D & 10 & 0 & 0  & 1 \\
+      E & 0  & 0 & 10 & 1 \\
+      \bottomrule
+    \end{tabular}
+  }
 \end{table}
 
 \begin{table}[h]
   \centering
   \caption{Herkkyystestien 1--5 tulokset. Sarakkeet ilmoittavat oikeiden, pienen virheen sisältävien ja väärien vastausten lukumäärät sekä yhteenlaskettu uniikkien SQL-kyselyiden määrä. (\textit{Yht.}).}
   \label{tb:sensitivity_all}
-
-  \small
 
   \begin{minipage}[t]{0.48\textwidth}
     \centering
