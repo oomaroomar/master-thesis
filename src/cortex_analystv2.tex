@@ -9,7 +9,7 @@ Tässä tutkielmassa tarkastellaan Snowflaken Cortex Analyst -järjestelmää ta
 \begin{figure}
   \centering
   \includegraphics[width=1\textwidth]{media/table_spec.png}
-  \caption{Tutkimuksessa käytettävän tietokannan rakenne.}
+  \caption{Tutkimuksessa käytettävän tietokannan rakenne. Taulujen nimet ollaan lyhennetty luettavuuden vuoksi.}
   \label{fig:table_spec}
 \end{figure}
 
@@ -72,6 +72,8 @@ Tutkimuksessa käytettävä järjestelmä on Snowflaken Cortex Analyst. Järjest
 
 Cortex Analystin toiminta perustuu semanttiseen näkymään, jossa tietokannan taulut, kentät ja niiden merkitykset kuvataan YAML-muotoisena määrittelynä (kts. kuva \ref{fig:example_semantic_view}). Semanttinen näkymä tarjoaa kielimallille rakenteellisen kuvauksen siitä, mitä tietoa tietokannassa on saatavilla ja miten eri taulut liittyvät toisiinsa. Näin järjestelmä pystyy muodostamaan syntaktisesti valideja SQL-kyselyitä ja kohdistamaan kyselyn oikeisiin tietokannan osiin. Semanttisen näkymän laatu on keskeinen osa järjestelmän toimivuutta, koska kielimallin tulkinta perustuu olennaisesti siihen, miten skeema on kuvattu.
 
+Tutkimuksessa käytetty semanttinen näkymä kuvailee kaikki tietokannan \ref{fig:table_spec} taulut, niiden kentät ja suhteet toisiinsa sekä useita kentistä laskettuja metriikoita. Kuvassa \ref{fig:example_semantic_view} on esitetty yksinkertaistettu versio käytetystä semanttisesta näkymästä.
+
 \begin{figure}[h]
 \begin{lstlisting}[language=yaml]
 name: SEM_EXAMPLE
@@ -106,7 +108,7 @@ tables:
         - PARTICIPANTS_ID
         - IDENTIFIER
 \end{lstlisting}
-  \caption{Esimerkki semanttisesta näkymästä.}
+  \caption{Esimerkki semanttisesta näkymästä. Esimerkki on yksinkertaistettu versio tutkimuksessa käytetystä näkymästä.}
   \label{fig:example_semantic_view}
 \end{figure}
 
@@ -115,7 +117,15 @@ Cortex Analyst hyödyntää taustallaan Anthropicin Claude Sonnet 4 -mallia. Tä
 \subsection{Arviointiperusteet}
 Tuotettuja SQL-kyselyitä arvioidaan useiden toisiaan täydentävien kriteerien avulla. Ensinnäkin tarkastellaan kyselyn syntaktista validiutta eli sitä, muodostuuko kyselystä teknisesti suorituskelpoinen SQL-lause. Toiseksi arvioidaan, valitseeko järjestelmä oikeat taulut ja käyttääkö se oikeita liitoksia silloin, kun käyttäjän kysymys edellyttää useamman taulun yhdistämistä. Kolmanneksi tarkastellaan suodatusehtoja, erityisesti where-lauseiden sisältöä, koska pienikin virhe niissä voi muuttaa kyselyn merkitystä olennaisesti. Lisäksi huomioidaan aggregaatiot, ryhmittelyt ja sarakevalinnat, jotta voidaan arvioida, vastaako kyselyn rakenne käyttäjän esittämää tiedontarvetta.
 
-Arvioinnissa erotetaan toisistaan kaksi poikkeamatyyppiä. Ensimmäisessä tapauksessa SQL-kyselyt eroavat toisistaan syntaktisesti, mutta ovat sisällöllisesti käytännössä ekvivalentteja. Toisessa tapauksessa erot muuttavat kyselyn semanttista merkitystä, jolloin myös mahdollinen vastaus tietokannasta voisi muuttua. Tämä erottelu on tärkeä, koska puhtaasti syntaktiset erot eivät ole tutkimuskysymysten kannalta merkittäviä.
+Arvioinnissa erotetaan toisistaan neljä poikkeamatyyppiä. Kysely luokitellaan korrektiksi, jos se vastaa esitettyyn luonnollisen kielen kysymykseen oikein huomioiden implisiittiset taustaoletukset. Kysely merkitään melkein korrektiksi, jos generoitu SQL vastaa kysymykseen, mutta sisältää teknisiä puutteita. Esimerkiksi kysely josta puuttuu \texttt{NULLIF} lause jakolaskun nimittäjästä vastaa olennaisesti samaan kysymykseen kuin \texttt{NULLIF} avainsanan sisältävä kysely, mutta erikoistapauksessa kysely voi tuottaa virheen. Tällainen kysely merkitaan "melkein korrektiksi". Kysely luokitellaan virheellisiksi, jos se ei vastaa kysymykseen merkityksellisesti. Esimerkiksi kysely joka käyttää väärää suodatusta tai kysely josta puuttuu olennainen taulu tai kenttä merkitään virheelliseksi. Jos malli ei tuota lainkaan SQL-kyselyä, vaan ilmoittaa, että kysymykseen ei voida vastata, tämä luokitellaan erikseen "ei kyselyä" -kategoriaksi. Käytettyihin kysymyksiin pystyy vastaamaan, joten tässä kategoriassa olevat vastaukset ovat virheellisiä, mutta ne on syytä erotella muista virheellisistä vastauksista, koska ne eivät tuota harhaanjohtavia tuloksia.
+
+Oikeellisuuden lisäksi kielimallin tuottamien kyselyiden variaatio on myös keskseinen tutkimuksen aihe. Analysoidaan siksi, kuinka monta uniikkia SQL-kyselyä järjstelmä tuottaa jokaista kysymystä kohden, kun sama luonnolisen kielen kysymys, tai jokin sen variaatioista, esitetään useamman kerran.
+
+Kyselyä ei nähdä uniikiksi, jos semanttisesti ekvivalentti kysely on tuotettu aiemmin paitsi siinä tapauksessa, että aiempi kysely hakee tietoa suoraan semanttisesta mallista määritellyistä metriikoista, ja uusi kysely hakee tietoa laskukaavoilla. Esimerkiksi jos kysymykseen "What was the answer rate for calls in February 2026?" tuottuu kerran SQL-kysely, joka hakee \texttt{answer\_percentage} metriikkaa semanttisesta näkymästä, ja kerran SQL-kysely, joka laskee vastaavan prosenttiluvun \texttt{answered\_calls} ja \texttt{total\_calls} -metriikoilla, nämä katsotaan kahdeksi uniikiksi kyselyksi.
+
+Päätös perustellaan sillä, että nämä kaksi lähestymistapaa ovat merkittävästi erilaiset (käytettävissä olevan kontekstin soveltaminen vs. päättely).
+
+Tuotettujen SQL-kyselyiden oikeellisuus arvioitiin manuaalisesti vertaamalla niitä tutkijan tulkintaan siitä, millainen kysely vastaisi käyttäjän tiedontarvetta. Arvioinnin suoritti yksi arvioija, mikä heikentää luokittelun reliabiliteettia.
 
 \section{Kokeet}
 Ensimmäisessä kokeessa tarkastellaan Cortex Analystin konsistenssia, eli sitä, tuottaako järjestelmä saman SQL-kyselyn, kun sama luonnollisen kielen kysymys esitetään useita kertoja.
@@ -183,9 +193,34 @@ Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyk
 \section{Tulokset}
 Merkitään konsistenssikokeen kysymykset A-E ja herkkyyskokeen variaatiot A1-A4, B1-B4, C1-C4, D1-D4 ja E1-E4 listojen \ref{it:q_consistency} ja \ref{it:q_sensitivity} mukaisesti. Kokeiden tulokset on esitetty taulukoissa \ref{tb:consistency} ja \ref{tb:sensitivity_all}. Taulukot kuvaavat kunkin kysymyksen osalta, kuinka monta kertaa järjestelmän tuottama SQL-kysely oli korrekti, virheellinen tai melkein korrekti sisältäen pienen virheen.
 
-Kysely luokitellaan korrektiksi, jos se vastaa esitettyyn luonnollisen kielen kysymykseen oikein huomioiden implisiittiset taustaoletukset. Kysely merkitään melkein korrektiksi, jos generoitu SQL vastaa kysymykseen, mutta sisältää teknisiä puutteita. Esimerkiksi kysely jossa on puuttuva \texttt{NULLIF} avainsana, jonka tarkoitus on estää nollalla jakaminen, vastaa olennaisesti samaan kysymykseen kuin \texttt{NULLIF} avainsanan sisältävä kysely, mutta erikoistapauksessa kysely voi tuottaa virheen. Tällainen kysely merkitaan "melkein korrektiksi". Kysely luokitellaan virheellisiksi, jos se ei vastaa kysymykseen merkityksellisesti. Esimerkiksi kysely joka käyttää väärää suodatusta tai kysely josta puuttuu olennainen taulu tai kenttä merkitään virheelliseksi.
+Kysymykset A, D ja E tuottivat konsistenssikokeessa vain yhden uniikin SQL-kyselyn kymmenellä suorituksella. Näistä A ja D kysymykseen vastaavat vastasivat oikein ja E kysymykseen Cortex Analyst ei tuottanut SQL-kyselyä. Sen sijaan malli huomautti, että tietokannan rakenne ei tue kysymystä. Tietokannassa ei ole kenttää, jonka yksinomainen tarkoitus on linkittää takaisinsoitto alkuperäiseen saapuvaan kontaktiin, mutta \textbf{(THIS OUGHT TO BE PROVEN)} self joinilla, kysymykseen pystyy vastaamaan käyttäen puhelinnumeroa avaimena.
 
-Konsistenssikokeen taulukossa on sarake uniikkien SQL-kyselyiden määrästä, joka kuvaa, kuinka monella eri tavalla järjestelmä muotoili SQL-kyselyn kyseiselle luonnollisen kielen kysymykselle. Herkkyyskokeen taulukoissa ollaan listattu kumulatiivinen uniikkien SQL-kyselyiden määrä, koska niissä tarkastellaan tuottaako järjestelmä saman SQL-kyselyn eri variaatioista. Jokaisessa herkkyyskokeen taulussa ensimmäinen rivi vastaa alkuperäistä kyselyä, jota käytettiin konsistenssikokeessa.
+\begin{quote}
+  \texttt{I'm sorry, but this question cannot be fully answered with the available data. While we can determine how many callbacks were answered versus not answered (using the c\_answered field fil-\\tered for callback media type), the semantic model does not \\ contain information about the original inbound contact that \\ triggered a callback. There is no field linking a callback con-\\versation back to its originating inbound contact, so we cannot calculate the time between the original inbound contact and the callback attempt.}
+\end{quote}
+
+\textbf{TODO: Lisää tähän esimerkki siitä, millainen SQL-kysely E-kysymykseen vastaisi. Idea on varmaan seuraavanlainen:}
+\begin{lstlisting}
+  WITH paired AS (
+  SELECT
+    c.phone_number,
+    c.contact_timestamp AS callback_ts,
+    MAX(m.contact_timestamp) AS missed_ts
+  FROM call_data c
+  JOIN call_data m
+    ON m.phone_number = c.phone_number
+   AND m.was_callback = false
+   AND m.contact_timestamp < c.contact_timestamp
+  WHERE c.was_callback = true
+  GROUP BY c.phone_number, c.contact_timestamp
+)
+SELECT AVG(callback_ts - missed_ts) AS avg_callback_delay
+FROM paired;
+\end{lstlisting}
+
+Kysymykseen B järjestelmä tuotti kaksi uniikkia SQL-kyselyä. Yksi näistä käytti semanttisessa näkymässä ennalta määriteltyä metriikkaa \texttt{answer\_percentage} ja toinen generoi metriikan laskukaavan. Kysymykseen C järjestelmä tuotti kaksi uniikkia SQL-kyselyä, joista toinen oli korrekti ja toinen virheellinen. Korrekti kysely tuotettiin 7 kertaa ja virheellinen 3 kertaa. Virheellisessä kyselyssä järjestelmä käytti agentteja asiakkaiden sijaan ja asiakkaita agenttien sijaan.
+
+Yhteensä esitetystä 50 kysymyksestä 37 tuotti korrektin SQL-kyselyn, 10 tuotti virheellisen vastauksen, joka ei vastannut kysymykseen, mutta ei myöskään ollut harhaan johtava, ja 3 tuotti virheellisen SQL-kyselyn, joka vastasi kysymykseen väärin. Konsistenssikokeen tulokset osoittavat, että Cortex Analyst tuottaa johdonmukaisia SQL-kyselyitä usein, mutta järjestelmän luotettavuus ei ole riittävällä tasolla.
 
 \renewcommand{\arraystretch}{1.1}
 \begin{table}[h]
@@ -194,124 +229,107 @@ Konsistenssikokeen taulukossa on sarake uniikkien SQL-kyselyiden määrästä, j
   \label{tb:consistency}
   \setlength{\tabcolsep}{4pt}
   {\small
-    \begin{tabular}{lcccc}
+    \begin{tabular}{lccccc}
       \toprule
-      Kysymys & Oikein & \makecell{Pieni\\virhe} & Väärin &
+      Kysymys & Oikein & \makecell{Melkein\\oikein} & Väärin & \makecell{Ei\\kyselyä} &
       \makecell{Erilaisten SQL-\\kyselyiden määrä} \\
       \midrule
-      A & 10 & 0 & 0  & 1 \\
-      B & 10 & 0 & 0  & 2 \\
-      C & 7  & 0 & 3  & 2 \\
-      D & 10 & 0 & 0  & 1 \\
-      E & 0  & 0 & 10 & 1 \\
+      A & 10 & 0 & 0 & 0 & 1 \\
+      B & 10 & 0 & 0 & 0 & 2 \\
+      C & 7  & 0 & 3 & 0 & 2 \\
+      D & 10 & 0 & 0 & 0  & 1 \\
+      E & 0  & 0 & 0 & 10 & 1 \\
       \bottomrule
     \end{tabular}
   }
 \end{table}
 
+Herkkyystesteissä suurin variaatio havaittiin kysymyksen C eri muotoiluissa, joissa järjestelmä tuotti yhteensä 6 uniikkia SQL-kyselyä. Kun Cortex Analystille syötettiin C kysymyksen eri variaatiota, järjestelmä tuotti väärän vastauksen 14 kertaa 50:stä suorituksesta. Virheellisissä kyselyissä toistuvin virhe oli, että järjestelmä ei rajannut hakuaan sarakkeen \texttt{direction} mukaisesti, vaan käytti \texttt{direction\_original} saraketta, tai jätti suunta suodatuksen kokonaan pois.
+
+Kysymyksessä C ja sen variaatioissa puhutaan palvelutasosta, jolloin implisiittinen taustaoletus on, että tarkastellaan vain saapuvia kontakteja. Havainto viittaa siihen, että tässä aineistossa ja tässä semanttisessa näkymässä Cortex Analyst ei aina huomioinut implisiittistä tietoa johdonmukaisesti.
+
+Kysymys E ja sen variaatiot syötteenä järjestelmälle tuottivat 40 kertaa 50:stä tekstin, jossa malli ilmoitti, että kysymykseen ei voida vastata. Kymmenen kertaa malli tuotti SQL-kyselyn, joka ei vastannut kysymykseen.
+
+Kysymys E on esimerkki tilanteesta, jossa tietokannan rakenne ei tue suoraan käyttäjän esittämää kysymystä, mutta johdonmukaisella SQL-kyselyllä siihen voisi silti vastata. Tämän kokeen perusteella järjestelmä ei suoriutunut tällaisesta päättelytehtävästä luotettavasti.
+
 \begin{table}[h]
   \centering
-  \caption{Herkkyystestien 1--5 tulokset. Sarakkeet ilmoittavat oikeiden, pienen virheen sisältävien ja väärien vastausten lukumäärät sekä yhteenlaskettu uniikkien SQL-kyselyiden määrä. (\textit{Yht.}).}
+  \caption{Herkkyystestien 1--5 tulokset. Sarakkeet ilmoittavat oikeiden, pienen virheen sisältävien, väärien ja ei kyselyä -vastausten lukumäärät sekä yhteenlaskettu uniikkien SQL-kyselyiden määrä. (\textit{Yht.}).}
   \label{tb:sensitivity_all}
 
-  \begin{minipage}[t]{0.48\textwidth}
-    \centering
-    \setlength{\tabcolsep}{4pt}
-    \begin{tabular}{lcccc}
-      \toprule
-      Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & Yht. \\
-      \midrule
-      A  & 10 & 0  & 0  & 1 \\
-      A1 & 10 & 0  & 0  & 1 \\
-      A2 & 10 & 0  & 0  & 1 \\
-      A3 & 10 & 0  & 0  & 1 \\
-      A4 & 0  & 10 & 0  & 2 \\
-      \bottomrule
-    \end{tabular}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    A  & 10 & 0  & 0  & 0 & 1 \\
+    A1 & 10 & 0  & 0  & 0 & 1 \\
+    A2 & 10 & 0  & 0  & 0 & 1 \\
+    A3 & 10 & 0  & 0  & 0 & 1 \\
+    A4 & 0  & 10 & 0  & 0 & 2 \\
+    \bottomrule
+  \end{tabular}
 
-    \vspace{0.3em}
-    Testi 1
-  \end{minipage}
-  \hfill
-  \begin{minipage}[t]{0.48\textwidth}
-    \centering
-    \setlength{\tabcolsep}{4pt}
-    \begin{tabular}{lcccc}
-      \toprule
-      Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & Yht. \\
-      \midrule
-      B  & 10 & 0 & 0 & 1 \\
-      B1 & 10 & 0 & 0 & 1 \\
-      B2 & 10 & 0 & 0 & 1 \\
-      B3 & 10 & 0 & 0 & 1 \\
-      B4 & 10 & 0 & 0 & 2 \\
-      \bottomrule
-    \end{tabular}
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    B  & 10 & 0 & 0 & 0 & 1 \\
+    B1 & 10 & 0 & 0 & 0 & 1 \\
+    B2 & 10 & 0 & 0 & 0 & 1 \\
+    B3 & 10 & 0 & 0 & 0 & 1 \\
+    B4 & 10 & 0 & 0 & 0 & 2 \\
+    \bottomrule
+  \end{tabular}
 
-    \vspace{0.3em}
-    Testi 2
-  \end{minipage}
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    C  & 7 & 0  & 3  & 0 & 2 \\
+    C1 & 8 & 2  & 0  & 0 & 3 \\
+    C2 & 10 & 0  & 0 & 0 & 3 \\
+    C3 & 0 & 0 & 10  & 0 & 5 \\
+    C4 & 8 & 1  & 1  & 0 & 6 \\
+    \bottomrule
+  \end{tabular}
 
-  \vspace{1em}
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    D  & 10 & 0 & 0 & 0 & 1 \\
+    D1 & 10 & 0 & 0 & 0 & 1 \\
+    D2 & 10 & 0 & 0 & 0 & 1 \\
+    D3 & 10 & 0 & 0 & 0 & 2 \\
+    D4 & 7  & 0 & 3 & 0 & 2 \\
+    \bottomrule
+  \end{tabular}
 
-  \begin{minipage}[t]{0.48\textwidth}
-    \centering
-    \setlength{\tabcolsep}{4pt}
-    \begin{tabular}{lcccc}
-      \toprule
-      Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & Yht. \\
-      \midrule
-      C  & 7 & 0  & 3  & 2 \\
-      C1 & 8 & 2  & 0  & 3 \\
-      C2 & 0 & 0  & 10 & 3 \\
-      C3 & 0 & 10 & 0  & 5 \\
-      C4 & 8 & 1  & 1  & 6 \\
-      \bottomrule
-    \end{tabular}
-
-    \vspace{0.3em}
-    Testi 3
-  \end{minipage}
-  \hfill
-  \begin{minipage}[t]{0.48\textwidth}
-    \centering
-    \setlength{\tabcolsep}{4pt}
-    \begin{tabular}{lcccc}
-      \toprule
-      Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & Yht. \\
-      \midrule
-      D  & 10 & 0 & 0 & 1 \\
-      D1 & 10 & 0 & 0 & 1 \\
-      D2 & 10 & 0 & 0 & 1 \\
-      D3 & 10 & 0 & 0 & 2 \\
-      D4 & 7  & 0 & 3 & 2 \\
-      \bottomrule
-    \end{tabular}
-
-    \vspace{0.3em}
-    Testi 4
-  \end{minipage}
-
-  \vspace{1em}
-
-  \begin{minipage}[t]{0.48\textwidth}
-    \centering
-    \setlength{\tabcolsep}{4pt}
-    \begin{tabular}{lcccc}
-      \toprule
-      Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & Yht. \\
-      \midrule
-      E  & 0 & 0 & 10 & 1 \\
-      E1 & 0 & 0 & 10 & 1 \\
-      E2 & 0 & 0 & 10 & 3 \\
-      E3 & 0 & 0 & 10 & 3 \\
-      E4 & 0 & 0 & 10 & 3 \\
-      \bottomrule
-    \end{tabular}
-
-    \vspace{0.3em}
-    Testi 5
-  \end{minipage}
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    E  & 0 & 0 & 0 & 10 & 1 \\
+    E1 & 0 & 0 & 0 & 10 & 1 \\
+    E2 & 0 & 0 & 10 & 0 & 3 \\
+    E3 & 0 & 0 & 0 & 10 & 3 \\
+    E4 & 0 & 0 & 0 & 10 & 3 \\
+    \bottomrule
+  \end{tabular}
 \end{table}
 
 \section{Rajoitukset}
