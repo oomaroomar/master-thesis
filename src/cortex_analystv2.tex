@@ -153,7 +153,7 @@ Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmäl
   \item What's the success rate of our callbacks? Show me how many callbacks resulted in a conversation versus no answer, and what the average time between the original inbound contact and the callback was.
 \end{enumerate}
 
-Määritellyssä semanttisessa näkymässä on kuvattu metriikoihin SQL-kyselyt, jotka vastaavat suoraan kysymyksiin 1 ja 2. Kysymykset 3-5 ovat huomattavasti monimutkaisempia, ja niihin ei ole ennalta validoituja SQL-kyselyitä semanttisessa näkymässä. Kysymys 4 vaatii, että kentästä \texttt{CONTACT\_CONNECTED\_DATETIME} erotetaan kellonaika tunnin tarkkuudella, ja viikonpäivä pitää hakea kalenteritaulusta. Kysymys 5 vaatii, että malli suodattaa takaisinsoitot oikein \texttt{direction\_original = 'inbound' AND direction = 'outbound'} -ehdon perusteella sekä osaa yhdistää takaisinsoiton vastaavaan alkuperäiseen soittoon.
+Määritellyssä semanttisessa näkymässä on kuvattu metriikoihin SQL-kyselyt, jotka vastaavat suoraan kysymyksiin A ja B. Kysymykset C-E ovat huomattavasti monimutkaisempia, ja niihin ei ole ennalta validoituja SQL-kyselyitä semanttisessa näkymässä. Kysymys 4 vaatii, että kentästä \texttt{CONTACT\_CONNECTED\_DATETIME} erotetaan kellonaika tunnin tarkkuudella, ja viikonpäivä pitää hakea kalenteritaulusta. Kysymys E on harhaanjohtava. Erityisesti osa koskien takaisinsoiton ja alkuperäisen sisääntulevan soiton välisen ajan keskiarvoa on paljon helpompi kuin luonnollisen kielen kysymys ehdottaa. Vastaus ei vaadi vertailua kahden eri rivin välillä. Kaikki tarpeellinen tieto löytyy takaisinsoitonna tallennetusta rivistä.
 
 \paragraph{Sensitiivisyyskoe}
 Kokeen tavoitteena on arvioida, tulkitseeko Cortex Analyst semanttisesti saman sisältöiset kysymykset johdonmukaisesti vai johtavatko kielelliset erot erilaisiin SQL-kyselyihin. Jos järjestelmä on hyvin herkkä muotoilun vaihtelulle, luonnollisen kielen käyttö rajapintana muuttuu käyttäjän kannalta epävarmaksi. Jos taas järjestelmä tuottaa olennaisesti saman kyselyn eri sanamuodoista huolimatta, tämä tukee sen käytettävyyttä käytännön työssä.
@@ -198,33 +198,18 @@ Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyk
     \end{enumerate}
 \end{enumerate}
 
+Jokainen kysymys molemmissa kokeissa esitetään järjestelmälle 10 kertaa ja jokainen yksittäinen suoritus tehdään tyhjällä sessiolla. Testit suoritettiin 23.04.2026-28.04.2026 välisenä aikana käyttäen samaa semanttista mallia.
+
+Kymmenen toistoa valittiin käytännöllisenä kompromissina, joka mahdollistaa vaihtelun havaitsemisen ilman kohtuuttoman suurta manuaalisen arvioinnin työmäärää.
+
 \section{Tulokset}
 Merkitään konsistenssikokeen kysymykset A-E ja herkkyyskokeen variaatiot A1-A4, B1-B4, C1-C4, D1-D4 ja E1-E4 listojen \ref{it:q_consistency} ja \ref{it:q_sensitivity} mukaisesti. Kokeiden tulokset on esitetty taulukoissa \ref{tb:consistency} ja \ref{tb:sensitivity_all}. Taulukot kuvaavat kunkin kysymyksen osalta, kuinka monta kertaa järjestelmän tuottama SQL-kysely oli korrekti, virheellinen tai melkein korrekti sisältäen pienen virheen.
 
-Kysymykset A, D ja E tuottivat konsistenssikokeessa vain yhden uniikin SQL-kyselyn kymmenellä suorituksella. Näistä A ja D kysymykseen vastaavat vastasivat oikein ja E kysymykseen Cortex Analyst ei tuottanut SQL-kyselyä. Sen sijaan malli huomautti, että tietokannan rakenne ei tue kysymystä. Tietokannassa ei ole kenttää, jonka yksinomainen tarkoitus on linkittää takaisinsoitto alkuperäiseen saapuvaan kontaktiin, mutta \textbf{(THIS OUGHT TO BE PROVEN)} self joinilla, kysymykseen pystyy vastaamaan käyttäen puhelinnumeroa avaimena.
+Kysymykset A, D ja E tuottivat konsistenssikokeessa vain yhden uniikin SQL-kyselyn kymmenellä suorituksella. Näistä A ja D kysymykseen vastaavat vastasivat oikein ja E kysymykseen Cortex Analyst ei tuottanut SQL-kyselyä. Sen sijaan malli huomautti, että tietokannan rakenne ei tue kysymystä.
 
 \begin{quote}
   \texttt{I'm sorry, but this question cannot be fully answered with the available data. While we can determine how many callbacks were answered versus not answered (using the c\_answered field fil-\\tered for callback media type), the semantic model does not \\ contain information about the original inbound contact that \\ triggered a callback. There is no field linking a callback con-\\versation back to its originating inbound contact, so we cannot calculate the time between the original inbound contact and the callback attempt.}
 \end{quote}
-
-\textbf{TODO: Lisää tähän esimerkki siitä, millainen SQL-kysely E-kysymykseen vastaisi. Idea on varmaan seuraavanlainen:}
-\begin{lstlisting}
-  WITH paired AS (
-  SELECT
-    c.phone_number,
-    c.contact_timestamp AS callback_ts,
-    MAX(m.contact_timestamp) AS missed_ts
-  FROM call_data c
-  JOIN call_data m
-    ON m.phone_number = c.phone_number
-   AND m.was_callback = false
-   AND m.contact_timestamp < c.contact_timestamp
-  WHERE c.was_callback = true
-  GROUP BY c.phone_number, c.contact_timestamp
-)
-SELECT AVG(callback_ts - missed_ts) AS avg_callback_delay
-FROM paired;
-\end{lstlisting}
 
 Kysymykseen B järjestelmä tuotti kaksi uniikkia SQL-kyselyä. Yksi näistä käytti semanttisessa näkymässä ennalta määriteltyä metriikkaa \texttt{answer\_percentage} ja toinen generoi metriikan laskukaavan. Kysymykseen C järjestelmä tuotti kaksi uniikkia SQL-kyselyä, joista toinen oli korrekti ja toinen virheellinen. Korrekti kysely tuotettiin 7 kertaa ja virheellinen 3 kertaa. Virheellisessä kyselyssä järjestelmä käytti agentteja asiakkaiden sijaan ja asiakkaita agenttien sijaan.
 
@@ -256,9 +241,32 @@ Herkkyystesteissä suurin variaatio havaittiin kysymyksen C eri muotoiluissa, jo
 
 Kysymyksessä C ja sen variaatioissa puhutaan palvelutasosta, jolloin implisiittinen taustaoletus on, että tarkastellaan vain saapuvia kontakteja. Havainto viittaa siihen, että tässä aineistossa ja tässä semanttisessa näkymässä Cortex Analyst ei aina huomioinut implisiittistä tietoa johdonmukaisesti.
 
-Kysymys E ja sen variaatiot syötteenä järjestelmälle tuottivat 40 kertaa 50:stä tekstin, jossa malli ilmoitti, että kysymykseen ei voida vastata. Kymmenen kertaa malli tuotti SQL-kyselyn, joka ei vastannut kysymykseen.
+Kysymys E ja sen variaatiot syötteenä järjestelmälle tuottivat 40 kertaa 50:stä tekstin, jossa malli ilmoitti, että kysymykseen ei voida vastata. Variaatio 2 tuotti 9 kertaa korrektin SQL-kyselyn ja kerran SQL-kyselyn, joka oli muuten oikein, mutta \texttt{DISTINCT(IDENTIFIER)} ehdon sijaan kysely vaati rivin olevan uniikki, joka on huomattavasti heikompi ehto.
 
-Kysymys E on esimerkki tilanteesta, jossa tietokannan rakenne ei tue suoraan käyttäjän esittämää kysymystä, mutta johdonmukaisella SQL-kyselyllä siihen voisi silti vastata. Tämän kokeen perusteella järjestelmä ei suoriutunut tällaisesta päättelytehtävästä luotettavasti.
+Kysymyksen E variaatio 2 ei implisiittisesti ehdota, että kysymyksen vastaaminen vaatisi kahden rivin välistä vertailua. Tämä voi selittää, miksi tämä variaatio tuotti enemmän oikeita vastauksia kuin muut.
+
+Kysymys E oli Cortex Analystille vaikein, joka vääntää virhetyyppien jakaumaa ``ei kyselyä'' -virhetyypin puoleen. Taulusta \ref{tb:errors} nähdään, että muista virhetyypeistä yleisimmät olivat suodatus- ja duplikaattien hallintavirheet. Kaikki suodatusvirheet liittyivät sarakkeisiin \texttt{direction} ja \texttt{direction\_original}. Duplikaattien hallintavirheet ovat virheitä, jossa \texttt{DISTINCT} avainsanaa on käytetty väärin.
+
+Taululiitos- tai sarakevalintavirheitä ei havaittu, mikä viittaa siihen, että järjestelmä tunnisti kysymyksistä, mitä käyttäjä halusi hakea, vaikka se ei aina onnistunut tuottamaan oikeaa SQL-kyselyä tämän vastaamiseksi. Käytetyn tietokannan rakenne on liian yksinkertainen, jotta taululiitosvirheiden puutteesta voisi tehdä varmoja johtopäätöksiä.
+
+\begin{table}[h]
+  \centering
+  \caption{Esiintyneiden virhetyyppien määrät kaikissa kokeissa. Rivit kuvaavat, kuinka monta kertaa kukin virhetyyppi esiintyi kussakin kysymyksessä tai sen variaatioissa. Jos yhdessä SQL-kyselyssä esiintyy useampi virhetyyppi, kysely lasketaan jokaiseen virhetyyppiin erikseen.}
+  \label{tb:errors}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lcccccc}
+    \toprule
+    Kysymys & A & B & C & D & E & Yhteensä\\
+    \midrule
+    Aggregaatio & 0 & 0 & 2  & 0 & 0  & 2 \\
+    Duplikaattien hallinta & 10 & 0 & 7 & 0 & 1 & 18 \\
+    Ei kyselyä & 0 & 0 & 0 & 0 & 40 & 40 \\
+    Sarakevalinta & 0 & 0 & 0 & 0 & 0 & 0 \\
+    Suodatus & 0 & 0 & 11  & 3 & 0  & 14 \\
+    Taululiitos & 0 & 0 & 0 & 0 & 0 & 0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \begin{table}[h]
   \centering
@@ -320,7 +328,7 @@ Kysymys E on esimerkki tilanteesta, jossa tietokannan rakenne ei tue suoraan kä
     D1 & 10 & 0 & 0 & 0 & 1 \\
     D2 & 10 & 0 & 0 & 0 & 1 \\
     D3 & 10 & 0 & 0 & 0 & 2 \\
-    D4 & 7  & 0 & 3 & 0 & 2 \\
+    D4 & 7  & 0 & 3 & 0 & 3 \\
     \bottomrule
   \end{tabular}
 
@@ -333,7 +341,7 @@ Kysymys E on esimerkki tilanteesta, jossa tietokannan rakenne ei tue suoraan kä
     \midrule
     E  & 0 & 0 & 0 & 10 & 1 \\
     E1 & 0 & 0 & 0 & 10 & 1 \\
-    E2 & 0 & 0 & 10 & 0 & 3 \\
+    E2 & 9 & 1 & 0 & 0 & 3 \\
     E3 & 0 & 0 & 0 & 10 & 3 \\
     E4 & 0 & 0 & 0 & 10 & 3 \\
     \bottomrule

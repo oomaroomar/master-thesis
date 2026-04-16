@@ -21,7 +21,7 @@
 
 ## Q5: For each weekday, what were our peak contact hours, and how are contacts distributed across the day (by hour)?
 
-- Query 1, count 4, doesn't filter by direction at all
-- Query 2, count 6, filters by direction_original = inbound
+- Query 1, doesn't filter by direction at all
+- Query 2, filters by direction_original = inbound
 
 By the definition of metrics, we want direction_original = inbound
