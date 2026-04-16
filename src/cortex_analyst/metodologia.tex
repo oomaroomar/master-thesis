@@ -1,0 +1,85 @@
+\section{Metodologia}
+
+\subsection{Tutkimusasetelma}
+Tutkimus toteutetaan empiirisenä tapaustutkimuksena, jossa arvioidaan yhden kielimallipohjaisen järjestelmän toimintaa rajatussa sovelluskontekstissa. Tavoitteena ei ole rakentaa uutta mallia tai vertailla useita eri järjestelmiä keskenään, vaan tarkastella, miten Cortex Analyst suoriutuu käytännöllisestä tehtävästä, jossa luonnollisen kielen kysymykset muunnetaan SQL-kyselyiksi. Tapaustutkimus soveltuu tähän tarkoitukseen hyvin, koska se mahdollistaa järjestelmän toiminnan yksityiskohtaisen tarkastelun todellisessa kaupallisessa ympäristössä.
+
+Tutkimuksen analyysiyksikkönä on yksittäinen käyttäjän luonnollisen kielen kysymys ja sitä vastaava Cortex Analystin tuottama SQL-kysely. Arviointi kohdistuu siihen, vastaako muodostettu kysely käyttäjän tarkoitusta, hyödyntääkö se oikeita tauluja ja kenttiä sekä noudattaako se tietokannan rakennetta. Näin tutkimus keskittyy suoraan siihen vaiheeseen, jossa kielimallin tulkinta muuttuu koneellisesti suoritettavaksi tietokantakyselyksi.
+
+\subsection{Tutkimusaineisto}
+Tutkimuksen aineistona toimii puhelinkeskusdataa sisältävä tietokanta, joka noudattaa kuvassa \ref{fig:table_spec} esitettyä rakennetta. Tarkastelun keskiössä on yksi keskusteludataa sisältävä päätason taulu, jota täydentävät kolme liitännäistaulua. Liitännäistaulujen avulla voidaan tarkentaa päätason taulun yksittäisten kenttien sisältöä ja merkitystä. Tietokannan rakenne on siten riittävän monipuolinen, jotta voidaan tarkastella sekä yksinkertaisia että vaativampia kyselytilanteita, kuten taululiitoksia, suodatuksia ja aggregaatioita.
+
+Aineisto sisältää kaupallisesti arkaluonteista tietoa, minkä vuoksi varsinaisia kyselytuloksia ei julkaista. Tästä syystä tutkimuksessa vertaillaan järjestelmän tuottamia SQL-kyselyitä eikä niiden palauttamia tietosisältöjä. Ratkaisu tukee myös analyysin johdonmukaisuutta, koska virheellisen kyselyn vaikutus lopputulokseen ei ole aina pääteltävissä pelkästään syntaksista, vaan riippuu osittain tietokannan sisällöstä.
+
+\subsection{Cortex Analyst ja semanttinen näkymä}
+Tutkimuksessa käytettävä järjestelmä on Snowflaken Cortex Analyst. Järjestelmän tarkoituksena on mahdollistaa tietokantatiedon hyödyntäminen luonnollisen kielen kautta siten, että käyttäjän ei tarvitse tuntea SQL-kieltä tai tietokannan skeemaa yksityiskohtaisesti. Cortex Analyst muodostaa käyttäjän kysymyksestä SQL-kyselyn ja voi suorittaa sen tietokantaa vasten.
+
+Cortex Analystin toiminta perustuu semanttiseen näkymään, jossa tietokannan taulut, kentät ja niiden merkitykset kuvataan YAML-muotoisena määrittelynä (ks. kuva \ref{fig:example_semantic_view}). Semanttinen näkymä tarjoaa kielimallille rakenteellisen kuvauksen siitä, mitä tietoa tietokannassa on saatavilla ja miten eri taulut liittyvät toisiinsa. Näin järjestelmä pystyy muodostamaan syntaktisesti valideja SQL-kyselyitä ja kohdistamaan kyselyn oikeisiin tietokannan osiin. Semanttisen näkymän laatu on keskeinen osa järjestelmän toimivuutta, koska kielimallin tulkinta perustuu olennaisesti siihen, miten skeema on kuvattu.
+
+Tutkimuksessa käytetty semanttinen näkymä on tutkijan rakentama yhteistyössä yksityisen IT-konsulttiyrityksen Knowitin ja yhden heidän asiakkaan kanssa osana hanketta, jossa pyritään hyödyntämään kielimalleja tietokantakyselyissä.
+
+Tämä semanttinen näkymä kuvailee kaikki tietokannan \ref{fig:table_spec} taulut, niiden kentät ja suhteet toisiinsa sekä useita kentistä laskettuja metriikoita. Kuvassa \ref{fig:example_semantic_view} on esitetty yksinkertaistettu versio käytetystä semanttisesta näkymästä.
+
+\begin{figure}[h]
+\begin{lstlisting}[language=yaml]
+name: SEM_EXAMPLE
+description: |-
+  Semantic model that models conversations data from Genesys Cloud contact center software.
+tables:
+  - name: CONV
+    description: |-
+      All Genesys conversations.
+    base_table:
+      database: DEV
+      schema: DBT_OM
+      table: FACT_GENESYS__CONVERSATIONS_STANDARD
+    dimensions:
+      - name: C_ADDRESS_FROM
+        description: Source address for the interaction. Only present in email contacts..
+        expr: conv.address_from
+        data_type: VARCHAR(16777216)
+    facts:
+      - name: CALL_DURATION
+        description: Duration of the actual call in seconds. The time the customer speaks to an agent
+        expr: conv.call_duration
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+    metrics:
+      - name: AVERAGE_CALL_DURATION
+        description: Average call duration in seconds
+        expr: sum(conv.call_duration)
+        access_modifier: public_access
+    primary_key:
+      columns:
+        - PARTICIPANTS_ID
+        - IDENTIFIER
+\end{lstlisting}
+  \caption{Esimerkki semanttisesta näkymästä. Esimerkki on yksinkertaistettu versio tutkimuksessa käytetystä näkymästä.}
+  \label{fig:example_semantic_view}
+\end{figure}
+
+Cortex Analyst hyödyntää taustallaan Anthropicin Claude Sonnet 4 -mallia. Tästä seuraa, että tutkimuksen tulokset kuvaavat ensisijaisesti juuri tämän järjestelmän ja mallin yhdistelmän toimintaa. Tuloksia ei siksi voida sellaisenaan yleistää kaikkiin kielimalleihin tai muihin luonnollisen kielen tietokantarajapintoihin.
+
+\subsection{Arviointiperusteet}
+Tuotettuja SQL-kyselyitä arvioidaan useiden toisiaan täydentävien kriteerien avulla. Ensinnäkin tarkastellaan, valitseeko järjestelmä oikeat taulut ja käyttääkö se oikeita liitoksia silloin, kun käyttäjän kysymys edellyttää useamman taulun yhdistämistä. Toiseksi arvioidan suodatusehtoja, erityisesti where-lauseiden sisältöä, koska pienikin virhe niissä voi muuttaa kyselyn merkitystä olennaisesti. Lisäksi huomioidaan aggregaatiot, duplikaattien käsittely ja sarakevalinnat.
+
+Syntaktista validiutta ei tarkastella erikseen, koska kaikki järjestelmän tuottamat kyselyt olivat syntaktisesti valideja.
+
+Arvioinnissa erotetaan toisistaan neljä poikkeamatyyppiä. Kysely luokitellaan korrektiksi, jos sen tuottama vastaus vastaa esitettyyn luonnollisen kielen kysymykseen oikein ja humioi ne implisiittiset taustaoletukset, jotka ovat sovellusalueen näkökulmasta perusteltuja.
+
+Tutkittava tietokanta sisältää puhelinkeskusdataa, joten erityisesti puhelun suuntaan liittyvät taustaoletukset ovat keskeisiä. Esimerkiksi palvelutasoa koskevan kysymyksen implisiittinen taustaoletus on, että tarkastellaan vain saapuvia kontakteja. Korrekti kysely huomioi tällaiset taustaoletukset ja tuottaa oikean vastauksen käyttäjän kysymykseen.
+
+Kysely merkitään melkein korrektiksi, jos generoitu SQL vastaa kysymykseen, mutta sisältää teknisiä puutteita. Esimerkiksi kysely josta puuttuu \texttt{NULLIF} lause jakolaskun nimittäjästä vastaa olennaisesti samaan kysymykseen kuin \texttt{NULLIF} avainsanan sisältävä kysely, mutta erikoistapauksessa kysely voi tuottaa virheen. Tällainen kysely merkitään "melkein korrektiksi".
+
+Kysely luokitellaan virheelliseksi, jos se ei vastaa kysymykseen merkityksellisesti. Esimerkiksi kysely joka käyttää väärää suodatusta tai kysely josta puuttuu olennainen taulu tai kenttä merkitään virheelliseksi.
+
+Jos malli ei tuota lainkaan SQL-kyselyä, vaan ilmoittaa, että kysymykseen ei voida vastata, tämä luokitellaan erikseen ``ei kyselyä'' -kategoriaksi. Käytettyihin kysymyksiin pystyy vastaamaan, joten tässä kategoriassa olevat vastaukset ovat virheellisiä, mutta ne on syytä erotella muista virheellisistä vastauksista, koska ne eivät tuota harhaanjohtavia tuloksia.
+
+Oikeellisuuden lisäksi kielimallin tuottamien kyselyiden variaatio on myös keskseinen tutkimuksen aihe. Analysoidaan siksi, kuinka monta uniikkia SQL-kyselyä järjstelmä tuottaa jokaista kysymystä kohden, kun sama luonnolisen kielen kysymys, tai jokin sen variaatioista, esitetään useamman kerran.
+
+Voi olla useampi oikeellinen tapa vastata samaan luonnollisen kysymykseen. Esimerkiksi kysymykseen "How many contacts did we handle in January 2026?" järjestelmä voi antaa vastaukseksi yhden numeron, tai kollme numeroa tammi-, helmi- ja maaliskuulle käyttäjälle vertailtavaksi. Molemmat nähdään oikeina vastauksina, sillä ne sisältävät vastauksen käyttäjän kysymykseen, mutta ne ovat selvästikkin toisistaan eroavat.
+
+Kyselyä ei nähdä uniikiksi, jos semanttisesti ekvivalentti kysely on tuotettu aiemmin paitsi siinä tapauksessa, että yksi kysely hakee tietoa suoraan semanttisesta mallista määritellyistä metriikoista, ja toinen kysely hakee tietoa laskukaavoilla. Esimerkiksi jos kysymykseen ``What was the answer rate for calls in February 2026?'' tuottuu kerran SQL-kysely, joka hakee \texttt{answer\_percentage} metriikan semanttisesta näkymästä, ja kerran SQL-kysely, joka laskee vastaavan prosenttiluvun laskukaavalla, nämä katsotaan kahdeksi uniikiksi kyselyksi.
+
+Päätös perustellaan sillä, että nämä kaksi lähestymistapaa ovat olennaisesti erilaiset (käytettävissä olevan kontekstin soveltaminen vs. päättely). Vaikka kyselyt sisältävät sisällöllisesti saman semantiikan, niiden muodostaminen edellyttää erilaista ongelmanratkaisua ja hyödyntää järjestelmältä eri kyvykkyyksiä. Ensimmäisessä tapauksessa malli tunnistaa valmiiksi määritellyn metriikan ja osaa käyttää sitä suoraan, kun taas jälkimmäisessä tapauksessa sen on pääteltävä tarvittava laskentatapa. Suuri varianssi mallin lähestymistavalla voidaan nähdä heikkoutena. Tämän vuoksi tapaukset erotellaan analyysissa toisistaan, vaikka niiden semanttinen tavoite on sama.
+
+Tuotettujen SQL-kyselyiden oikeellisuus arvioitiin manuaalisesti vertaamalla niitä tutkijan tulkintaan siitä, millainen kysely vastaisi käyttäjän tiedontarvetta. Arvioinnin suoritti yksi arvioija, mikä heikentää luokittelun reliabiliteettia.
