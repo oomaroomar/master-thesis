@@ -1,31 +1,84 @@
-\section{LLM Preamble}
-Kielimallit ovat autoregressiivisiä funktioita, jotka ennustavat kontekstista seuraavan sanan. Kielimallia voidaan iteroida syöttämällä mallin tuottama sana uudestaan mallille, jolloin saadaan seuraava sana. Näin voidaan tuottaa mielivaltaisen pitkä teksti. Yleensä määritetään jokin lopetusmerkki, jonka kielimalli voi ennustaa kuten minkä tahansa muun sanan, jonka jälkeen tämä iteraatio lopetetaan.
+\section{Johdanto}
 
-Voidaan siis vaihtoehtoisesti nähdä, että kielimallit tuottavat syötetystä tekstistä mielivaltaisen suuren vastauksen. Tällä ajattelumallilla on helpompi puhua mallin tulosteesta.
+Kielimalli on autoregressiivinen malli, joka ennustaa seuraavan sanan (tai tokenin) aiemman kontekstin perusteella. Kun mallin tuottama sana liitetään aiempaan kontekstiin, voidaan kutsua mallia päivitetyllä kontekstilla ja näin malli voi tuottaa pitkiäkin tekstijaksoja. Suuret kielimallit ovat viime vuosina kehittyneet pelkistä tekstin tuottajista järjestelmiksi, jotka kykenevät myös hyödyntämään ulkoisia työkaluja.  Jos kielimallia suorittava ympäristö tulkitsee tiettyjä mallin tuottamia merkintöjä työkalukutsuina, kielimalli voi käyttää esimerkiksi laskentaa, verkkohakua tai tietokantakyselyitä.
 
-Kielimallin sanakirjaan voidaan lisätä sanoja kuten \texttt{<tool\_call>}, \texttt{<tool\_name>} ja \texttt{<arguments>}, jolloin ympäristö, jossa ohjelmaa suoritetaan voi tulkita näitä komentoina ja suorittaa niihin liitettyjä toimintoja. Näin saadaan kielimallit käyttämään työkaluja, kuten laskinta, verkkohakua, tai toista kielimallia.
+Luonnollisen kielen käyttö tietokantojen rajapintana on kiinnostava sovelluskohde, koska se voi madaltaa datan hyödyntämisen kynnystä. Tällöin käyttäjän ei tarvitse osata SQL-kieltä eikä tuntea tietokannan rakennetta yksityiskohtaisesti, vaan hän voi esittää tiedontarpeensa tavallisella kielellä. Käytännön hyöty riippuu kuitenkin siitä, kuinka luotettavasti järjestelmä kykenee tulkitsemaan käyttäjän tarkoituksen ja muuntamaan sen oikeaksi SQL-kyselyksi.
 
-Toteutusmenetelmiä ei tarkalleen tiedetä nykyajan käytetyimmille kielimalleille, sillä nämä omistavat yritykset eivät julkaise toteutustietoja. Mutta kykeneväisyyksiä voidaan empiirisesti testata, joka on tämän osion tarkoitus.
-
-\section{Cortex Analyst}
-Cortex Analyst (CA) on kielimalleja soveltava työkalu, joka toimii kuten ChatGPT, mutta CA pystyy myös suorittamaan SQL kyselyitä tietokantaa vastaan tarjotakseen käyttäjille perusteellisia vastauksia heidän kysymyksiin. Cortex Analystin tarkoitus on mahdollistaa nopeampi ja helpompi pääsy tietokantatietoihin, ilman että käyttäjien tarvitsee osata SQL:ää tai tuntea tietokannan rakennetta.
-
-Sovelletaan Cortex Analystia puhelinkeskusdataan tapaustutkimuksena kielimallien kyvykkyyksistä. On huomioitava, että malli jota Cortex Analyst käyttää on Anthropicin Claude Sonnet 4 (https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst), joten tulokset eivät välttämättä yleisty muihin malleihin, mutta tarjoavat silti hyödyllistä tietoa siitä, mitä nykyaikaiset kielimallit kykenevät tekemään.
-
-\paragraph{Defining our problem} Tarkasteltavana on pääasiassa yksi taulu, joka sisältää keskusteludataa, ja 3 sitä ympäröivää taulua, josta saa tarkempaa tietoa tietyistä kentistä (kuva \ref{fig:table_spec}).
+Tässä tutkielmassa tarkastellaan Snowflaken Cortex Analyst -järjestelmää tapaustutkimuksena. Cortex Analyst on kielimallipohjainen työkalu, joka muodostaa käyttäjän luonnollisen kielen kysymyksistä SQL-kyselyitä ja voi suorittaa niitä tietokantaa vasten. Tutkimuskohteena on puhelinkeskusdataa sisältävä tietokanta, jossa analyysin keskiössä on yksi keskusteludataa sisältävä päätason taulu sekä kolme sitä täydentävää taulua (ks. kuva \ref{fig:table_spec}). Järjestelmän toiminta perustuu semanttiseen näkymään, jossa taulut, kentät ja niiden merkitykset kuvataan YAML-muodossa (ks. kuva \ref{fig:example_semantic_view}). Tämä näkymä toimii linkkinä käyttäjän luonnollisen kielen kysymyksen ja tietokannan rakenteen välillä.
 
 \begin{figure}
-  \begin{center}
-    \includegraphics[width=1\textwidth]{media/table_spec.png}
-    \caption{Käytettävän datan rakenne. Keskustelutiedot ovat päätaulussa, ja niihin liittyviä tietoja voidaan hakea liittyvistä tauluista.}
-    \label{fig:table_spec}
-  \end{center}
+  \centering
+  \includegraphics[width=1\textwidth]{media/table_spec.png}
+  \caption{Tutkimuksessa käytettävän tietokannan rakenne. Taulujen nimet ollaan lyhennetty luettavuuden vuoksi.}
+  \label{fig:table_spec}
 \end{figure}
 
-\paragraph{Semanttinen näkymä} Jotta CA pystyy tekemään syntaktisesti valideja SQL kyselyitä, määritellään semanttinen näkymä, jossa taulut ja niiden kentät on kuvattu YAML formaattiin. Kun semanttinen näkymä syötetään kielimallin kontekstiin, niin kielimalli ymmärtää tietokannan rakenteen ja osaa muodostaa oikeanlaisia SQL kyselyitä. Esimerkin semanttisesta näkymästä saa kuvasta \ref{fig:example_semantic_view}.
-\begin{figure}
+\begin{table}[ht]
+  \centering
+  \small
+  \begin{tabularx}{0.8\textwidth}{l X}
+    \toprule
+    \textbf{Attribute} & \textbf{Value} \\
+    \midrule
+    PARTICIPANTS\_ID & ea0a918f \\
+    IDENTIFIER & 63c44469 \\
+    QUEUEID & 3b10a230 \\
+    CALLERS & +123456789012 \\
+    AGENTID & b7e632de \\
+    SUBJECT & Null \\
+    ADDRESS\_TO & Null \\
+    ADDRESS\_FROM & Null \\
+    CONTACT\_DURATION & 363 \\
+    DIRECTION & inbound \\
+    DIRECTION\_ORIGINAL & inbound \\
+    ANSWERED & 1 \\
+    QUEUE\_DURATION & 2 \\
+    CALL\_DURATION & 316 \\
+    WRAPUPID & dd91b10d \\
+    WRAPUP\_DURATION & 47 \\
+    CONTACT\_CLOSED\_REASON & client \\
+    CONTACT\_CONNECTED\_DATETIME & 2025-08-23 13:41:13.000 \\
+    CONTACT\_CLOSED\_DATETIME & 2025-08-23 13:47:28.000 \\
+    CALL\_ANSWERED\_DATETIME & 2025-08-23 13:41:25.000 \\
+    CALL\_DISCONNECTED\_DATETIME & 2025-08-23 13:46:41.000 \\
+    MEDIA\_TYPE & call \\
+    CONTACT\_CONNECTED\_DATE & 2025-08-23 00:00:00.000 \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Esimerkki yhdestä tietokannan rivistä. Osa kentistä on anonymisoitu tietosuoja- ja luottamuksellisuussyistä.}
+  \label{tb:example_record}
+\end{table}
+
+Tutkielman tavoitteena on arvioida, kuinka hyvin Cortex Analyst soveltuu luonnollisen kielen tietokantakyselyihin ja millaisia rajoituksia sen käyttöön liittyy. Koska nykyaikaisten kaupallisten kielimallien tarkat toteutustiedot eivät yleensä ole julkisia, järjestelmän arviointi perustuu empiiriseen tarkasteluun. Tässä työssä vertaillaan nimenomaan Cortex Analystin tuottamia SQL-kyselyitä eikä niiden palauttamia vastauksia. Rajaus on perusteltu sekä aineiston luottamuksellisuuden vuoksi että siksi, että virheellisen kyselyn vaikutus lopulliseen vastaukseen riippuu myös tietokannan sisällöstä.
+
+Tutkimusta ohjaavat seuraavat tutkimuskysymykset: Kuinka konsistentisti Cortex Analyst tuottaa SQL-kyselyitä, kun sama kysymys esitetään useita kertoja? Kuinka herkkä Cortex Analyst on sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä? Millaisia virhe- ja vaihtelutyyppejä järjestelmän tuottamissa SQL-kyselyissä esiintyy?
+
+Tutkielma etenee siten, että ensin kuvataan tutkimusasetelma, aineisto ja arviointitapa. Tämän jälkeen esitellään kokeet, joissa tarkastellaan järjestelmän konsistenssia ja herkkyyttä merkitykseltään vähäisille muutoksille. Lopuksi esitetään tulokset, johtopäätökset ja tutkimuksen keskeiset rajoitukset.
+
+\section{Metodologia}
+
+\subsection{Tutkimusasetelma}
+Tutkimus toteutetaan empiirisenä tapaustutkimuksena, jossa arvioidaan yhden kielimallipohjaisen järjestelmän toimintaa rajatussa sovelluskontekstissa. Tavoitteena ei ole rakentaa uutta mallia tai vertailla useita eri järjestelmiä keskenään, vaan tarkastella, miten Cortex Analyst suoriutuu käytännöllisestä tehtävästä, jossa luonnollisen kielen kysymykset muunnetaan SQL-kyselyiksi. Tapaustutkimus soveltuu tähän tarkoitukseen hyvin, koska se mahdollistaa järjestelmän toiminnan yksityiskohtaisen tarkastelun todellisessa kaupallisessa ympäristössä.
+
+Tutkimuksen analyysiyksikkönä on yksittäinen käyttäjän luonnollisen kielen kysymys ja sitä vastaava Cortex Analystin tuottama SQL-kysely. Arviointi kohdistuu siihen, vastaako muodostettu kysely käyttäjän tarkoitusta, hyödyntääkö se oikeita tauluja ja kenttiä sekä noudattaako se tietokannan rakennetta. Näin tutkimus keskittyy suoraan siihen vaiheeseen, jossa kielimallin tulkinta muuttuu koneellisesti suoritettavaksi tietokantakyselyksi.
+
+\subsection{Tutkimusaineisto}
+Tutkimuksen aineistona toimii puhelinkeskusdataa sisältävä tietokanta, joka noudattaa kuvassa \ref{fig:table_spec} esitettyä rakennetta. Tarkastelun keskiössä on yksi keskusteludataa sisältävä päätason taulu, jota täydentävät kolme liitännäistaulua. Liitännäistaulujen avulla voidaan tarkentaa päätason taulun yksittäisten kenttien sisältöä ja merkitystä. Tietokannan rakenne on siten riittävän monipuolinen, jotta voidaan tarkastella sekä yksinkertaisia että vaativampia kyselytilanteita, kuten taululiitoksia, suodatuksia ja aggregaatioita.
+
+Aineisto sisältää kaupallisesti arkaluonteista tietoa, minkä vuoksi varsinaisia kyselytuloksia ei julkaista. Tästä syystä tutkimuksessa vertaillaan järjestelmän tuottamia SQL-kyselyitä eikä niiden palauttamia tietosisältöjä. Ratkaisu tukee myös analyysin johdonmukaisuutta, koska virheellisen kyselyn vaikutus lopputulokseen ei ole aina pääteltävissä pelkästään syntaksista, vaan riippuu osittain tietokannan sisällöstä.
+
+\subsection{Cortex Analyst ja semanttinen näkymä}
+Tutkimuksessa käytettävä järjestelmä on Snowflaken Cortex Analyst. Järjestelmän tarkoituksena on mahdollistaa tietokantatiedon hyödyntäminen luonnollisen kielen kautta siten, että käyttäjän ei tarvitse tuntea SQL-kieltä tai tietokannan skeemaa yksityiskohtaisesti. Cortex Analyst muodostaa käyttäjän kysymyksestä SQL-kyselyn ja voi suorittaa sen tietokantaa vasten.
+
+Cortex Analystin toiminta perustuu semanttiseen näkymään, jossa tietokannan taulut, kentät ja niiden merkitykset kuvataan YAML-muotoisena määrittelynä (ks. kuva \ref{fig:example_semantic_view}). Semanttinen näkymä tarjoaa kielimallille rakenteellisen kuvauksen siitä, mitä tietoa tietokannassa on saatavilla ja miten eri taulut liittyvät toisiinsa. Näin järjestelmä pystyy muodostamaan syntaktisesti valideja SQL-kyselyitä ja kohdistamaan kyselyn oikeisiin tietokannan osiin. Semanttisen näkymän laatu on keskeinen osa järjestelmän toimivuutta, koska kielimallin tulkinta perustuu olennaisesti siihen, miten skeema on kuvattu.
+
+Tutkimuksessa käytetty semanttinen näkymä on tutkijan rakentama yhteistyössä yksityisen IT-konsulttiyrityksen Knowitin ja yhden heidän asiakkaan kanssa osana hanketta, jossa pyritään hyödyntämään kielimalleja tietokantakyselyissä.
+
+Tämä semanttinen näkymä kuvailee kaikki tietokannan \ref{fig:table_spec} taulut, niiden kentät ja suhteet toisiinsa sekä useita kentistä laskettuja metriikoita. Kuvassa \ref{fig:example_semantic_view} on esitetty yksinkertaistettu versio käytetystä semanttisesta näkymästä.
+
+\begin{figure}[h]
 \begin{lstlisting}[language=yaml]
-name: SEM_VERBOSE
+name: SEM_EXAMPLE
 description: |-
   Semantic model that models conversations data from Genesys Cloud contact center software.
 tables:
@@ -57,13 +110,257 @@ tables:
         - PARTICIPANTS_ID
         - IDENTIFIER
 \end{lstlisting}
-  \caption{Lyhennetty esimerkki käytetystä semanttisesta näkymästä, joka kuvaa tietokannan rakennetta ja kenttien merkityksiä}
+  \caption{Esimerkki semanttisesta näkymästä. Esimerkki on yksinkertaistettu versio tutkimuksessa käytetystä näkymästä.}
   \label{fig:example_semantic_view}
 \end{figure}
 
+Cortex Analyst hyödyntää taustallaan Anthropicin Claude Sonnet 4 -mallia. Tästä seuraa, että tutkimuksen tulokset kuvaavat ensisijaisesti juuri tämän järjestelmän ja mallin yhdistelmän toimintaa. Tuloksia ei siksi voida sellaisenaan yleistää kaikkiin kielimalleihin tai muihin luonnollisen kielen tietokantarajapintoihin.
+
+\subsection{Arviointiperusteet}
+Tuotettuja SQL-kyselyitä arvioidaan useiden toisiaan täydentävien kriteerien avulla. Ensinnäkin tarkastellaan, valitseeko järjestelmä oikeat taulut ja käyttääkö se oikeita liitoksia silloin, kun käyttäjän kysymys edellyttää useamman taulun yhdistämistä. Toiseksi arvioidan suodatusehtoja, erityisesti where-lauseiden sisältöä, koska pienikin virhe niissä voi muuttaa kyselyn merkitystä olennaisesti. Lisäksi huomioidaan aggregaatiot, duplikaattien käsittely ja sarakevalinnat.
+
+Syntaktista validiutta ei tarkastella erikseen, koska kaikki järjestelmän tuottamat kyselyt olivat syntaktisesti valideja.
+
+Arvioinnissa erotetaan toisistaan neljä poikkeamatyyppiä. Kysely luokitellaan korrektiksi, jos se vastaa esitettyyn luonnollisen kielen kysymykseen oikein huomioiden implisiittiset taustaoletukset.
+
+Tutkittava tietokanta sisältää puhelinkeskusdataa, joten erityisesti puhelun suuntaan liittyvät taustaoletukset ovat keskeisiä. Esimerkiksi palvelutasoa koskevan kysymyksen implisiittinen taustaoletus on, että tarkastellaan vain saapuvia kontakteja. Korrekti kysely huomioi tällaiset taustaoletukset ja tuottaa oikean vastauksen käyttäjän kysymykseen.
+
+Kysely merkitään melkein korrektiksi, jos generoitu SQL vastaa kysymykseen, mutta sisältää teknisiä puutteita. Esimerkiksi kysely josta puuttuu \texttt{NULLIF} lause jakolaskun nimittäjästä vastaa olennaisesti samaan kysymykseen kuin \texttt{NULLIF} avainsanan sisältävä kysely, mutta erikoistapauksessa kysely voi tuottaa virheen. Tällainen kysely merkitään "melkein korrektiksi".
+
+Kysely luokitellaan virheelliseksi, jos se ei vastaa kysymykseen merkityksellisesti. Esimerkiksi kysely joka käyttää väärää suodatusta tai kysely josta puuttuu olennainen taulu tai kenttä merkitään virheelliseksi.
+
+Jos malli ei tuota lainkaan SQL-kyselyä, vaan ilmoittaa, että kysymykseen ei voida vastata, tämä luokitellaan erikseen ``ei kyselyä'' -kategoriaksi. Käytettyihin kysymyksiin pystyy vastaamaan, joten tässä kategoriassa olevat vastaukset ovat virheellisiä, mutta ne on syytä erotella muista virheellisistä vastauksista, koska ne eivät tuota harhaanjohtavia tuloksia.
+
+Oikeellisuuden lisäksi kielimallin tuottamien kyselyiden variaatio on myös keskseinen tutkimuksen aihe. Analysoidaan siksi, kuinka monta uniikkia SQL-kyselyä järjstelmä tuottaa jokaista kysymystä kohden, kun sama luonnolisen kielen kysymys, tai jokin sen variaatioista, esitetään useamman kerran.
+
+Voi olla useampi oikeellinen tapa vastata samaan luonnollisen kysymykseen. Esimerkiksi kysymykseen "How many contacts did we handle in January 2026?" järjestelmä voi antaa vastaukseksi yhden numeron, tai kollme numeroa tammi-, helmi- ja maaliskuulle käyttäjälle vertailtavaksi. Molemmat nähdään oikeina vastauksina, sillä ne sisältävät vastauksen käyttäjän kysymykseen, mutta ne ovat selvästikkin toisistaan eroavat.
+
+Kyselyä ei nähdä uniikiksi, jos semanttisesti ekvivalentti kysely on tuotettu aiemmin paitsi siinä tapauksessa, että yksi kysely hakee tietoa suoraan semanttisesta mallista määritellyistä metriikoista, ja toinen kysely hakee tietoa laskukaavoilla. Esimerkiksi jos kysymykseen ``What was the answer rate for calls in February 2026?'' tuottuu kerran SQL-kysely, joka hakee \texttt{answer\_percentage} metriikan semanttisesta näkymästä, ja kerran SQL-kysely, joka laskee vastaavan prosenttiluvun laskukaavalla, nämä katsotaan kahdeksi uniikiksi kyselyksi.
+
+Päätös perustellaan sillä, että nämä kaksi lähestymistapaa ovat olennaisesti erilaiset (käytettävissä olevan kontekstin soveltaminen vs. päättely). Vaikka kyselyt sisältävät sisällöllisesti saman semantiikan, niiden muodostaminen edellyttää erilaista ongelmanratkaisua ja hyödyntää järjestelmältä eri kyvykkyyksiä. Ensimmäisessä tapauksessa malli tunnistaa valmiiksi määritellyn metriikan ja osaa käyttää sitä suoraan, kun taas jälkimmäisessä tapauksessa sen on pääteltävä tarvittava laskentatapa. Suuri varianssi mallin lähestymistavalla voidaan nähdä heikkoutena. Tämän vuoksi tapaukset erotellaan analyysissa toisistaan, vaikka niiden semanttinen tavoite on sama.
+
+Tuotettujen SQL-kyselyiden oikeellisuus arvioitiin manuaalisesti vertaamalla niitä tutkijan tulkintaan siitä, millainen kysely vastaisi käyttäjän tiedontarvetta. Arvioinnin suoritti yksi arvioija, mikä heikentää luokittelun reliabiliteettia.
+
 \section{Kokeet}
-Vertaillaan Cortex Analystin tuottamia SQL kyselyitä, eikä kyselyiden tuottamia vastauksia. Vastaukset sisältävät kaupallista tietoa, jota ei sovi julkistaa. Lisäksi huomioidaan, että virheellisen \texttt{where}-lauseen käytön muutos vastaukseen riippuu tietokannan sisällöstä, joka lisää syyn siihen, miksi vertaillaan kyselyitä eikä vastauksia.
+Ensimmäisessä kokeessa tarkastellaan Cortex Analystin konsistenssia, eli sitä, tuottaako järjestelmä saman SQL-kyselyn, kun sama luonnollisen kielen kysymys esitetään useita kertoja.
 
-\paragraph{Konsistenssi} Statistisina malleina kielimallit voivat tuottaa eri ulostuloja eri suorituksilla, vaikka nämä suoritukset ajettaisiin samalla kontekstilla. Tämä voi olla ongelma, koska haluamme mallin olevan luotettava ja tuottavan johdonmukaisia vastauksia. Voidaan mitata, kuinka usein malli tuottaa saman vastauksen, kun sama kysymys esitetään useamman kerran.
+Toisessa kokeessa tarkastellaan järjestelmän herkkyyttä sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä. Näissä kokeissa muodostetaan useita eri sanamuotoja samasta tiedontarpeesta ja arvioidaan, tuottaako järjestelmä niistä olennaisesti saman SQL-kyselyn.
 
-\paragraph{Sensitivity to insignificant changes}
+\paragraph{Konsistenssikoe}
+Koska kielimallit ovat tilastollisia järjestelmiä, sama syöte ei välttämättä aina johda täsmälleen samaan tulosteeseen. Tietokantakyselyiden tapauksessa tämä on olennainen kysymys, koska käyttäjät odottavat järjestelmältä ennustettavaa ja toistettavaa toimintaa.
+
+Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmälle 10 kertaa. Jokaisesta suorituksesta tallennetaan järjestelmän tuottama SQL-kysely, joita verrataan keskenään. Käytetyt kysymykset ovat seuraavat:
+\begin{enumerate}[label=\Alph*.]
+    \label{it:q_consistency}
+  \item How many total contacts did we handle in January 2026?
+  \item What's our answer rate for calls in February 2026?
+  \item What percentage of contacts that were answered within our service level target were closed by the customer versus closed by the agent?
+  \item What was our peak contact hours by day of week? Show me the distribution of when contacts arrive throughout the day, broken down by hour and weekday.
+  \item What's the success rate of our callbacks? Show me how many callbacks resulted in a conversation versus no answer, and what the average time between the original inbound contact and the callback was.
+\end{enumerate}
+
+Määritellyssä semanttisessa näkymässä on kuvattu metriikoihin SQL-kyselyt, jotka vastaavat suoraan kysymyksiin A ja B. Kysymykset C-E ovat huomattavasti monimutkaisempia, ja niihin ei ole ennalta validoituja SQL-kyselyitä semanttisessa näkymässä. Kysymys D vaatii, että kentästä \texttt{CONTACT\_CONNECTED\_DATETIME} erotetaan kellonaika tunnin tarkkuudella, ja viikonpäivä pitää hakea kalenteritaulusta. Kysymys E on harhaanjohtava. Erityisesti osa koskien takaisinsoiton ja alkuperäisen sisääntulevan soiton välisen ajan keskiarvoa on paljon helpompi kuin luonnollisen kielen kysymys ehdottaa. Vastaus ei vaadi vertailua kahden eri rivin välillä. Kaikki tarpeellinen tieto löytyy takaisinsoitonna tallennetusta rivistä.
+
+\paragraph{Sensitiivisyyskoe}
+Kokeen tavoitteena on arvioida, tulkitseeko Cortex Analyst semanttisesti saman sisältöiset kysymykset johdonmukaisesti vai johtavatko kielelliset erot erilaisiin SQL-kyselyihin. Jos järjestelmä on hyvin herkkä muotoilun vaihtelulle, luonnollisen kielen käyttö rajapintana muuttuu käyttäjän kannalta epävarmaksi. Jos taas järjestelmä tuottaa olennaisesti saman kyselyn eri sanamuodoista huolimatta, tämä tukee sen käytettävyyttä käytännön työssä.
+
+Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyksestä 4 vaihtoehtoista versiota, joissa pyritään säilyttämään kysymyksen merkitys, mutta muokkaamaan sanamuotoa. Järjestelmän tuottamat SQL-kyselyt tallennetaan ja vertaillaan keskenään. Käytetyt kysymykset ovat seuraavat:
+\begin{enumerate}[label=\Alph*.]
+    \label{it:q_sensitivity}
+  \item Variaatioita kysymyksestä A:
+    \begin{enumerate}[label=\arabic*.]
+      \item What was the total number of contacts we handled in January 2026?
+      \item How many contacts did we handle overall in January 2026?
+      \item What is the total contact volume for January 2026?
+      \item How many total customer contacts were handled during January 2026?
+    \end{enumerate}
+  \item Variaatioita kysymyksestä B:
+    \begin{enumerate}[label=\arabic*.]
+      \item What was our call answer rate in February 2026?
+      \item What percentage of incoming calls were answered in February 2026?
+      \item What percentage of calls were answered in February 2026?
+      \item How did our call answer rate perform during February 2026?
+    \end{enumerate}
+  \item Variaatioita kysymyksestä C:
+    \begin{enumerate}[label=\arabic*.]
+      \item Of the contacts answered within our service-level target, what share were closed by the customer compared to those closed by the agent?
+      \item For interactions resolved within the service level target, what percentage were customer-closed versus agent-closed?
+      \item Within our service level target, how is the closure split: what percent of contacts were closed by customers versus agents?
+      \item Among contacts answered within SLA, what proportion ended with customer closure versus agent closure?
+    \end{enumerate}
+  \item Variaatioita kysymyksestä D:
+    \begin{enumerate}[label=\arabic*.]
+      \item When do contacts most frequently arrive during the week? Break this down by weekday and hour.
+      \item Show the hourly contact-arrival distribution for every day of the week, highlighting which hours were highest on each weekday.
+      \item What times during the day (hour-by-hour) drive the most contacts, split by weekday. Please summarize peak hours and the overall distribution.
+      \item Across the week, when do contacts arrive most often? Provide an hour-by-hour breakdown for each weekday and identify the peak contact hours.
+    \end{enumerate}
+  \item Variaatioita kysymyksestä E:
+    \begin{enumerate}[label=\arabic*.]
+      \item What percentage of our callback attempts lead to an actual conversation? Please break down callbacks that reached a conversation vs. those with no answer, and calculate the average delay from the original inbound to the callback.
+      \item How effective are our callbacks? Show the success rate by counting callbacks that resulted in a conversation versus no answer, and report the average time-to-callback from the initial inbound contact.
+      \item For our callback campaign, what's the outcomes split and average response speed? Provide counts of conversations vs. no-answer callbacks, the resulting success rate, and the average elapsed time between inbound contact and callback.
+      \item Can you analyze callback performance for me: success rate (conversation vs no answer) with the number of callbacks in each outcome category, plus the average time lag from the inbound contact to when the callback occurred?
+    \end{enumerate}
+\end{enumerate}
+
+Jokainen kysymys molemmissa kokeissa esitetään järjestelmälle 10 kertaa ja jokainen yksittäinen suoritus tehdään tyhjällä sessiolla. Testit suoritettiin 23.04.2026-28.04.2026 välisenä aikana käyttäen samaa semanttista mallia.
+
+Kymmenen toistoa valittiin käytännöllisenä kompromissina, joka mahdollistaa vaihtelun havaitsemisen ilman kohtuuttoman suurta manuaalisen arvioinnin työmäärää.
+
+\section{Tulokset}
+Merkitään konsistenssikokeen kysymykset A-E ja herkkyyskokeen variaatiot A1-A4, B1-B4, C1-C4, D1-D4 ja E1-E4 listojen \ref{it:q_consistency} ja \ref{it:q_sensitivity} mukaisesti. Kokeiden tulokset on esitetty taulukoissa \ref{tb:consistency} ja \ref{tb:sensitivity_all}. Taulukot kuvaavat kunkin kysymyksen osalta, kuinka monta kertaa järjestelmän tuottama SQL-kysely oli korrekti, virheellinen tai melkein korrekti sisältäen pienen virheen.
+
+Kysymykset A, D ja E tuottivat konsistenssikokeessa vain yhden uniikin SQL-kyselyn kymmenellä suorituksella. Näistä A ja D kysymykseen vastaavat vastasivat oikein ja E kysymykseen Cortex Analyst ei tuottanut SQL-kyselyä. Sen sijaan malli huomautti, että tietokannan rakenne ei tue kysymystä.
+
+\begin{quote}
+  \texttt{I'm sorry, but this question cannot be fully answered with the available data. While we can determine how many callbacks were answered versus not answered (using the c\_answered field fil-\\tered for callback media type), the semantic model does not \\ contain information about the original inbound contact that \\ triggered a callback. There is no field linking a callback con-\\versation back to its originating inbound contact, so we cannot calculate the time between the original inbound contact and the callback attempt.}
+\end{quote}
+
+Kysymykseen B järjestelmä tuotti kaksi uniikkia SQL-kyselyä. Yksi näistä käytti semanttisessa näkymässä ennalta määriteltyä metriikkaa \texttt{answer\_percentage} ja toinen generoi metriikan laskukaavan. Kysymykseen C järjestelmä tuotti kaksi uniikkia SQL-kyselyä, joista toinen oli korrekti ja toinen virheellinen. Korrekti kysely tuotettiin 7 kertaa ja virheellinen 3 kertaa. Virheellisessä kyselyssä järjestelmä käytti agentteja asiakkaiden sijaan ja asiakkaita agenttien sijaan.
+
+Yhteensä esitetystä 50 kysymyksestä 37 tuotti korrektin SQL-kyselyn, 10 tuotti virheellisen vastauksen, joka ei vastannut kysymykseen, mutta ei myöskään ollut harhaanjohtava, ja 3 tuotti virheellisen SQL-kyselyn, joka vastasi kysymykseen väärin. Konsistenssikokeen tulokset osoittavat, että Cortex Analyst tuottaa johdonmukaisia SQL-kyselyitä usein, mutta järjestelmän luotettavuus ei ole riittävällä tasolla.
+
+\renewcommand{\arraystretch}{1.1}
+\begin{table}[h]
+  \centering
+  \caption{Konsistenssikokeen tulokset.}
+  \label{tb:consistency}
+  \setlength{\tabcolsep}{4pt}
+  {\small
+    \begin{tabular}{lccccc}
+      \toprule
+      Kysymys & Oikein & \makecell{Melkein\\oikein} & Väärin & \makecell{Ei\\kyselyä} &
+      \makecell{Erilaisten SQL-\\kyselyiden määrä} \\
+      \midrule
+      A & 10 & 0 & 0 & 0 & 1 \\
+      B & 10 & 0 & 0 & 0 & 2 \\
+      C & 7  & 0 & 3 & 0 & 2 \\
+      D & 10 & 0 & 0 & 0  & 1 \\
+      E & 0  & 0 & 0 & 10 & 1 \\
+      \bottomrule
+    \end{tabular}
+  }
+\end{table}
+
+Herkkyystesteissä suurin variaatio havaittiin kysymyksen C eri muotoiluissa, joissa järjestelmä tuotti yhteensä 6 uniikkia SQL-kyselyä. Kun Cortex Analystille syötettiin kysymyksen C eri variaatiota, järjestelmä tuotti väärän vastauksen 14 kertaa 50:stä suorituksesta. Virheellisissä kyselyissä toistuvin virhe oli, että järjestelmä ei rajannut hakuaan sarakkeen \texttt{direction} mukaisesti, vaan käytti \texttt{direction\_original} saraketta, tai jätti suuntasuodatuksen kokonaan pois.
+
+Kysymyksessä C ja sen variaatioissa puhutaan palvelutasosta, jolloin implisiittinen taustaoletus on, että tarkastellaan vain saapuvia kontakteja. Havainto viittaa siihen, että tässä aineistossa ja tässä semanttisessa näkymässä Cortex Analyst ei aina huomioinut implisiittistä tietoa johdonmukaisesti.
+
+Kun kysymys E ja sen variaatiot annettiin järjestelmälle syötteeksi, se tuotti 40 kertaa 50:stä tekstin, jossa malli ilmoitti, että kysymykseen ei voida vastata. Variaatio 2 tuotti 9 kertaa korrektin SQL-kyselyn ja kerran SQL-kyselyn, joka oli muuten oikein, mutta \texttt{DISTINCT(IDENTIFIER)} ehdon sijaan kysely vaati rivin olevan uniikki, joka on huomattavasti heikompi ehto.
+
+Kysymyksen E variaatio 2 ei implisiittisesti ehdota, että kysymyksen vastaaminen vaatisi kahden rivin välistä vertailua. Tämä voi selittää, miksi tämä variaatio tuotti enemmän oikeita vastauksia kuin muut.
+
+Kysymys E oli Cortex Analystille vaikein, joka vääntää virhetyyppien jakaumaa ``ei kyselyä'' -virhetyypin puoleen. Taulusta \ref{tb:errors} nähdään, että muista virhetyypeistä yleisimmät olivat suodatus- ja duplikaattien hallintavirheet. Kaikki suodatusvirheet liittyivät sarakkeisiin \texttt{direction} ja \texttt{direction\_original}. Duplikaattien hallintavirheet ovat virheitä, jossa \texttt{DISTINCT} avainsanaa on käytetty väärin.
+
+Taululiitos- tai sarakevalintavirheitä ei havaittu, mikä viittaa siihen, että järjestelmä tunnisti kysymyksistä, mitä käyttäjä halusi hakea, vaikka se ei aina onnistunut tuottamaan oikeaa SQL-kyselyä tämän vastaamiseksi. Käytetyn tietokannan rakenne on liian yksinkertainen, jotta taululiitosvirheiden puutteesta voisi tehdä varmoja johtopäätöksiä.
+
+\begin{table}[h]
+  \centering
+  \caption{Esiintyneiden virhetyyppien määrät kaikissa kokeissa. Rivit kuvaavat, kuinka monta kertaa kukin virhetyyppi esiintyi kussakin kysymyksessä tai sen variaatioissa. Jos yhdessä SQL-kyselyssä esiintyy useampi virhetyyppi, kysely lasketaan jokaiseen virhetyyppiin erikseen.}
+  \label{tb:errors}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lcccccc}
+    \toprule
+    Kysymys & A & B & C & D & E & Yhteensä\\
+    \midrule
+    Aggregaatio & 0 & 0 & 2  & 0 & 0  & 2 \\
+    Duplikaattien hallinta & 10 & 0 & 7 & 0 & 1 & 18 \\
+    Ei kyselyä & 0 & 0 & 0 & 0 & 40 & 40 \\
+    Sarakevalinta & 0 & 0 & 0 & 0 & 0 & 0 \\
+    Suodatus & 0 & 0 & 11  & 3 & 0  & 14 \\
+    Taululiitos & 0 & 0 & 0 & 0 & 0 & 0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[h]
+  \centering
+  \caption{Herkkyystestien 1--5 tulokset. Sarakkeet ilmoittavat oikeiden, pienen virheen sisältävien, väärien ja ei kyselyä -vastausten lukumäärät sekä yhteenlaskettu uniikkien SQL-kyselyiden määrä. (\textit{Yht.}).}
+  \label{tb:sensitivity_all}
+
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    A  & 10 & 0  & 0  & 0 & 1 \\
+    A1 & 10 & 0  & 0  & 0 & 1 \\
+    A2 & 10 & 0  & 0  & 0 & 1 \\
+    A3 & 10 & 0  & 0  & 0 & 1 \\
+    A4 & 0  & 10 & 0  & 0 & 2 \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    B  & 10 & 0 & 0 & 0 & 1 \\
+    B1 & 10 & 0 & 0 & 0 & 1 \\
+    B2 & 10 & 0 & 0 & 0 & 1 \\
+    B3 & 10 & 0 & 0 & 0 & 1 \\
+    B4 & 10 & 0 & 0 & 0 & 2 \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    C  & 7 & 0  & 3  & 0 & 2 \\
+    C1 & 8 & 2  & 0  & 0 & 3 \\
+    C2 & 10 & 0  & 0 & 0 & 3 \\
+    C3 & 0 & 0 & 10  & 0 & 5 \\
+    C4 & 8 & 1  & 1  & 0 & 6 \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    D  & 10 & 0 & 0 & 0 & 1 \\
+    D1 & 10 & 0 & 0 & 0 & 1 \\
+    D2 & 10 & 0 & 0 & 0 & 1 \\
+    D3 & 10 & 0 & 0 & 0 & 2 \\
+    D4 & 7  & 0 & 3 & 0 & 3 \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    E  & 0 & 0 & 0 & 10 & 1 \\
+    E1 & 0 & 0 & 0 & 10 & 1 \\
+    E2 & 9 & 1 & 0 & 0 & 3 \\
+    E3 & 0 & 0 & 0 & 10 & 3 \\
+    E4 & 0 & 0 & 0 & 10 & 3 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Rajoitukset}
+Tutkimukseen liittyy useita rajoituksia, jotka on huomioitava tuloksia tulkittaessa. Ensinnäkin tutkimus kohdistuu yhteen järjestelmään, Snowflaken Cortex Analystiin, jonka taustalla toimii Anthropicin Claude Sonnet 4 -malli. Tulokset kuvaavat siis yhtä tiettyä toteutusta eivätkä ole suoraan yleistettävissä muihin kielimalleihin, SQL-avustajiin tai luonnollisen kielen analytiikkatyökaluihin.
+
+Toiseksi tutkimus perustuu yhteen sovellusalueeseen eli puhelinkeskusdataan. Tämän tietokannan rakenne, sanasto ja analyysitarpeet voivat poiketa merkittävästi muiden toimialojen vastaavista ympäristöistä. On mahdollista, että järjestelmä suoriutuisi eri tavalla esimerkiksi talousdatan, lokidatan tai asiakastietojen yhteydessä.
+
+Kolmanneksi tutkimuksessa tarkastellaan mallin tuottamia SQL-kyselyitä eikä kyselyiden palauttamia varsinaisia vastauksia. Tämä rajaus on perusteltu aineiston luottamuksellisuuden vuoksi, mutta samalla se tarkoittaa, että tutkimus ei suoraan mittaa liiketoiminnallisen lopputuloksen oikeellisuutta. Kysely voi olla rakenteeltaan puutteellinen tai vaihtoehtoisesti syntaktisesti erilainen mutta käytännössä toimiva, eikä tätä eroa voida aina arvioida täysin ilman varsinaista tulosaineistoa.
+
+Neljänneksi semanttisen näkymän laatu vaikuttaa suoraan siihen, miten hyvin Cortex Analyst kykenee muodostamaan kyselyitä. Jos näkymässä on epäselvyyksiä, puutteita tai monitulkintaisia kuvauksia, osa havaituista ongelmista voi johtua itse määrittelystä eikä pelkästään kielimallin rajoituksista. Tämän vuoksi tutkimus arvioi samalla myös sitä, kuinka hyvin kyseinen semanttinen näkymä tukee luonnollisen kielen ja tietokantarakenteen välistä tulkintaa.
+
+Viidenneksi kielimallien toimintaa luonnehtii tietty epädeterministisyys, minkä vuoksi tulokset voivat vaihdella eri suorituskerroilla tai järjestelmäversioiden välillä. Tästä syystä tutkimuksen havainnot kuvaavat järjestelmän toimintaa tiettynä ajankohtana ja tietyssä konfiguraatiossa, eivät välttämättä pysyvää ominaisuutta.
