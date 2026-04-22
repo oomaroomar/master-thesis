@@ -1,7 +1,62 @@
-\section{Introduction}
+\section{Johdanto}
 
 This section includes general despription of the field and the topic of the MSc thesis.
 
 Note that if you have used AI in your writing, you must mention it. Check for guidelines \href{https://utuguides.fi/artificialintelligence}{https://utuguides.fi/artificialintelligence}.  Good place to mention that AI tolls have been used is  here, for example, in the following form:
 
 The ChatGPT AI  has been used to enhance the language of the thesis.
+
+Kielimalli on autoregressiivinen malli, joka ennustaa seuraavan sanan (tai tokenin) aiemman kontekstin perusteella. Kun mallin tuottama sana liitetään aiempaan kontekstiin, voidaan kutsua mallia päivitetyllä kontekstilla ja näin malli voi tuottaa pitkiäkin tekstijaksoja. Suuret kielimallit ovat viime vuosina kehittyneet pelkistä tekstin tuottajista järjestelmiksi, jotka kykenevät myös hyödyntämään ulkoisia työkaluja.  Jos kielimallia suorittava ympäristö tulkitsee tiettyjä mallin tuottamia merkintöjä työkalukutsuina, kielimalli voi käyttää esimerkiksi laskentaa, verkkohakua tai tietokantakyselyitä.
+
+Luonnollisen kielen käyttö tietokantojen rajapintana on kiinnostava sovelluskohde, koska se voi madaltaa datan hyödyntämisen kynnystä. Tällöin käyttäjän ei tarvitse osata SQL-kieltä eikä tuntea tietokannan rakennetta yksityiskohtaisesti, vaan hän voi esittää tiedontarpeensa tavallisella kielellä. Käytännön hyöty riippuu kuitenkin siitä, kuinka luotettavasti järjestelmä kykenee tulkitsemaan käyttäjän tarkoituksen ja muuntamaan sen oikeaksi SQL-kyselyksi.
+
+Tässä tutkielmassa tarkastellaan Snowflaken Cortex Analyst -järjestelmää tapaustutkimuksena. Cortex Analyst on kielimallipohjainen työkalu, joka muodostaa käyttäjän luonnollisen kielen kysymyksistä SQL-kyselyitä ja voi suorittaa niitä tietokantaa vasten. Tutkimuskohteena on puhelinkeskusdataa sisältävä tietokanta, jossa analyysin keskiössä on yksi keskusteludataa sisältävä päätason taulu sekä kolme sitä täydentävää taulua (ks. kuva \ref{fig:table_spec}). Järjestelmän toiminta perustuu semanttiseen näkymään, jossa taulut, kentät ja niiden merkitykset kuvataan YAML-muodossa (ks. kuva \ref{fig:example_semantic_view}). Tämä näkymä toimii linkkinä käyttäjän luonnollisen kielen kysymyksen ja tietokannan rakenteen välillä.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=1\textwidth]{media/table_spec.png}
+  \caption{Tutkimuksessa käytettävän tietokannan rakenne. Taulujen nimet ollaan lyhennetty luettavuuden vuoksi.}
+  \label{fig:table_spec}
+\end{figure}
+
+\begin{table}[ht]
+  \centering
+  \small
+  \begin{tabularx}{0.8\textwidth}{l X}
+    \toprule
+    \textbf{Attribute} & \textbf{Value} \\
+    \midrule
+    PARTICIPANTS\_ID & ea0a918f \\
+    IDENTIFIER & 63c44469 \\
+    QUEUEID & 3b10a230 \\
+    CALLERS & +123456789012 \\
+    AGENTID & b7e632de \\
+    SUBJECT & Null \\
+    ADDRESS\_TO & Null \\
+    ADDRESS\_FROM & Null \\
+    CONTACT\_DURATION & 363 \\
+    DIRECTION & inbound \\
+    DIRECTION\_ORIGINAL & inbound \\
+    ANSWERED & 1 \\
+    QUEUE\_DURATION & 2 \\
+    CALL\_DURATION & 316 \\
+    WRAPUPID & dd91b10d \\
+    WRAPUP\_DURATION & 47 \\
+    CONTACT\_CLOSED\_REASON & client \\
+    CONTACT\_CONNECTED\_DATETIME & 2025-08-23 13:41:13.000 \\
+    CONTACT\_CLOSED\_DATETIME & 2025-08-23 13:47:28.000 \\
+    CALL\_ANSWERED\_DATETIME & 2025-08-23 13:41:25.000 \\
+    CALL\_DISCONNECTED\_DATETIME & 2025-08-23 13:46:41.000 \\
+    MEDIA\_TYPE & call \\
+    CONTACT\_CONNECTED\_DATE & 2025-08-23 00:00:00.000 \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Esimerkki yhdestä tietokannan rivistä. Osa kentistä on anonymisoitu tietosuoja- ja luottamuksellisuussyistä.}
+  \label{tb:example_record}
+\end{table}
+
+Tutkielman tavoitteena on arvioida, kuinka hyvin Cortex Analyst soveltuu luonnollisen kielen tietokantakyselyihin ja millaisia rajoituksia sen käyttöön liittyy. Koska nykyaikaisten kaupallisten kielimallien tarkat toteutustiedot eivät yleensä ole julkisia, järjestelmän arviointi perustuu empiiriseen tarkasteluun. Tässä työssä vertaillaan nimenomaan Cortex Analystin tuottamia SQL-kyselyitä eikä niiden palauttamia vastauksia. Rajaus on perusteltu sekä aineiston luottamuksellisuuden vuoksi että siksi, että virheellisen kyselyn vaikutus lopulliseen vastaukseen riippuu myös tietokannan sisällöstä.
+
+Tutkimusta ohjaavat seuraavat tutkimuskysymykset: Kuinka konsistentisti Cortex Analyst tuottaa SQL-kyselyitä, kun sama kysymys esitetään useita kertoja? Kuinka herkkä Cortex Analyst on sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä? Millaisia virhe- ja vaihtelutyyppejä järjestelmän tuottamissa SQL-kyselyissä esiintyy?
+
+Tutkielma etenee siten, että ensin kuvataan tutkimusasetelma, aineisto ja arviointitapa. Tämän jälkeen esitellään kokeet, joissa tarkastellaan järjestelmän konsistenssia ja herkkyyttä merkitykseltään vähäisille muutoksille. Lopuksi esitetään tulokset, johtopäätökset ja tutkimuksen keskeiset rajoitukset.
