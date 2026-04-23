@@ -1,20 +1,40 @@
-
 \section{Tulokset}
-Merkitään konsistenssikokeen kysymykset A-E ja herkkyyskokeen variaatiot A1-A4, B1-B4, C1-C4, D1-D4 ja E1-E4 listojen \ref{it:q_consistency} ja \ref{it:q_sensitivity} mukaisesti. Kokeiden tulokset on esitetty taulukoissa \ref{tb:consistency} ja \ref{tb:sensitivity_all}. Taulukot kuvaavat kunkin kysymyksen osalta, kuinka monta kertaa järjestelmän tuottama SQL-kysely oli korrekti, virheellinen tai melkein korrekti sisältäen pienen virheen.
+Merkitään konsistenssikokeen kysymykset A-E ja herkkyyskokeen variaatiot A1-A4, B1-B4, C1-C4, D1-D4 ja E1-E4 listojen \ref{it:q_consistency} ja \ref{it:q_sensitivity} mukaisesti. Kokeiden tulokset on esitetty taulukoissa \ref{tb:consistency} ja \ref{tb:sensitivity_all}. Taulukot kuvaavat kunkin kysymyksen osalta, kuinka monta kertaa järjestelmän tuottama SQL-kysely oli korrekti, melkein korrekti, virheellinen tai johti tilanteeseen, jossa SQL-kyselyä ei tuotettu lainkaan.
 
-Konsistenssin osalta vain kysymys C tuotti sekä korrekteja että virheellisiä SQL-kyselyitä. Kysymys B tuotti kaksi uniikkia SQL-kyselyä, joista toinen käytti semanttisessa näkymässä määritettyä metriikkaa \texttt{answer\_percentage} suoraan, ja toinen laski vastaavan prosenttiluvun laskukaavalla.
+Konsistenssikokeessa vain kysymys C tuotti sekä korrekteja että virheellisiä SQL-kyselyitä. Kysymys B tuotti kaksi uniikkia SQL-kyselyä, joista toinen käytti semanttisessa näkymässä määriteltyä metriikkaa \texttt{answer\_percentage} suoraan ja toinen laski vastaavan prosenttiluvun erillisellä laskukaavalla.
 
-Kysymykset A, D ja E tuottivat konsistenssikokeessa vain yhden uniikin SQL-kyselyn kymmenellä suorituksella. Vaikka kysymys E tuotti aina virheellisen vastauksen, jossa SQL-kyselyä ei tuotettu, niin konsistenssin kannalta järjestelmä oli johdonmukainen, koska se tuotti saman tulosteen joka kerta. Kysymys E on esimerkki siitä, että konsistenssi ei yksinään riitä kuvaamaan järjestelmän luotettavuutta.
+Kysymykset A, D ja E tuottivat konsistenssikokeessa vain yhden uniikin lopputuloksen kymmenessä suorituksessa. Vaikka kysymys E tuotti jokaisella suorituskerralla virheellisen vastauksen siinä mielessä, että SQL-kyselyä ei muodostettu, konsistenssin näkökulmasta järjestelmä oli johdonmukainen, koska tuloste oli joka kerta sama. Kysymys E osoittaa, että konsistenssi ei yksin riitä kuvaamaan järjestelmän luotettavuutta.
 
-Vahva havaittu konsistenssi on merkki siitä, että järjestelmän arkisessa käytössä havaitut ongelmat ovat todennäköisesti toistettavia, joka on käyttäjälle ja erityisesti semanttisen mallin kehittäjälle hyödyllistä tietoa. Tosin kysymys C osoittaa, että järjestelmä kykenee tuottamaan sekä korrekteja että virheellisiä vastauksia, joten toistettavuus ei ole täydellistä.
+Tulokset viittaavat siihen, että tässä tutkimusasetelmassa havaitut ongelmat olivat usein toistettavia, mikä on hyödyllinen havainto sekä käyttäjän että semanttisen näkymän kehittäjän näkökulmasta. Kysymys C kuitenkin osoittaa, että järjestelmä pystyi tuottamaan samassa asetelmassa sekä korrekteja että virheellisiä vastauksia, joten toistettavuus ei ollut täydellistä.
 
+Alla on esimerkki kysymykseen E tuotetusta ei kyselyä -vastauksesta:
 \begin{quote}
-  \texttt{I'm sorry, but this question cannot be fully answered with the available data. While we can determine how many callbacks were answered versus not answered (using the c\_answered field fil-\\tered for callback media type), the semantic model does not \\ contain information about the original inbound contact that \\ triggered a callback. There is no field linking a callback con-\\versation back to its originating inbound contact, so we cannot calculate the time between the original inbound contact and the callback attempt.}
+  I'm sorry, but this question cannot be fully answered with the available data. While we can determine how many callbacks were answered versus not answered (using the c\_answered field filtered for callback media type), the semantic model does not contain information about the original inbound contact that triggered a callback. There is no field linking a callback conversation back to its originating inbound contact, so we cannot calculate the time between the original inbound contact and the callback attempt.
 \end{quote}
 
-Kysymykseen B järjestelmä tuotti kaksi uniikkia SQL-kyselyä. Yksi näistä käytti semanttisessa näkymässä ennalta määriteltyä metriikkaa \texttt{answer\_percentage} ja toinen generoi metriikan laskukaavan. Kysymykseen C järjestelmä tuotti kaksi uniikkia SQL-kyselyä, joista toinen oli korrekti ja toinen virheellinen. Korrekti kysely tuotettiin 7 kertaa ja virheellinen 3 kertaa. Virheellisessä kyselyssä järjestelmä käytti agentteja asiakkaiden sijaan ja asiakkaita agenttien sijaan.
+Kysymykseen B järjestelmä tuotti kaksi uniikkia SQL-kyselyä. Näistä toinen käytti semanttisessa näkymässä ennalta määriteltyä metriikkaa \texttt{answer\_percentage} ja toinen muodosti vastaavan laskukaavan eksplisiittisesti SQL:ssä. Kysymykseen C järjestelmä tuotti kaksi uniikkia SQL-kyselyä, joista toinen oli korrekti ja toinen virheellinen. Korrekti kysely tuotettiin seitsemän kertaa ja virheellinen kolme kertaa. Virheellisessä kyselyssä järjestelmä sekoitti asiakkaan ja agentin roolit keskenään.
 
-Yhteensä esitetystä 50 kysymyksestä 37 tuotti korrektin SQL-kyselyn, 10 tuotti virheellisen vastauksen, joka ei vastannut kysymykseen, mutta ei myöskään ollut harhaanjohtava, ja 3 tuotti virheellisen SQL-kyselyn, joka vastasi kysymykseen väärin. Konsistenssikokeen tulokset osoittavat, että Cortex Analyst pystyy usein tuottamaan johdonmukaisia SQL-kyselyitä, mutta sen luotettavuus ei ollut kaikissa kysymystyypeissä riittävällä tasolla.
+Konsistenssikokeen 50 suorituksesta 37 tuotti korrektin SQL-kyselyn, 10 johti tilanteeseen, jossa järjestelmä ei tuottanut lainkaan SQL-kyselyä, ja 3 tuotti virheellisen SQL-kyselyn. Tulokset osoittavat, että Cortex Analyst pystyy usein tuottamaan johdonmukaisia SQL-kyselyitä, mutta sen luotettavuus ei ollut kaikissa kysymystyypeissä riittävällä tasolla.
+
+Herkkyystesteissä suurin variaatio havaittiin kysymyksen C eri muotoiluissa, joissa järjestelmä tuotti yhteensä kuusi uniikkia SQL-kyselyä. Kun Cortex Analystille syötettiin kysymyksen C eri variaatioita, järjestelmä tuotti väärän vastauksen 14 kertaa 50 suorituksesta. Virheellisissä kyselyissä toistuvin ongelma oli se, että järjestelmä ei rajannut hakua sarakkeen \texttt{direction} mukaisesti, vaan käytti saraketta \texttt{direction\_original} tai jätti suuntasuodatuksen kokonaan pois.
+
+Kysymyksessä C ja sen variaatioissa puhutaan palvelutasosta, jolloin implisiittisenä taustaoletuksena on, että tarkastelu kohdistuu vain saapuviin kontakteihin. Havainto viittaa siihen, että Cortex Analyst ei tässä tutkimusasetelmassa aina huomioinut tällaisia implisiittisiä oletuksia johdonmukaisesti.
+
+Kun kysymys E ja sen variaatiot annettiin järjestelmälle syötteeksi, järjestelmä tuotti 40 kertaa 50 suorituksesta tekstivastauksen, jossa se ilmoitti, että kysymykseen ei voida vastata. Variaatio E2 tuotti yhdeksän kertaa korrektin SQL-kyselyn ja kerran kyselyn, joka oli muuten oikea mutta käytti \texttt{distinct(identifier)}-ehdon sijaan ehtoa, jossa koko rivi vaadittiin uniikiksi. Tämä on huomattavasti heikompi ehto ja johti duplikaattivirheisiin.
+
+Kysymyksen E variaatio E2 ei implikoi yhtä vahvasti, että kysymykseen vastaaminen vaatisi kahden rivin välistä vertailua. Tämä voi osaltaan selittää, miksi juuri tämä variaatio tuotti enemmän oikeita vastauksia kuin muut.
+
+Kysymys E oli Cortex Analystille vaikein, mikä painottaa virhetyyppien jakaumaa ei kyselyä -luokan suuntaan.
+
+Taulukosta \ref{tb:errors} nähdään, että muista virhetyypeistä yleisimpiä olivat suodatusvirheet ja duplikaattien hallintaan liittyvät virheet. Kaikki suodatusvirheet liittyivät sarakkeisiin \texttt{direction} ja \texttt{direction\_original}, mikä viittaa siihen, että järjestelmä voisi olla robustimpi, jos nämä kaksi saraketta erotettaisiin toisistaan semanttisesti selvemmin. Esimerkiksi \texttt{direction\_original}-sarakkeen korvaaminen \texttt{is\_callback}-sarakkeella saattaisi helpottaa mallia erottamaan sarakkeiden merkitykset toisistaan. Tätä ei kuitenkaan testattu tässä tutkimuksessa.
+
+On kuitenkin huomioitava, että juuri nämä sarakkeet nousivat esiin tässä tutkimusasetelmassa. Toisenlaisessa tietokannassa tai toisessa sovellusympäristössä ongelmalliset kentät voisivat olla erilaisia. Havainto korostaa semanttisen näkymän merkitystä järjestelmän luotettavuuden kannalta. Semanttisen näkymän huolellinen suunnittelu ja iteratiivinen kehittäminen voivat pitkällä aikavälillä parantaa järjestelmän toimintaa merkittävästi.
+
+Duplikaattien hallintavirheillä tarkoitetaan tässä virheitä, joissa \texttt{distinct}-avainsanaa on käytetty tarpeettomasti tai väärin. Tutkimusasetelmassa vain kysymystä A vastaavissa SQL-kyselyissä \texttt{distinct}-avainsanaa ei tarvita. Muiden kysymysten kohdalla duplikaattien hallinta tulisi yleensä kohdistaa \texttt{identifier}-sarakkeeseen. Duplikaattien hallintavirheitä esiintyi tutkimuksessa yhteensä 18 kertaa 250 suorituksen aikana.
+
+Kysymyksessä A duplikaattien hallintaa ei odoteta lainkaan, mutta 10 suorituksessa järjestelmä tuotti SQL-kyselyn, joka sisälsi lausekkeen \texttt{distinct(identifier)}. Muut havaitut duplikaattien hallintavirheet liittyivät siihen, että \texttt{distinct}-avainsanaa sovellettiin n-tupleen, joka sisälsi identifier-sarakkeen lisäksi myös muita sarakkeita. Tällöin kysely vaatii näiden sarakkeiden yhdistelmän olevan uniikki, mikä on heikompi ehto kuin se, että \texttt{identifier}-sarake olisi jo yksin uniikki.
+
+Taululiitos- tai sarakevalintavirheitä ei havaittu. Tämä viittaa siihen, että järjestelmä tunnisti kysymyksistä yleensä oikein, mitä attribuutteja käyttäjä halusi hakea, vaikka se ei aina onnistunut tuottamaan oikeaa SQL-kyselyä niiden perusteella.
 
 \renewcommand{\arraystretch}{1.1}
 \begin{table}[h]
@@ -38,25 +58,85 @@ Yhteensä esitetystä 50 kysymyksestä 37 tuotti korrektin SQL-kyselyn, 10 tuott
   }
 \end{table}
 
-Herkkyystesteissä suurin variaatio havaittiin kysymyksen C eri muotoiluissa, joissa järjestelmä tuotti yhteensä 6 uniikkia SQL-kyselyä. Kun Cortex Analystille syötettiin kysymyksen C eri variaatiota, järjestelmä tuotti väärän vastauksen 14 kertaa 50:stä suorituksesta. Virheellisissä kyselyissä toistuvin virhe oli, että järjestelmä ei rajannut hakuaan sarakkeen \texttt{direction} mukaisesti, vaan käytti \texttt{direction\_original} saraketta, tai jätti suuntasuodatuksen kokonaan pois.
+\begin{table}[h]
+  \centering
+  \caption{Herkkyystestien 1--5 tulokset. Sarakkeet ilmoittavat oikeiden, pienen virheen sisältävien, väärien ja ei kyselyä -vastausten lukumäärät sekä yhteenlaskettu uniikkien SQL-kyselyiden määrä. (\textit{Yht.}).}
+  \label{tb:sensitivity_all}
 
-Kysymyksessä C ja sen variaatioissa puhutaan palvelutasosta, jolloin implisiittinen taustaoletus on, että tarkastellaan vain saapuvia kontakteja. Havainto viittaa siihen, että Cortex Analyst ei tässä tutkimusasetelmassa huomioinut implisiittisiä oletuksia aina johdonmukaisesti.
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Melkein\\oikein} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    A  & 10 & 0  & 0  & 0 & 1 \\
+    A1 & 10 & 0  & 0  & 0 & 1 \\
+    A2 & 10 & 0  & 0  & 0 & 1 \\
+    A3 & 10 & 0  & 0  & 0 & 1 \\
+    A4 & 0  & 10 & 0  & 0 & 2 \\
+    \bottomrule
+  \end{tabular}
 
-Kun kysymys E ja sen variaatiot annettiin järjestelmälle syötteeksi, se tuotti 40 kertaa 50:stä tekstin, jossa malli ilmoitti, että kysymykseen ei voida vastata. Variaatio 2 tuotti 9 kertaa korrektin SQL-kyselyn ja kerran SQL-kyselyn, joka oli muuten oikein, mutta \texttt{DISTINCT(IDENTIFIER)} ehdon sijaan kysely vaati rivin olevan uniikki, joka on huomattavasti heikompi ehto.
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Melkein\\oikein} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    B  & 10 & 0 & 0 & 0 & 2 \\
+    B1 & 10 & 0 & 0 & 0 & 2 \\
+    B2 & 10 & 0 & 0 & 0 & 2 \\
+    B3 & 10 & 0 & 0 & 0 & 2 \\
+    B4 & 10 & 0 & 0 & 0 & 2 \\
+    \bottomrule
+  \end{tabular}
 
-Kysymyksen E variaatio 2 ei implisiittisesti ehdota, että kysymyksen vastaaminen vaatisi kahden rivin välistä vertailua. Tämä voi selittää, miksi tämä variaatio tuotti enemmän oikeita vastauksia kuin muut.
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Melkein\\oikein} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    C  & 7 & 0  & 3  & 0 & 2 \\
+    C1 & 8 & 2  & 0  & 0 & 3 \\
+    C2 & 10 & 0  & 0 & 0 & 3 \\
+    C3 & 0 & 0 & 10  & 0 & 5 \\
+    C4 & 8 & 1  & 1  & 0 & 6 \\
+    \bottomrule
+  \end{tabular}
 
-Kysymys E oli Cortex Analystille vaikein, joka vääntää virhetyyppien jakaumaa ``ei kyselyä'' -virhetyypin puoleen.
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Melkein\\oikein} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    D  & 10 & 0 & 0 & 0 & 1 \\
+    D1 & 10 & 0 & 0 & 0 & 1 \\
+    D2 & 10 & 0 & 0 & 0 & 1 \\
+    D3 & 10 & 0 & 0 & 0 & 2 \\
+    D4 & 7  & 0 & 3 & 0 & 3 \\
+    \bottomrule
+  \end{tabular}
 
-Taulusta \ref{tb:errors} nähdään, että muista virhetyypeistä yleisimmät olivat suodatus- ja duplikaattien hallintavirheet. Kaikki suodatusvirheet liittyivät sarakkeisiin \texttt{direction} ja \texttt{direction\_original}, joka ehdottaa, että järjestelmä voisi olla merkittävästi robustimpi, jos nämä kaksi saraketta erotettaisiin toisistaan selvemmin. Esimerkiksi \texttt{direction\_original} sarakkeen korvaaminen \texttt{is\_callback} sarakkeella saattaisi auttaa mallia erottamaan sarakkeiden semanttisen merkityksen.
-
-On kuitenkin huomioitava, että nämä sarakkeet nousivat esille tässä tutkimuksessa, mutta eri tutkimusasetelmassa ongelmana voi olla toinen sarake tai tietokannan rakenne. Havainto korostaa semanttisen näkymän tärkeyttä järjestelmän luotettavuuden kannalta. Semanttisen näkymän huolellinen suunnittelu ja sen iteratiivinen kehitys voivat merkittävästi parantaa järjestelmän luotettavuutta pitkällä aikavälillä.
-
-Duplikaattien hallintavirheet ovat virheitä, jossa \texttt{DISTINCT} avainsanaa on käytetty väärin. Tutkimusasetelmassa vain kysmystä A vastaavissa SQL-kyselyissä \texttt{DISTINCT} avainsanaa ei tarvita. Muihin kysymyksiin vastaessa avainsanaa tulisi käyttää \texttt{identifier} sarakkeeseen. Duplikaattien hallintavirheitä esiintyi tutkimuksen aikana 18 kertaa 250:n kyselyn aikana.
-
-Kysymykseen A ei odoteta duplikaattien hallintaa, mutta 10:ssä suorituksessa järjestelmä tuotti SQL-kyselyn, joka sisälsi lauseen \texttt{distinct(identifier)}. Muut tutkimuksessa havaitut duplikaattien hallintavirheet liittyivät siihen, että \texttt{DISTINCT} avainsanaa sovellettiin $n$-tupleen, joka sisälsi \texttt{identifier} sarakkeen lisäksi muitakin sarakkeita. Tällöin kysely vaatii, että näiden sarakkeiden yhdistelmä on uniikki, mikä on heikompi ehto kuin se, että jo pelkästään \texttt{identifier} sarake itsessään on uniikki. Ei ole selvää, miksi duplikaattien hallintavirheitä esiintyy tai.
-
-Taululiitos- tai sarakevalintavirheitä ei havaittu, mikä viittaa siihen, että järjestelmä tunnisti kysymyksistä, mitä atribuutteja käyttäjä halusi hakea, vaikka se ei aina onnistunut tuottamaan oikeaa SQL-kyselyä tämän vastaamiseksi.
+  \vspace{0.3em}
+  \centering
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Kysmys & Oikein & \makecell{Melkein\\oikein} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
+    \midrule
+    E  & 0 & 0 & 0 & 10 & 1 \\
+    E1 & 0 & 0 & 0 & 10 & 1 \\
+    E2 & 9 & 1 & 0 & 0 & 3 \\
+    E3 & 0 & 0 & 0 & 10 & 3 \\
+    E4 & 0 & 0 & 0 & 10 & 3 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \begin{table}[h]
   \centering
@@ -73,86 +153,6 @@ Taululiitos- tai sarakevalintavirheitä ei havaittu, mikä viittaa siihen, että
     Sarakevalinta & 0 & 0 & 0 & 0 & 0 & 0 \\
     Suodatus & 0 & 0 & 11  & 3 & 0  & 14 \\
     Taululiitos & 0 & 0 & 0 & 0 & 0 & 0 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\begin{table}[h]
-  \centering
-  \caption{Herkkyystestien 1--5 tulokset. Sarakkeet ilmoittavat oikeiden, pienen virheen sisältävien, väärien ja ei kyselyä -vastausten lukumäärät sekä yhteenlaskettu uniikkien SQL-kyselyiden määrä. (\textit{Yht.}).}
-  \label{tb:sensitivity_all}
-
-  \centering
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{lccccc}
-    \toprule
-    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
-    \midrule
-    A  & 10 & 0  & 0  & 0 & 1 \\
-    A1 & 10 & 0  & 0  & 0 & 1 \\
-    A2 & 10 & 0  & 0  & 0 & 1 \\
-    A3 & 10 & 0  & 0  & 0 & 1 \\
-    A4 & 0  & 10 & 0  & 0 & 2 \\
-    \bottomrule
-  \end{tabular}
-
-  \vspace{0.3em}
-  \centering
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{lccccc}
-    \toprule
-    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
-    \midrule
-    B  & 10 & 0 & 0 & 0 & 2 \\
-    B1 & 10 & 0 & 0 & 0 & 2 \\
-    B2 & 10 & 0 & 0 & 0 & 2 \\
-    B3 & 10 & 0 & 0 & 0 & 2 \\
-    B4 & 10 & 0 & 0 & 0 & 2 \\
-    \bottomrule
-  \end{tabular}
-
-  \vspace{0.3em}
-  \centering
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{lccccc}
-    \toprule
-    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
-    \midrule
-    C  & 7 & 0  & 3  & 0 & 2 \\
-    C1 & 8 & 2  & 0  & 0 & 3 \\
-    C2 & 10 & 0  & 0 & 0 & 3 \\
-    C3 & 0 & 0 & 10  & 0 & 5 \\
-    C4 & 8 & 1  & 1  & 0 & 6 \\
-    \bottomrule
-  \end{tabular}
-
-  \vspace{0.3em}
-  \centering
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{lccccc}
-    \toprule
-    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
-    \midrule
-    D  & 10 & 0 & 0 & 0 & 1 \\
-    D1 & 10 & 0 & 0 & 0 & 1 \\
-    D2 & 10 & 0 & 0 & 0 & 1 \\
-    D3 & 10 & 0 & 0 & 0 & 2 \\
-    D4 & 7  & 0 & 3 & 0 & 3 \\
-    \bottomrule
-  \end{tabular}
-
-  \vspace{0.3em}
-  \centering
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{lccccc}
-    \toprule
-    Kysmys & Oikein & \makecell{Pieni\\virhe} & Väärin & \makecell{Ei\\kyselyä} & Yht. \\
-    \midrule
-    E  & 0 & 0 & 0 & 10 & 1 \\
-    E1 & 0 & 0 & 0 & 10 & 1 \\
-    E2 & 9 & 1 & 0 & 0 & 3 \\
-    E3 & 0 & 0 & 0 & 10 & 3 \\
-    E4 & 0 & 0 & 0 & 10 & 3 \\
     \bottomrule
   \end{tabular}
 \end{table}
