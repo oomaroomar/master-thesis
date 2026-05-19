@@ -1,0 +1,186 @@
+\section{N-gram-mallit}
+
+N-gram-malli on klassinen tilastollinen kielimalli, jossa seuraavan sanan tai symbolin ennustaminen perustuu sitä edeltävään  kontekstiin. Mallin taustalla on $(n-1)$:n kertaluvun Markovin oletus, jonka mukaan nykyinen tokeni riippuu vain edeltävistä $(n-1)$ tokenista eikä koko aiemmasta historiallisesta kontekstista. Tällöin voidaan approksimoida ehdollinen todennäköisyys
+
+\begin{equation*}
+  P(w_t | w_1, w_2, \ldots, w_{t-1}) \approx P(w_t | w_{t-n+1}, \ldots, w_{t-1}),
+\end{equation*}
+missä $w_t$ on ajanhetken $t$ tokeni ja $(w_{t-n+1}, \ldots, w_{t-1})$ on sitä edeltävät $(n-1)$ tokenia.
+
+Olkoon $V=\{v_1, v_2, \ldots, v_{|V|}\}$ sanasto, jossa |V| on sanaston koko ja $W=(v_{i_1}, v_{i_2}, \ldots, v_{i_{|W|}})\\=(w_1, w_2, \ldots, w_{|W|})$ havaintoaineisto. N-gram-malli voidaan toteuttaa muodostamalla lukumatriisi $C\in\Re^{|V|^{n-1} \times |V|}$, jossa $C_{c,j}$ edustaa kuinka monta kertaa kontekstia $c$ seuraa tokeni $v_j$ havaintoaineistossa. Formaalisti voidaan kirjoittaa
+\begin{align*}
+  C_{c,j} = |\{t\in\N | (w_{t-n+1}, \dots, w_{t-1}) = c \text{ ja } w_t = v_j \}|.
+\end{align*}
+
+Kun lukumatriisin $C$ rivit normalisoidaan jakamalla jokainen alkio rivinsä summalla, saadaan frekvenssimatriisi $F\in\Re^{|V|^{n-1} \times |V|}$, jossa
+\begin{align*}
+  F_{c,j} = \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}},
+\end{align*} edustaa ehdollista todennäköisyyttä $P(w_t = v_j | (w_{t-n+1}, \dots, w_{t-1}) = c)$. On helppo osoittaa, että nämä ehdolliset todennäköisyydet vastaavat suurimman uskottavuuden estimaatteja.
+
+N-gram-mallin oletuksen mukaisesti koko havaintoaineiston todennäköisyys voidaan kirjoittaa ehdollisten todennäköisyyksien tulona
+\begin{equation*}
+  P(W) \approx \prod_{t=1}^{|W|} P(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
+\end{equation*}
+Kiinteän kontekstin $c$ tapauksessa havaintojen lukumäärät
+\[
+  \{C_{c,1}, C_{c,2}, \ldots, C_{c,|V|}\}
+\]
+muodostavat multinomijakauman otoksen, jossa parametreina ovat todennäköisyydet
+\[
+  \theta_c = (\theta_{c,1}, \theta_{c,2}, \ldots, \theta_{c,|V|}),
+  \qquad
+  \sum_{j=1}^{|V|}\theta_{c,j} = 1.
+\]
+Tällöin kyseisen kontekstin osalta uskottavuusfunktio voidaan kirjoittaa muodossa
+\begin{equation}\label{eq:n-gram_target_function}
+  \mathcal{L}(\theta_c)
+  = \prod_{j=1}^{|V|} \theta_{c,j}^{C_{c,j}}.
+\end{equation}
+Tämän funktion maksimoiminen on ekvivalenttia sen logaritmin maksimoimiselle, joten saadaan Lagrangen funktio
+\begin{align*}
+  \mathcal{L}_{\text{Lag}}(\theta_c, \lambda)
+  &= \sum_{j=1}^{|V|} C_{c,j} \log \theta_{c,j} + \lambda\left(1 - \sum_{j=1}^{|V|} \theta_{c,j}\right).
+\end{align*}
+Derivoimalla saadaan
+\begin{align*}
+  &\frac{\partial \mathcal{L}_{\text{Lag}}}{\partial \theta_{c,j}}
+  = \frac{C_{c,j}}{\theta_{c,j}} - \lambda = 0,
+  && j=1,2,\ldots,|V| \\
+  &\implies \theta_{c,j} = \frac{C_{c,j}}{\lambda}, && j=1,2,\ldots,|V| \\
+  &\implies \lambda = \sum_{j=1}^{|V|} C_{c,j} \\
+  &\implies \theta_{c,j} = \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}}, && j=1,2,\ldots,|V|.
+\end{align*}
+eli täsmälleen rivikohtaisesti normalisoitu frekvenssimatriisi.
+
+Tekstin generointi n-gram-mallilla tapahtuu iteratiivisesti hyödyntämällä frekvenssimatriisia $F$. Ensin valitaan alkukonteksti, esimerkiksi erikoismerkeillä aloitettu $(n-1)$-tokenin pituinen alkujakso. Tämän jälkeen mallin tämänhetkistä kontekstia vastaava rivi $F_{c,\cdot}$ tulkitaan todennäköisyysjakaumaksi, josta seuraava tokeni valitaan satunnaisotannalla. Kun tokeni $w_t$ on generoitu, konteksti päivitetään siirtämällä ikkuna yhden askeleen eteenpäin siten, että uusi konteksti muodostuu edeltävistä $(n-1)$ generoidusta tokenista. Prosessia jatketaan, kunnes generoidaan päätemerkki tai saavutetaan haluttu tekstin pituus.
+
+Formaalisti voidaan sanoa, että jos nykyinen konteksti on $c = (w_{t-n+1}, \ldots, w_{t-1})$, niin seuraava tokeni valitaan jakaumasta
+\begin{align*}
+  w_t \sim F_{c,\cdot}
+\end{align*}  ja uusi konteksti on $c' = (w_{t-n+2}, \ldots, w_t)$.
+Näin muodostunut teksti on siis peräkkäisten ehdollisten otosten ketju, jossa kunkin tokenin valinta riippuu vain edeltävästä paikallisesta kontekstista.
+
+Vaikka lähestymistapa on käsitteellisesti yksinkertainen ja tulkittava, siihen liittyy merkittäviä laskennallisia haasteita erityisesti kontekstikoon \(n\) kasvaessa. Tämän seurauksena lukumatriisista $C\in\Re^{|V|^{n-1} \times |V|}$ tulee nopeasti erittäin suuri ja käytännöllisissä sovelluksissa hyvin harva, koska vain pieni osa kaikista mahdollisista konteksteista esiintyy tyypillisessä havaintoaineistossa. Tämä lisää sekä muistin- että laskentatehon tarvetta.
+
+Kuvattujen rajoitusten vuoksi lukumatriisiin perustuva menetelmä ei skaalaudu hyvin suuriin \(n\)-arvoihin. Erityisesti harva havaintotiheys ja eksponentiaalinen tilavaatimuksen kasvu rajoittavat mallin käytännöllisyyttä. Tästä syystä on perusteltua tarkastella vaihtoehtoisia menetelmiä, joissa mallin parametrit opitaan optimoimalla minimoitavaa häviöfunktiota.
+
+\subsection{N-gram-malli optimointiongelmana}
+
+Sen sijaan, että määriteltäisiin mallin parametrit suoraan laskemalla havaintofrekvenssejä, voidaan lähestyä ongelmaa maksimointiperiaatteen kautta. Tällöin tavoitteena on löytää mallin parametrit $\theta$, jotka maksimoivat havaintoaineiston uskottavuuden $P(W;\theta)$.
+
+Koneoppimisessa optimointiongelma esitetään yleensä minimointimuodossa. Tämän vuoksi on tavanomaista määritellä häviöfunktioksi negatiivinen log-uskottavuus. Jotta mallin häviötä voidaan vertailla eri havaintoaineistojen välillä, jaetaan häviöfunktio havaintoaineiston koolla eli
+\begin{equation*}
+  \mathcal{J}(\theta; W)
+  = -\frac{1}{|W|}\sum_{t=1}^{|W|}
+  \log P_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1})
+\end{equation*}
+
+Tämä suure on keskimääräinen negatiivinen log-todennäköisyysarvo, jonka minimointi on täsmälleen ekvivalenttia uskottavuuden maksimoinnille. Toisin sanoen
+\begin{equation*}
+  \arg\max_{\theta} P(W;\theta)
+  =
+  \arg\min_{\theta} \mathcal{J}(W;\theta).
+\end{equation*}
+
+Tämä näkökulma on keskeinen, sillä se muuntaa probabilistisen mallinnuksen optimointitehtäväksi, jota voidaan ratkaista yleisillä numeerisen optimoinnin menetelmillä.
+
+Neuroverkkopohjaisessa $n$-gram-mallissa tavoitteena on oppia funktio
+\begin{equation*}
+  f_{\theta} : \mathcal{C} \to [0,1]^{|V|},
+\end{equation*}
+jossa $\mathcal{C}$ on kontekstien avaruus ja $\theta$ mallin opittavat parametrit. Malli saa syötteenä kontekstin $c=(w_{t-n+1},\ldots,w_{t-1})$ ja tuottaa jakauman seuraavalle tokenille:
+\begin{equation*}
+  f_{\theta}(c) = p_{\theta}(\cdot \mid c).
+\end{equation*}
+Tällöin halutun tokenin todennäköisyys on
+\begin{equation*}
+  p_{\theta}(w_t \mid c),
+\end{equation*}
+ja koko aineiston häviöfunktio voidaan kirjoittaa muodossa
+\begin{equation*}
+  \mathcal{J}(\theta)
+  = - \frac{1}{|W|}\sum_{t=1}^{|W|} \log p_{\theta}(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
+\end{equation*}
+
+\subsection{Neuroverkot optimointiongelmana}
+
+Edellä kuvattu n-gram-malli perustuu suoraan havaittuihin frekvensseihin tai niiden
+maksimointiin perustuvaan estimaattiin. Tällöin mallin parametrit määräytyvät
+käsin määritellyistä tilastollisista säännöistä, eikä mallilla ole kykyä oppia
+kontekstien välisiä monimutkaisempia riippuvuuksia. Neuroverkkopohjaisessa
+lähestymistavassa taas pyritään oppimaan suoraan funktio, joka kuvaa annetun
+kontekstin ja sitä seuraavan tokenin välistä yhteyttä.
+
+Yleisesti neuroverkko voidaan esittää peräkkäisten parametrisoitujen funktioiden
+kompositiona. Olkoon \(x \in \mathbb{R}^d\) syötevektori ja \(y \in \mathbb{R}^m\)
+mallin tuottama ulostulo. Tällöin yksi piilokerros voidaan kirjoittaa muodossa
+
+$$
+h = \phi(Wx + b),
+$$
+
+missä \(W \in \mathbb{R}^{k \times d}\) on painomatriisi, \(b \in \mathbb{R}^k\) on
+siirtovektori ja \(\phi\) on epälineaarinen aktivaatiofunktio, kuten ReLU,
+tanh tai sigmoid. Monikerroksisessa verkossa tämä prosessi toistetaan useita
+kertoja, jolloin saadaan
+
+$$
+h^{(1)} = \phi^{(1)}(W^{(1)}x + b^{(1)}), \quad
+h^{(2)} = \phi^{(2)}(W^{(2)}h^{(1)} + b^{(2)}), \ \ldots
+$$
+
+ja lopulta verkon tuottama lopputulos saadaan viimeisestä kerroksesta.
+
+Kielimallinnuksessa neuroverkon tehtävänä on arvioida todennäköisyysjakauma
+seuraavalle tokenille annetun kontekstin ehdolla. Jos konteksti on
+\(c = (w_{t-n+1}, \ldots, w_{t-1})\), pyritään oppimaan malli
+
+$$
+f_\theta : C \rightarrow [0,1]^{|V|},
+$$
+
+missä \(f_\theta(c)\) on kontekstin \(c\) perusteella muodostettu todennäköisyysjakauma
+sanaston kaikille tokeneille. Käytännössä tämä toteutetaan usein siten, että
+konteksti muunnetaan numeeriseksi syötevektoriksi \(x_c\), jonka perusteella
+verkko tuottaa ensin niin sanotut logit-arvot \(z \in \mathbb{R}^{|V|}\). Näistä
+muodostetaan todennäköisyysjakauma softmax-funktiolla
+
+$$
+p_\theta(w_t = v_j \mid c) =
+\frac{\exp(z_j)}{\sum_{k=1}^{|V|} \exp(z_k)}.
+$$
+
+Tällöin mallin oppimistavoite voidaan esittää negatiivisena log-uskottavuuden
+keskiarvona, eli ristientropiahäviönä:
+
+$$
+J(\theta) = -\frac{1}{|W|} \sum_{t=1}^{|W|}
+\log p_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
+$$
+
+Tämä on sama tavoitefunktio kuin n-gram-mallin tapauksessa, mutta nyt
+todennäköisyydet eivät määräydy suoraan frekvenssien perusteella vaan ne opitaan
+parametrisella funktiolla \(f_\theta\). Tällöin optimointiongelmana on löytää
+parametrit \(\theta\), jotka minimoivat häviöfunktion
+
+$$
+\theta^\ast = \arg\min_\theta J(\theta).
+$$
+
+Neuroverkoissa tämän minimoinnin suorittaminen perustuu gradienttipohjaisiin
+optimointimenetelmiin, kuten stokastiseen gradienttilaskuun
+(stochastic gradient descent, SGD) ja sen muunnelmiin, esimerkiksi Adam-
+optimointiin. Parametreja päivitetään laskemalla häviöfunktion gradientti
+suhteessa verkon painoihin ja siirtoihin sekä siirtämällä parametreja tämän
+gradientin vastakkaiseen suuntaan. Tämä prosessi tunnetaan takaisinsyöttönä
+(backpropagation), ja sen avulla verkko oppii asteittain parantamaan seuraavan
+tokenin ennustamista.
+
+Keskeinen etu neuroverkkopohjaisessa mallissa on, että samaan aikaan kun se
+mallintaa kontekstin ja seuraavan tokenin välistä yhteyttä, se oppii myös
+jatkuvia esityksiä sanoille ja konteksteille. Toisin kuin lukumatriisipohjainen
+n-gram-malli, neuroverkko ei ole sidottu vain havaittuihin konteksteihin, vaan
+se voi yleistää osittain myös harvinaisempiin tai kokonaan näkemättömiin
+tilanteisiin oppimiensa painojen ja esitysten avulla. Tästä syystä neuroverkkoja
+voidaan pitää n-gram-ajattelun yleistyksenä, jossa tilastollinen taulukko korvataan
+opittavalla funktiolla.
