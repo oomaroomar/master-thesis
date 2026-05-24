@@ -1,186 +1,399 @@
-\section{N-gram-mallit}
+\section{Tokenien enkoodaus}
 
-N-gram-malli on klassinen tilastollinen kielimalli, jossa seuraavan sanan tai symbolin ennustaminen perustuu sitä edeltävään  kontekstiin. Mallin taustalla on $(n-1)$:n kertaluvun Markovin oletus, jonka mukaan nykyinen tokeni riippuu vain edeltävistä $(n-1)$ tokenista eikä koko aiemmasta historiallisesta kontekstista. Tällöin voidaan approksimoida ehdollinen todennäköisyys
+Kielimallien yhteydessä tekstiä käsitellään tavallisesti diskreetteinä tokeneina,
+jotka muunnetaan laskennalliseen muotoon mallintamista varten. Olkoon
+\(V = \{v_1, v_2, \dots, v_{|V|}\}\) sanasto eli joukko kaikista mallin
+käyttämistä tokeneista ja olkoon
+\(W = (w_1, w_2, \dots, w_{|W|})\) korpus eli havaittu tokenijono. Tällöin
+\(w_t \in V\) merkitsee korpuksen ajanhetken \(t\) tokenia. Tokenilla voidaan
+tarkoittaa esimerkiksi sanaa, osasanaa, merkkiä tai muuta diskreettiä
+tekstiyksikköä riippuen käytetystä tokenisointimenetelmästä.
 
-\begin{equation*}
-  P(w_t | w_1, w_2, \ldots, w_{t-1}) \approx P(w_t | w_{t-n+1}, \ldots, w_{t-1}),
-\end{equation*}
-missä $w_t$ on ajanhetken $t$ tokeni ja $(w_{t-n+1}, \ldots, w_{t-1})$ on sitä edeltävät $(n-1)$ tokenia.
-
-Olkoon $V=\{v_1, v_2, \ldots, v_{|V|}\}$ sanasto, jossa |V| on sanaston koko ja $W=(v_{i_1}, v_{i_2}, \ldots, v_{i_{|W|}})\\=(w_1, w_2, \ldots, w_{|W|})$ havaintoaineisto. N-gram-malli voidaan toteuttaa muodostamalla lukumatriisi $C\in\Re^{|V|^{n-1} \times |V|}$, jossa $C_{c,j}$ edustaa kuinka monta kertaa kontekstia $c$ seuraa tokeni $v_j$ havaintoaineistossa. Formaalisti voidaan kirjoittaa
-\begin{align*}
-  C_{c,j} = |\{t\in\N | (w_{t-n+1}, \dots, w_{t-1}) = c \text{ ja } w_t = v_j \}|.
-\end{align*}
-
-Kun lukumatriisin $C$ rivit normalisoidaan jakamalla jokainen alkio rivinsä summalla, saadaan frekvenssimatriisi $F\in\Re^{|V|^{n-1} \times |V|}$, jossa
-\begin{align*}
-  F_{c,j} = \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}},
-\end{align*} edustaa ehdollista todennäköisyyttä $P(w_t = v_j | (w_{t-n+1}, \dots, w_{t-1}) = c)$. On helppo osoittaa, että nämä ehdolliset todennäköisyydet vastaavat suurimman uskottavuuden estimaatteja.
-
-N-gram-mallin oletuksen mukaisesti koko havaintoaineiston todennäköisyys voidaan kirjoittaa ehdollisten todennäköisyyksien tulona
-\begin{equation*}
-  P(W) \approx \prod_{t=1}^{|W|} P(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
-\end{equation*}
-Kiinteän kontekstin $c$ tapauksessa havaintojen lukumäärät
+Diskreetit tokenit esitetään numeerisessa muodossa, jotta niitä voidaan hyödyntää
+tilastollisissa malleissa ja neuroverkoissa. Yksinkertaisin ja yleisesti käytetty
+esitystapa on one-hot-enkoodaus. Siinä kukin token \(v_j \in V\) esitetään
+vektorina \(x(v_j) \in \{0,1\}^{|V|}\), jossa
 \[
-  \{C_{c,1}, C_{c,2}, \ldots, C_{c,|V|}\}
+  x(v_j)_k =
+  \begin{cases}
+    1, & \text{jos } k = j, \\
+    0, & \text{muulloin}.
+  \end{cases}
+\]
+Tällainen esitys ilmaisee ainoastaan tokenin identiteetin: eri tokeneilla on
+toisistaan poikkeavat vektoriesitykset, mutta niihin ei sisälly eksplisiittistä
+semanttista tai syntaktista rakennetta. Menetelmän etuna on yksikäsitteisyys ja
+sen yksinkertainen yhteys sanaston indeksöintiin.
+
+Käytännön kielimallinnuksessa sanastoa täydennetään usein erikoistokeneilla,
+joilla kuvataan sekvenssin rakennetta ja käsitellään harvinaisia havaintoja.
+Tällaisia ovat esimerkiksi aloitus- ja lopetusmerkit \(\langle s \rangle\) ja
+\(\langle /s \rangle\) sekä tuntemattoman tokenin merkki \(\langle unk \rangle\).
+Laajennettu sanasto voidaan kirjoittaa muodossa
+\[
+  V' = V \cup \{\langle s \rangle, \langle /s \rangle, \langle unk \rangle\}.
+\]
+Aloitus- ja lopetusmerkit ovat erityisen hyödyllisiä silloin, kun mallin
+ennustettavaa kontekstia halutaan määritellä myös sekvenssin reuna-alueilla.
+Esimerkiksi \(n\)-gram-malleissa (kts. osio \ref{sec:n-gram}) kontekstin pituus on vakio, minkä vuoksi
+sekvenssin alku- ja loppupäähän lisätään tyypillisesti riittävä määrä
+erikoistokeneita, jotta kontekstit voidaan muodostaa yhtenäisesti kaikille
+ajanhetkille.
+
+Koko korpus voidaan esittää one-hot-vektoreiden jonona
+\[
+  X = (x_1, x_2, \dots, x_{|W|}),
+\]
+missä \(x_t = x(w_t)\) on tokenin \(w_t\) one-hot-esitys. Jos syöte koostuu
+useasta tokenista, voidaan niiden one-hot-esitykset yhdistää esimerkiksi
+ketjuttamalla ne yhdeksi syötevektoriksi
+\[
+  \tilde{x}_t = [x_{t-n+1}; x_{t-n+2}; \dots; x_{t-1}]
+  \in \{0,1\}^{(n-1)|V|}.
+\]
+Tämä muodostaa luonnollisen syötteen monille kontekstipohjaisille malleille, sillä
+se säilyttää kontekstin tokenijärjestyksen eksplisiittisesti.
+
+One-hot-enkoodaus muodostaa siten perustavanlaatuisen sillan diskreetin tekstin ja
+numeeristen kielimallien välille. Se tarjoaa täsmällisen ja muodollisesti
+yksinkertaisen esitystavan, jonka varaan voidaan rakentaa sekä tilastollisia
+\(n\)-gram-malleja että neuroverkkopohjaisia kielimalleja.
+
+One-hot-esitys tarjoaa yksikäsitteisen tavan kuvata tokeneita, mutta sen
+heikkoutena on, ettei se sisällä eksplisiittistä tietoa tokenien välisistä
+suhteista. Jokaisen tokenin vektorikuvaus on ortogonaalinen toisten kanssa. Tämän mallin mukaan kissan relaatio koiraan on sama kuin tietokoneeseen. Tästä rajoiteesta pyritään eroon upotusvektoreilla
+(engl. \emph{embedding vectors}), joissa kukin token kuvataan tiheällä
+reaaliarvoisella vektorilla. Olkoon edelleen \(V = \{v_1, v_2, \dots, v_{|V|}\}\)
+sanasto. Tällöin tokenille \(v_j\) määritellään upotus
+\[
+  e(v_j) \in \mathbb{R}^d,
+\]
+missä \(d \ll |V|\) on upotustilan dimensio.
+
+Upotusvektorit voidaan esittää myös matriisimuodossa. Olkoon
+\[
+  E \in \mathbb{R}^{d \times |V|}
+\]
+upotusmatriisi, jonka sarakkeet vastaavat sanaston tokeneita. Tällöin
+tokenin \(v_j\) upotus saadaan one-hot-vektorin \(x(v_j)\) avulla muodossa
+\[
+  e(v_j) = E x(v_j).
+\]
+Koska one-hot-vektori sisältää täsmälleen yhden epä-nollan komponentin, tämä
+kertolasku palauttaa matriisista \(E\) juuri tokenia \(v_j\) vastaavan
+sarakkeen.
+
+Upotusvektorien keskeinen etu liittyy siihen, että samankaltaisten tokenien upotukset voivat sijaita lähellä toisiaan upotustilassa. Tällöin tokenien geometrinen läheisyys voi heijastaa niiden semanttista tai syntaktista samankaltaisuutta. Esimerkiksi sanat ``kuningas'' ja ``kuningatar'' voivat saada upotukset, jotka ovat lähellä toisiaan, koska ne esiintyvät samankaltaisissa konteksteissa ja jakavat merkityksellisiä piirteitä. Upotusvektorit tarjoavat rikkaamman ja joustavamman esityksen tokenien välisistä suhteista kuin one-hot-esitys, jossa kaikki tokenit ovat yhtä kaukana toisistaan.
+
+Käytännön kielimallinnuksessa upotukset opitaan tavallisesti tehtäväkohtaisesti
+osana laajempaa optimointia. Jos korpus on
+\(W = (w_1, w_2, \dots, w_{|W|})\), voidaan jokainen tokeni \(w_t \in V\)
+korvata sitä vastaavalla upotusvektorilla \(e(w_t)\). Tällöin koko korpusta
+voidaan tarkastella tiheiden vektorien jonona
+\[
+  E_W = (e(w_1), e(w_2), \dots, e(w_{|W|})).
+\]
+Tämä esitystapa on erityisen hyödyllinen neuroverkoissa, joissa upotukset
+muodostavat syötteen myöhemmille kerroksille ja joissa opittavat parametrit
+voivat hyödyntää tokenien välisiä yhteyksiä yhteisen esitystilan kautta.
+
+Upotusvektorit ovat myös yhteensopivia erikoistokenien kanssa. Esimerkiksi
+aloitusmerkki \(\langle s \rangle\), lopetusmerkki \(\langle /s \rangle\) ja
+tuntematon token \(\langle unk \rangle\) voidaan sisällyttää laajennettuun
+sanastoon
+\[
+  V' = V \cup \{\langle s \rangle, \langle /s \rangle, \langle unk \rangle\},
+\]
+jolloin niille voidaan oppia omat upotuksensa samalla tavalla kuin muillekin
+tokeneille. Näin myös sekvenssien rakenteelliset elementit voidaan käsitellä
+yhtenäisesti muun sanaston kanssa.
+
+Upotusvektorit muodostavat siten luonnollisen jatkeen one-hot-esitykselle.
+Siinä missä one-hot kuvaa tokenin pelkkänä identiteettinä, upotusvektori tarjoaa
+tiiviin ja optimoitavan esityksen, joka soveltuu tehokkaasti neuroverkkopohjaisiin kielimalleihin.
+
+\section{Upotusvektorien oppiminen Word2Vec-menetelmällä}
+
+Edellä esitetyt upotusvektorit eivät ole ennalta annettuja, vaan ne opitaan
+tyypillisesti korpuksesta optimointitehtävän avulla. Yksi tunnetuimmista ja
+vaikuttavimmista menetelmistä tähän tarkoitukseen on Word2Vec, jonka
+perusarkkitehtuurit esittelevät Mikolov ym. työssään
+\emph{Efficient Estimation of Word Representations in Vector Space}
+\cite{mikolov2013efficient}. Menetelmän keskeinen ajatus on oppia sellaiset
+vektoriesitykset, että samankaltaisissa konteksteissa esiintyvät sanat saavat
+samankaltaiset upotukset. Tämä perustuu distributionaaliseen periaatteeseen,
+jonka mukaan sanan merkitystä voidaan approksimoida sen käyttöympäristöjen
+perusteella.
+
+Olkoon korpus edelleen \(W = (w_1, w_2, \dots, w_{|W|})\), missä
+\(w_t \in V\). Word2Vec-malleissa tarkastellaan tavallisesti kunkin sanan
+ympärille muodostettua kontekstia, jonka laajuus määrätään ikkunaparametrilla
+\(c \in \mathbb{N}\). Tällöin ajanhetken \(t\) kontekstiksi saadaan esimerkiksi
+joukko
+\[
+  C_t = \{w_{t-c}, \dots, w_{t-1}, w_{t+1}, \dots, w_{t+c}\},
+\]
+olettaen, että indeksit pysyvät korpuksen rajojen sisällä. Word2Vec-menetelmän
+kaksi keskeistä arkkitehtuuria ovat jatkuvien sanojen pussimalli
+(\emph{continuous bag-of-words}, CBOW) ja Skip-gram \cite{mikolov2013efficient}.
+
+CBOW-mallissa ennustetaan keskimmäinen sana sen kontekstin perusteella. Toisin
+sanoen mallin tavoitteena on approksimoida todennäköisyyttä
+\[
+  p(w_t \mid w_{t-c}, \dots, w_{t-1}, w_{t+1}, \dots, w_{t+c}).
+\]
+Kontekstin tokenit muunnetaan ensin upotusvektoreiksi, minkä jälkeen niiden
+esitykset yhdistetään tavallisesti summaamalla tai keskiarvoistamalla. Saatua
+kontekstivektoria käytetään ennustamaan kohdesana koko sanaston yli.
+Mikolov ym. \cite{mikolov2013efficient} korostavat, että CBOW on
+laskennallisesti tehokas erityisesti suurilla aineistoilla, koska se aggregoi
+kontekstin yhdeksi esitykseksi eikä käsittele jokaista kontekstisanaa täysin
+erillisenä ennustustehtävänä.
+
+Skip-gram-mallissa ennustussuunta on päinvastainen: keskimmäisen sanan avulla
+pyritään ennustamaan sitä ympäröivät kontekstisanat. Tavoitteena on siis
+maksimoida todennäköisyydet
+\[
+  p(w_{t+j} \mid w_t), \qquad -c \le j \le c,\; j \ne 0.
+\]
+Koko korpuksen yli tämä voidaan kirjoittaa maksimoitavana tavoitefunktiona
+muodossa
+\[
+  \sum_{t=1}^{|W|} \sum_{\substack{-c \le j \le c \\ j \ne 0}}
+  \log p(w_{t+j} \mid w_t).
+\]
+Skip-gram soveltuu hyvin tilanteisiin, joissa halutaan oppia laadukkaita
+esityksiä myös harvinaisemmille sanoille, sillä kukin havaittu sana toimii
+useiden kontekstien ennustamisen lähtökohtana
+\cite{mikolov2013efficient}.
+
+Todennäköisyys \(p(w_O \mid w_I)\), missä \(w_I\) on syötesana ja \(w_O\)
+kohdesana, voidaan määritellä softmax-funktion avulla. Jos syötesanaa \(w_I\)
+vastaa vektori \(v_{w_I}\) ja kohdesanaa \(w_O\) vastaava ulostulovektori on
+\(u_{w_O}\), saadaan
+\[
+  p(w_O \mid w_I)
+  =
+  \frac{\exp(u_{w_O}^{\top} v_{w_I})}
+  {\sum_{w \in V} \exp(u_w^{\top} v_{w_I})}.
+\]
+Tässä nimittäjän summa ulottuu koko sanastoon, mikä tekee täsmällisestä
+optimoinnista laskennallisesti raskasta suurilla sanastoilla. Mikolov ym.
+\cite{mikolov2013efficient} esittävät tehokkaita ratkaisuja tähän ongelmaan,
+jotta sanavektoreita voidaan oppia erittäin suurista korpuksista käytännöllisin
+resurssein. Työn keskeinen kontribuutio onkin osoittaa, että yksinkertaisilla
+arkkitehtuureilla voidaan oppia laadukkaita sanaesityksiä huomattavasti
+aiempia neuroverkkokielimalleja tehokkaammin.
+
+Word2Vec-mallissa opitaan käytännössä kaksi parametrimatriisia: syötevektorit ja
+ulostulovektorit. Jokaiselle sanaston sanalle \(v_j \in V\) voidaan siis
+assosioida ainakin yksi tiheä vektorikuvaus. Oppimisen jälkeen näistä käytetään
+tavallisesti sanan syötevektoria tai vaihtoehtoisesti syöte- ja
+ulostulovektoreiden yhdistelmää sanan lopullisena esityksenä. Näin muodostuvat
+upotukset heijastavat sanojen yhteisesiintymisrakenteita korpuksessa:
+vektorit, jotka esiintyvät samankaltaisissa käyttöympäristöissä, sijoittuvat
+tyypillisesti lähelle toisiaan upotustilassa.
+
+Mikolov ym. \cite{mikolov2013efficient} osoittavat lisäksi, että tällä tavoin
+opitut vektoriesitykset säilyttävät kielellisesti mielekkäitä säännönmukaisuuksia.
+Sanavektorien väliset erot voivat vastata semanttisia tai syntaktisia suhteita,
+mikä näkyy esimerkiksi analogiatehtävissä. Tämän vuoksi Word2Vec ei ole
+ainoastaan tehokas optimointimenetelmä, vaan myös empiirisesti toimiva tapa
+rakentaa sellaisia upotuksia, jotka tiivistävät sanojen välisiä suhteita
+hyödyllisellä tavalla.
+
+Vaikka Word2Vec kehitettiin alun perin sanojen vektoriesitysten oppimiseen,
+sen perusajatus yleistyy myös laajemmin tokenipohjaiseen mallinnukseen.
+Menetelmä havainnollistaa, kuinka diskreetistä tokenijonosta voidaan oppia
+jatkuvaesityksiä pelkästään kontekstuaalisen ennustetehtävän avulla. Tässä
+mielessä se muodostaa tärkeän sillan klassisten jakaumallisten
+sanamallien ja myöhempien neuroverkkopohjaisten kielimallien välille.
+
+\section{N-gram-mallit}\label{sec:n-gram}
+
+N-gram-malli on klassinen tilastollinen kielimalli, jossa seuraavan sanan tai symbolin ennustaminen perustuu sitä edeltävään rajattuun kontekstiin. Mallin taustalla on \((n-1)\):n kertaluvun Markovin oletus, jonka mukaan nykyinen tokeni riippuu vain edeltävistä \((n-1)\) tokenista eikä koko aiemmasta historiallisesta kontekstista \cite{manning1999foundations,jurafsky2023speech}. Tällöin voidaan approksimoida ehdollinen todennäköisyys
+
+\[
+  P(w_t \mid w_1, w_2, \ldots, w_{t-1})
+  \approx
+  P(w_t \mid w_{t-n+1}, \ldots, w_{t-1}),
+\]
+
+missä \(w_t\) on ajanhetken \(t\) tokeni ja \((w_{t-n+1}, \ldots, w_{t-1})\) on sitä edeltävät \((n-1)\) tokenia.
+
+Olkoon \(V = \{v_1, v_2, \ldots, v_{|V|}\}\) sanasto, jossa \(|V|\) on sanaston koko, ja \(W = (w_1, w_2, \ldots, w_{|W|})\) havaintoaineisto. N-gram-malli voidaan toteuttaa muodostamalla lukumatriisi \(C \in \mathbb{R}^{|V|^{n-1} \times |V|}\), jossa \(C_{c,j}\) edustaa kuinka monta kertaa kontekstia \(c\) seuraa tokeni \(v_j\) havaintoaineistossa. Formaalisti
+
+\[
+  C_{c,j}
+  =
+  \left|
+  \left\{
+    t \in \mathbb{N}
+    \mid
+    (w_{t-n+1}, \ldots, w_{t-1}) = c
+    \ \text{ja}\
+    w_t = v_j
+  \right\}
+  \right|.
+\]
+
+Kun lukumatriisin \(C\) rivit normalisoidaan jakamalla jokainen alkio rivinsä summalla, saadaan frekvenssimatriisi \(F \in \mathbb{R}^{|V|^{n-1} \times |V|}\), jossa
+\[
+  F_{c,j}
+  =
+  \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}},
+\]
+ja joka edustaa ehdollista todennäköisyyttä
+
+\[
+  P(w_t = v_j \mid (w_{t-n+1}, \ldots, w_{t-1}) = c).
+\]
+
+On helppo osoittaa, että nämä ehdolliset todennäköisyydet vastaavat suurimman uskottavuuden estimaatteja \cite{bishop2006pattern}. N-gram-mallin oletuksen mukaisesti koko havaintoaineiston todennäköisyys voidaan kirjoittaa ehdollisten todennäköisyyksien tulona
+
+\[
+  P(W) \approx \prod_{t=1}^{|W|}
+  P(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
+\]
+
+Kiinteän kontekstin \(c\) tapauksessa havaintojen lukumäärät
+\[
+  (C_{c,1}, C_{c,2}, \ldots, C_{c,|V|})
 \]
 muodostavat multinomijakauman otoksen, jossa parametreina ovat todennäköisyydet
 \[
   \theta_c = (\theta_{c,1}, \theta_{c,2}, \ldots, \theta_{c,|V|}),
   \qquad
-  \sum_{j=1}^{|V|}\theta_{c,j} = 1.
+  \sum_{j=1}^{|V|}\theta_{c,j}=1.
 \]
 Tällöin kyseisen kontekstin osalta uskottavuusfunktio voidaan kirjoittaa muodossa
-\begin{equation}\label{eq:n-gram_target_function}
-  \mathcal{L}(\theta_c)
-  = \prod_{j=1}^{|V|} \theta_{c,j}^{C_{c,j}}.
-\end{equation}
+\[
+  L(\theta_c)
+  =
+  \prod_{j=1}^{|V|}
+  \theta_{c,j}^{C_{c,j}}.
+  \tag{1}
+\]
+
 Tämän funktion maksimoiminen on ekvivalenttia sen logaritmin maksimoimiselle, joten saadaan Lagrangen funktio
-\begin{align*}
-  \mathcal{L}_{\text{Lag}}(\theta_c, \lambda)
-  &= \sum_{j=1}^{|V|} C_{c,j} \log \theta_{c,j} + \lambda\left(1 - \sum_{j=1}^{|V|} \theta_{c,j}\right).
-\end{align*}
+\[
+  \mathcal{L}_{\mathrm{Lag}}(\theta_c,\lambda)
+  =
+  \sum_{j=1}^{|V|} C_{c,j}\log \theta_{c,j}
+  +
+  \lambda\left(1-\sum_{j=1}^{|V|}\theta_{c,j}\right).
+\]
 Derivoimalla saadaan
-\begin{align*}
-  &\frac{\partial \mathcal{L}_{\text{Lag}}}{\partial \theta_{c,j}}
-  = \frac{C_{c,j}}{\theta_{c,j}} - \lambda = 0,
-  && j=1,2,\ldots,|V| \\
-  &\implies \theta_{c,j} = \frac{C_{c,j}}{\lambda}, && j=1,2,\ldots,|V| \\
-  &\implies \lambda = \sum_{j=1}^{|V|} C_{c,j} \\
-  &\implies \theta_{c,j} = \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}}, && j=1,2,\ldots,|V|.
-\end{align*}
-eli täsmälleen rivikohtaisesti normalisoitu frekvenssimatriisi.
+\[
+  \frac{\partial \mathcal{L}_{\mathrm{Lag}}}{\partial \theta_{c,j}}
+  =
+  \frac{C_{c,j}}{\theta_{c,j}}-\lambda
+  =0,
+  \qquad
+  j=1,2,\ldots,|V|,
+\]
+josta seuraa
+\[
+  \theta_{c,j}=\frac{C_{c,j}}{\lambda}.
+\]
+Kun tämä sijoitetaan normalisaatioehtoon, saadaan
+\[
+  \lambda
+  =
+  \sum_{k=1}^{|V|} C_{c,k},
+\]
+ja siten
+\[
+  \theta_{c,j}
+  =
+  \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}},
+  \qquad
+  j=1,2,\ldots,|V|.
+\]
 
-Tekstin generointi n-gram-mallilla tapahtuu iteratiivisesti hyödyntämällä frekvenssimatriisia $F$. Ensin valitaan alkukonteksti, esimerkiksi erikoismerkeillä aloitettu $(n-1)$-tokenin pituinen alkujakso. Tämän jälkeen mallin tämänhetkistä kontekstia vastaava rivi $F_{c,\cdot}$ tulkitaan todennäköisyysjakaumaksi, josta seuraava tokeni valitaan satunnaisotannalla. Kun tokeni $w_t$ on generoitu, konteksti päivitetään siirtämällä ikkuna yhden askeleen eteenpäin siten, että uusi konteksti muodostuu edeltävistä $(n-1)$ generoidusta tokenista. Prosessia jatketaan, kunnes generoidaan päätemerkki tai saavutetaan haluttu tekstin pituus.
+Tämä on täsmälleen rivikohtaisesti normalisoitu frekvenssimatriisi. Näin ollen n-gram-mallin maksimointi ja laskumatriisiin perustuva estimaatti ovat yhtäpitäviä.
 
-Formaalisti voidaan sanoa, että jos nykyinen konteksti on $c = (w_{t-n+1}, \ldots, w_{t-1})$, niin seuraava tokeni valitaan jakaumasta
-\begin{align*}
-  w_t \sim F_{c,\cdot}
-\end{align*}  ja uusi konteksti on $c' = (w_{t-n+2}, \ldots, w_t)$.
-Näin muodostunut teksti on siis peräkkäisten ehdollisten otosten ketju, jossa kunkin tokenin valinta riippuu vain edeltävästä paikallisesta kontekstista.
+Tekstin generointi n-gram-mallilla tapahtuu iteratiivisesti hyödyntämällä frekvenssimatriisia \(F\). Ensin valitaan alkukonteksti, esimerkiksi erikoismerkeillä aloitettu \((n-1)\)-tokenin pituinen alkujakso. Tämän jälkeen mallin tämänhetkistä kontekstia vastaava rivi \(F_{c,\cdot}\) tulkitaan todennäköisyysjakaumaksi, josta seuraava tokeni valitaan satunnaisotannalla. Kun tokeni \(w_t\) on generoitu, konteksti päivitetään siirtämällä ikkuna yhden askeleen eteenpäin siten, että uusi konteksti muodostuu edeltävistä \((n-1)\) generoidusta tokenista. Prosessia jatketaan, kunnes generoidaan päätemerkki tai saavutetaan haluttu tekstin pituus.
 
-Vaikka lähestymistapa on käsitteellisesti yksinkertainen ja tulkittava, siihen liittyy merkittäviä laskennallisia haasteita erityisesti kontekstikoon \(n\) kasvaessa. Tämän seurauksena lukumatriisista $C\in\Re^{|V|^{n-1} \times |V|}$ tulee nopeasti erittäin suuri ja käytännöllisissä sovelluksissa hyvin harva, koska vain pieni osa kaikista mahdollisista konteksteista esiintyy tyypillisessä havaintoaineistossa. Tämä lisää sekä muistin- että laskentatehon tarvetta.
-
-Kuvattujen rajoitusten vuoksi lukumatriisiin perustuva menetelmä ei skaalaudu hyvin suuriin \(n\)-arvoihin. Erityisesti harva havaintotiheys ja eksponentiaalinen tilavaatimuksen kasvu rajoittavat mallin käytännöllisyyttä. Tästä syystä on perusteltua tarkastella vaihtoehtoisia menetelmiä, joissa mallin parametrit opitaan optimoimalla minimoitavaa häviöfunktiota.
+Vaikka lähestymistapa on käsitteellisesti yksinkertainen ja tulkittava, siihen liittyy merkittäviä laskennallisia haasteita erityisesti kontekstikoon \(n\) kasvaessa. Tämän seurauksena lukumatriisista \(C \in \mathbb{R}^{|V|^{n-1} \times |V|}\) tulee nopeasti erittäin suuri ja käytännöllisissä sovelluksissa hyvin harva, koska vain pieni osa kaikista mahdollisista konteksteista esiintyy tyypillisessä havaintoaineistossa. Tämä lisää sekä muistin- että laskentatehon tarvetta \cite{jurafsky2023speech}.
 
 \subsection{N-gram-malli optimointiongelmana}
 
-Sen sijaan, että määriteltäisiin mallin parametrit suoraan laskemalla havaintofrekvenssejä, voidaan lähestyä ongelmaa maksimointiperiaatteen kautta. Tällöin tavoitteena on löytää mallin parametrit $\theta$, jotka maksimoivat havaintoaineiston uskottavuuden $P(W;\theta)$.
+Sen sijaan, että mallin parametrit määriteltäisiin suoraan havaintofrekvenssien avulla, n-gram-malli voidaan esittää optimointitehtävänä. Tällöin tavoitteena on löytää parametrit \(\theta\), jotka maksimoivat havaintoaineiston uskottavuuden \(P(W;\theta)\).
 
-Koneoppimisessa optimointiongelma esitetään yleensä minimointimuodossa. Tämän vuoksi on tavanomaista määritellä häviöfunktioksi negatiivinen log-uskottavuus. Jotta mallin häviötä voidaan vertailla eri havaintoaineistojen välillä, jaetaan häviöfunktio havaintoaineiston koolla eli
-\begin{equation*}
-  \mathcal{J}(\theta; W)
-  = -\frac{1}{|W|}\sum_{t=1}^{|W|}
-  \log P_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1})
-\end{equation*}
+Koska koneoppimisessa optimointiongelmat esitetään tyypillisesti minimointimuodossa, on luonnollista määritellä häviöfunktioksi negatiivinen log-uskottavuus. Kun havaintoaineisto koostuu konteksti--seuraava tokeni -pareista, voidaan kirjoittaa
 
-Tämä suure on keskimääräinen negatiivinen log-todennäköisyysarvo, jonka minimointi on täsmälleen ekvivalenttia uskottavuuden maksimoinnille. Toisin sanoen
-\begin{equation*}
-  \arg\max_{\theta} P(W;\theta)
+\[
+  J(\theta;W)
   =
-  \arg\min_{\theta} \mathcal{J}(W;\theta).
-\end{equation*}
+  -\frac{1}{|W|}
+  \sum_{t=1}^{|W|}
+  \log P_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
+\]
 
-Tämä näkökulma on keskeinen, sillä se muuntaa probabilistisen mallinnuksen optimointitehtäväksi, jota voidaan ratkaista yleisillä numeerisen optimoinnin menetelmillä.
+Tämä suure kuvaa keskimääräistä negatiivista log-todennäköisyyttä havaintoaineistossa, ja sen minimointi on täsmälleen ekvivalenttia uskottavuuden maksimoinnin kanssa. Toisin sanoen
 
-Neuroverkkopohjaisessa $n$-gram-mallissa tavoitteena on oppia funktio
-\begin{equation*}
-  f_{\theta} : \mathcal{C} \to [0,1]^{|V|},
-\end{equation*}
-jossa $\mathcal{C}$ on kontekstien avaruus ja $\theta$ mallin opittavat parametrit. Malli saa syötteenä kontekstin $c=(w_{t-n+1},\ldots,w_{t-1})$ ja tuottaa jakauman seuraavalle tokenille:
-\begin{equation*}
-  f_{\theta}(c) = p_{\theta}(\cdot \mid c).
-\end{equation*}
-Tällöin halutun tokenin todennäköisyys on
-\begin{equation*}
-  p_{\theta}(w_t \mid c),
-\end{equation*}
-ja koko aineiston häviöfunktio voidaan kirjoittaa muodossa
-\begin{equation*}
-  \mathcal{J}(\theta)
-  = - \frac{1}{|W|}\sum_{t=1}^{|W|} \log p_{\theta}(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
-\end{equation*}
+\[
+  \arg\max_\theta P(W;\theta)
+  =
+  \arg\min_\theta J(\theta;W).
+\]
 
-\subsection{Neuroverkot optimointiongelmana}
+Mikäli n-gram-malli parametrisoidaan kontekstikohtaisilla todennäköisyyksillä \(\theta_c = (\theta_{c,1}, \ldots, \theta_{c,|V|})\), voidaan koko havaintoaineiston uskottavuus kirjoittaa muodossa
+\[
+  P(W;\theta)
+  =
+  \prod_c \prod_{j=1}^{|V|}
+  \theta_{c,j}^{C_{c,j}},
+\]
+missä \(C_{c,j}\) on kontekstin \(c\) jälkeen esiintyvän tokenin \(v_j\) lukumäärä. Tällöin negatiivinen log-uskottavuus saa muodon
+\[
+  J(\theta;W)
+  =
+  -\frac{1}{|W|}
+  \sum_c \sum_{j=1}^{|V|}
+  C_{c,j}\log \theta_{c,j}.
+\]
 
-Edellä kuvattu n-gram-malli perustuu suoraan havaittuihin frekvensseihin tai niiden
-maksimointiin perustuvaan estimaattiin. Tällöin mallin parametrit määräytyvät
-käsin määritellyistä tilastollisista säännöistä, eikä mallilla ole kykyä oppia
-kontekstien välisiä monimutkaisempia riippuvuuksia. Neuroverkkopohjaisessa
-lähestymistavassa taas pyritään oppimaan suoraan funktio, joka kuvaa annetun
-kontekstin ja sitä seuraavan tokenin välistä yhteyttä.
+Kunkin kontekstin parametrit ovat toisistaan riippumattomia, ja ne on lisäksi rajoitettu todennäköisyysjakaumiksi siten, että
+\[
+  \sum_{j=1}^{|V|}\theta_{c,j}=1,
+  \qquad
+  \theta_{c,j}\ge 0.
+\]
+Näin ollen jokainen konteksti muodostaa erillisen multinomiaalisen optimointiongelman, jonka ratkaisu saadaan maksimoimalla vastaava log-uskottavuus. Tämä johtaa täsmälleen samaan estimaattiin kuin rivikohtaisesti normalisoitu frekvenssimatriisi:
 
-Yleisesti neuroverkko voidaan esittää peräkkäisten parametrisoitujen funktioiden
-kompositiona. Olkoon \(x \in \mathbb{R}^d\) syötevektori ja \(y \in \mathbb{R}^m\)
-mallin tuottama ulostulo. Tällöin yksi piilokerros voidaan kirjoittaa muodossa
+\[
+  \theta_{c,j}
+  =
+  \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}}.
+\]
 
-$$
-h = \phi(Wx + b),
-$$
+Tämä tulos osoittaa, että lukumatriisiin perustuva n-gram-malli on yhtäpitävä suurimman uskottavuuden estimoinnin kanssa. Samalla käy kuitenkin ilmi mallin keskeinen rajoite: jokaiselle mahdolliselle kontekstille tarvitaan oma todennäköisyysjakaumansa. Kun kontekstin pituus kasvaa, mahdollisten kontekstien määrä kasvaa nopeasti, mikä tekee mallista harvan ja vaikeasti skaalautuvan. Lisäksi harvinaisten tai kokonaan havaitsemattomien kontekstien tapauksessa suora frekvenssiperusteinen estimaatti ei yleisty hyvin.
 
-missä \(W \in \mathbb{R}^{k \times d}\) on painomatriisi, \(b \in \mathbb{R}^k\) on
-siirtovektori ja \(\phi\) on epälineaarinen aktivaatiofunktio, kuten ReLU,
-tanh tai sigmoid. Monikerroksisessa verkossa tämä prosessi toistetaan useita
-kertoja, jolloin saadaan
+Tästä syystä on perusteltua tarkastella malleja, joissa todennäköisyydet opitaan parametrisoidun funktion avulla eikä jokaiselle kontekstille tallenneta erillistä jakaumaa.
 
-$$
-h^{(1)} = \phi^{(1)}(W^{(1)}x + b^{(1)}), \quad
-h^{(2)} = \phi^{(2)}(W^{(2)}h^{(1)} + b^{(2)}), \ \ldots
-$$
+\subsection{Monikerroksinen perseptroni parametrisoituna n-gram-mallina}
 
-ja lopulta verkon tuottama lopputulos saadaan viimeisestä kerroksesta.
+Monikerroksinen perseptroni (engl.\ \emph{multilayer perceptron}, jatkossa \emph{MLP}) on eteenpäinsyöttävä keinotekoinen neuroverkkomalli, joka muodostaa pohjan monille syvän oppimisen arkkitehtuureille. Matemaattisesti MLP voidaan ymmärtää funktion approksimaattorina, joka muodostaa kuvauksen syöteavaruudesta tulosteavaruuteen. Tämä kuvaus toteutetaan yhdistettynä funktiona, joka koostuu useista peräkkäisistä laskentakerroksista. Kerrokset rakentuvat affiineista muunnoksista (lineaarisista kerroksista) ja niitä seuraavista epälineaarisista aktivaatiofunktioista, mikä mahdollistaa epälineaaristen riippuvuuksien mallintamisen. MLP:n toimintaa ohjaavat opittavat parametrit, tyypillisesti painomatriisit ja bias-vektorit, joiden arvot estimoidaan datasta minimoimalla valittua kohdefunktiota numeeristen optimointialgoritmien (kuten gradienttimenettelyn) avulla.
 
-Kielimallinnuksessa neuroverkon tehtävänä on arvioida todennäköisyysjakauma
-seuraavalle tokenille annetun kontekstin ehdolla. Jos konteksti on
-\(c = (w_{t-n+1}, \ldots, w_{t-1})\), pyritään oppimaan malli
+Kielimallinnuksen kontekstissa MLP-mallia hyödynnetään sekvenssien tilastolliseen mallintamiseen. Tällöin MLP määritellään parametrisoituna funktiona, joka saa syötteenään kielellisen kontekstin, eli edeltävien tokenien jonon, ja tuottaa tulosteenaan ehdollisen todennäköisyysjakauman sekvenssin seuraavalle tokenille. Formaalisesti tämä kielimallinnukseen sovellettu MLP voidaan esittää funktiona
+$$ f_\theta : C \to [0,1]^{|V|}, $$
+missä \(C\) kuvastaa mahdollisten kontekstien avaruutta, \(V\) on mallin sanasto (token-avaruus) ja \(\theta\) viittaa MLP:n opittaviin parametreihin. Kun mallille syötetään edeltävistä tokeneista koostuva konteksti \(c=(w_{t-n+1},\ldots,w_{t-1})\), funktio tuottaa todennäköisyysjakauman
+$$ p_\theta(\cdot \mid c) = f_\theta(c), $$
+joka kuvaa kunkin sanastoon kuuluvan tokenin esiintymistodennäköisyyttä syötekontekstin jatkeena.
 
-$$
-f_\theta : C \rightarrow [0,1]^{|V|},
-$$
+Konteksti voidaan esittää esimerkiksi one-hot-vektoreina tai tiheinä upotus-vektoreina. Tällöin MLP voi ensin muodostaa kontekstista piirre-esityksen (engl.\ \emph{feature representation}) ja sen jälkeen muuntaa sen ulostuloksi, joka normalisoidaan softmax-funktion avulla todennäköisyysjakaumaksi:
+$$ p_\theta(w_t=v_j\mid c) = \frac{\exp(z_j)}{\sum_{k=1}^{|V|}\exp(z_k)}, $$
+missä \(z_j\) on MLP:n antama ennen normalisointia oleva pistemäärä tokenille \(v_j\).
 
-missä \(f_\theta(c)\) on kontekstin \(c\) perusteella muodostettu todennäköisyysjakauma
-sanaston kaikille tokeneille. Käytännössä tämä toteutetaan usein siten, että
-konteksti muunnetaan numeeriseksi syötevektoriksi \(x_c\), jonka perusteella
-verkko tuottaa ensin niin sanotut logit-arvot \(z \in \mathbb{R}^{|V|}\). Näistä
-muodostetaan todennäköisyysjakauma softmax-funktiolla
+Yksinkertaisessa MLP-pohjaisessa n-gram-mallissa konteksti muunnetaan ensin piilokerroksen esitykseksi esimerkiksi muodossa
+$$ h=\phi(Wx+b), $$
+missä \(x\) on kontekstin syötevektori, \(W\) painomatriisi, \(b\) bias-termi ja \(\phi\) epälineaarinen aktivaatiofunktio. Tämän jälkeen piilokerroksesta lasketaan tokenien pistemäärät ja niistä edelleen softmax-jakauma.
 
-$$
-p_\theta(w_t = v_j \mid c) =
-\frac{\exp(z_j)}{\sum_{k=1}^{|V|} \exp(z_k)}.
-$$
+Mallin oppiminen perustuu samaan negatiiviseen log-uskottavuuteen kuin aiemmin:
+$$ J(\theta) = -\frac{1}{|W|} \sum_{t=1}^{|W|} \log p_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}). $$
 
-Tällöin mallin oppimistavoite voidaan esittää negatiivisena log-uskottavuuden
-keskiarvona, eli ristientropiahäviönä:
+Erona perinteiseen frekvenssipohjaiseen n-gram-malliin, joka estimoi jokaiselle mahdolliselle diskreetille kontekstille oman erillisen parametrivektorinsa, MLP approksimoi todennäköisyyksiä jatkuvassa avaruudessa. Koska erilliset tokenit projisoidaan ensin matalaulotteisiksi tiheiksi upotusvektoreiksi \(v \in \mathbb{R}^d\), malli oppii ilmaisemaan sanojen semanttisia ja syntaktisia samankaltaisuuksia vektoreiden välisinä etäisyyksinä. MLP funktio on sileä eli pieni muutos syöteavaruudessa tuottaa vain pienen muutoksen ulostulon todennäköisyysjakaumassa. Tästä johtuen kun malli kohtaa harvinaisen tai täysin uuden kontekstin, se kykenee yleistämään siihen interpoloimalla sellaisten koulutusdatassa esiintyneiden kontekstien perusteella, joiden upotusvektorit sijaitsevat lähellä sitä yhteisessä esitysavaruudessa \cite{bengio2003neural}. Tämä ratkaisee n-gram-malleja vaivaavan nollatodennäköisyyksien ongelman ilman erillisiä tasoitusmenetelmiä (engl. smoothing).
 
-$$
-J(\theta) = -\frac{1}{|W|} \sum_{t=1}^{|W|}
-\log p_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
-$$
-
-Tämä on sama tavoitefunktio kuin n-gram-mallin tapauksessa, mutta nyt
-todennäköisyydet eivät määräydy suoraan frekvenssien perusteella vaan ne opitaan
-parametrisella funktiolla \(f_\theta\). Tällöin optimointiongelmana on löytää
-parametrit \(\theta\), jotka minimoivat häviöfunktion
-
-$$
-\theta^\ast = \arg\min_\theta J(\theta).
-$$
-
-Neuroverkoissa tämän minimoinnin suorittaminen perustuu gradienttipohjaisiin
-optimointimenetelmiin, kuten stokastiseen gradienttilaskuun
-(stochastic gradient descent, SGD) ja sen muunnelmiin, esimerkiksi Adam-
-optimointiin. Parametreja päivitetään laskemalla häviöfunktion gradientti
-suhteessa verkon painoihin ja siirtoihin sekä siirtämällä parametreja tämän
-gradientin vastakkaiseen suuntaan. Tämä prosessi tunnetaan takaisinsyöttönä
-(backpropagation), ja sen avulla verkko oppii asteittain parantamaan seuraavan
-tokenin ennustamista.
-
-Keskeinen etu neuroverkkopohjaisessa mallissa on, että samaan aikaan kun se
-mallintaa kontekstin ja seuraavan tokenin välistä yhteyttä, se oppii myös
-jatkuvia esityksiä sanoille ja konteksteille. Toisin kuin lukumatriisipohjainen
-n-gram-malli, neuroverkko ei ole sidottu vain havaittuihin konteksteihin, vaan
-se voi yleistää osittain myös harvinaisempiin tai kokonaan näkemättömiin
-tilanteisiin oppimiensa painojen ja esitysten avulla. Tästä syystä neuroverkkoja
-voidaan pitää n-gram-ajattelun yleistyksenä, jossa tilastollinen taulukko korvataan
-opittavalla funktiolla.
+Frekvensispohjaista mallia koskevat tekniset rajoitteet, kuten eksponentiaalinen muistin tarpeen kasvu ja lukumatriisin harvuus, voidaan osittain ratkaista parametrisoimalla n-gram-malli MLP:n avulla. MLP-rakenteessa opittavat painomatriisit ja bias-vektorit jakautuvat kaikkien kontekstien kesken. Siten jokainen harjoitusnäyte päivittää koko neuroverkon parametreja, mikä parantaa myös sellaisten lauseiden ennustamista, joita ei ole esiintynyt opetusdatassa, mutta jotka jakavat samankaltaisia piirteitä opittujen esitysten kautta. Tämä tekee MLP-pohjaisesta n-gram-mallista huomattavasti joustavamman, muistikapasiteetiltaan tehokkaamman ja yleistyskykyisemmän kuin perinteinen frekvenssiperusteinen taulukkolukuesitys \cite{goodfellow2016deep,jurafsky2023speech}.
