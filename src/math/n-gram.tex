@@ -32,10 +32,6 @@ Käytännön kielimallinnuksessa sanastoa täydennetään usein erikoistokeneill
 joilla kuvataan sekvenssin rakennetta ja käsitellään harvinaisia havaintoja.
 Tällaisia ovat esimerkiksi aloitus- ja lopetusmerkit \(\langle s \rangle\) ja
 \(\langle /s \rangle\) sekä tuntemattoman tokenin merkki \(\langle unk \rangle\).
-Laajennettu sanasto voidaan kirjoittaa muodossa
-\[
-  V' = V \cup \{\langle s \rangle, \langle /s \rangle, \langle unk \rangle\}.
-\]
 
 Aloitus- ja lopetusmerkit ovat erityisen hyödyllisiä silloin, kun mallin
 ennustettavaa kontekstia halutaan määritellä myös sekvenssin reuna-alueilla.
@@ -58,26 +54,34 @@ ketjuttamalla ne yhdeksi syötevektoriksi
 Tämä muodostaa luonnollisen syötteen monille kontekstipohjaisille malleille,
 sillä se säilyttää kontekstin tokenijärjestyksen eksplisiittisesti.
 
-One-hot-enkoodaus muodostaa siten perustavanlaatuisen sillan diskreetin tekstin
+One-hot-enkoodaus muodostaa perustavanlaatuisen sillan tekstin
 ja numeeristen kielimallien välille. Se tarjoaa täsmällisen ja muodollisesti
 yksinkertaisen esitystavan, jonka varaan voidaan rakentaa sekä tilastollisia
 \(n\)-gram-malleja että myöhempiä neuroverkkopohjaisia kielimalleja.
 
 \subsection{N-gram-mallit}\label{sec:n-gram}
 
-N-gram-malli on klassinen tilastollinen kielimalli, jossa seuraavan sanan tai
-symbolin ennustaminen perustuu sitä edeltävään rajattuun kontekstiin. Mallin
-taustalla on \((n-1)\):n kertaluvun Markovin oletus, jonka mukaan nykyinen tokeni
-riippuu vain edeltävistä \((n-1)\) tokenista eikä koko aiemmasta historiallisesta
-kontekstista \cite{manning1999foundations,jurafsky2023speech}. Tällöin voidaan
-approksimoida ehdollinen todennäköisyys
+N-gram-malli on klassinen tilastollinen kielimalli, jossa sekvenssin seuraavan
+tokenin todennäköisyyttä estimoidaan rajallisen kontekstin perusteella.
+Menetelmä perustuu \((n-1)\):n kertaluvun Markov-oletukseen, jonka mukaan
+tokenin \(w_t\) todennäköisyys riippuu vain sitä välittömästi edeltävistä
+\((n-1)\) tokenista eikä koko aiemmasta historiasta
+. Markov-oletuksen perusteella
+ehdollinen todennäköisyys voidaan approksimoida muodossa
 \[
   P(w_t \mid w_1, w_2, \ldots, w_{t-1})
   \approx
   P(w_t \mid w_{t-n+1}, \ldots, w_{t-1}),
 \]
 missä \(w_t\) on ajanhetken \(t\) tokeni ja
-\((w_{t-n+1}, \ldots, w_{t-1})\) on sitä edeltävät \((n-1)\) tokenia.
+\((w_{t-n+1}, \ldots, w_{t-1})\) muodostaa sitä edeltävän
+\((n-1)\) tokenin kontekstin.
+
+N-gram-mallien historialliset juuret yhdistetään usein Shannonin varhaiseen
+informaatioteoreettiseen työhön, jossa luonnollista kieltä tarkasteltiin
+symbolijonojen tilastollisena prosessina ja eri kertalukujen approksimaatioita
+havainnollistettiin englannin kielellä
+\cite{shannon1948mathematical,shannon1951prediction}.
 
 Olkoon \(V = \{v_1, v_2, \ldots, v_{|V|}\}\) sanasto, jossa \(|V|\) on sanaston
 koko, ja \(W = (w_1, w_2, \ldots, w_{|W|})\) havaintoaineisto. N-gram-malli
@@ -111,75 +115,6 @@ ja joka edustaa ehdollista todennäköisyyttä
 \[
   P(w_t = v_j \mid (w_{t-n+1}, \ldots, w_{t-1}) = c).
 \]
-
-On helppo osoittaa, että nämä ehdolliset todennäköisyydet vastaavat suurimman
-uskottavuuden estimaatteja \cite{bishop2006pattern}. N-gram-mallin oletuksen
-mukaisesti koko havaintoaineiston todennäköisyys voidaan kirjoittaa
-ehdollisten todennäköisyyksien tulona
-\[
-  P(W) \approx \prod_{t=1}^{|W|}
-  P(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
-\]
-
-Kiinteän kontekstin \(c\) tapauksessa havaintojen lukumäärät
-\[
-  (C_{c,1}, C_{c,2}, \ldots, C_{c,|V|})
-\]
-muodostavat multinomijakauman otoksen, jossa parametreina ovat
-todennäköisyydet
-\[
-  \theta_c = (\theta_{c,1}, \theta_{c,2}, \ldots, \theta_{c,|V|}),
-  \qquad
-  \sum_{j=1}^{|V|} \theta_{c,j} = 1.
-\]
-Tällöin kyseisen kontekstin osalta uskottavuusfunktio voidaan kirjoittaa muodossa
-\[
-  L(\theta_c)
-  =
-  \prod_{j=1}^{|V|}
-  \theta_{c,j}^{C_{c,j}}.
-\]
-
-Tämän funktion maksimoiminen on ekvivalenttia sen logaritmin maksimoimiselle,
-joten saadaan Lagrangen funktio
-\[
-  \mathcal{L}_{\mathrm{Lag}}(\theta_c,\lambda)
-  =
-  \sum_{j=1}^{|V|} C_{c,j}\log \theta_{c,j}
-  +
-  \lambda\left(1-\sum_{j=1}^{|V|}\theta_{c,j}\right).
-\]
-Derivoimalla saadaan
-\[
-  \frac{\partial \mathcal{L}_{\mathrm{Lag}}}{\partial \theta_{c,j}}
-  =
-  \frac{C_{c,j}}{\theta_{c,j}}-\lambda
-  = 0,
-  \qquad
-  j=1,2,\ldots,|V|,
-\]
-josta seuraa
-\[
-  \theta_{c,j} = \frac{C_{c,j}}{\lambda}.
-\]
-Kun tämä sijoitetaan normalisaatioehtoon, saadaan
-\[
-  \lambda
-  =
-  \sum_{k=1}^{|V|} C_{c,k},
-\]
-ja siten
-\[
-  \theta_{c,j}
-  =
-  \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}},
-  \qquad
-  j=1,2,\ldots,|V|.
-\]
-
-Tämä on täsmälleen rivikohtaisesti normalisoitu frekvenssimatriisi. Näin ollen
-n-gram-mallin suurimman uskottavuuden estimaatti ja laskumatriisiin perustuva
-estimaatti ovat yhtäpitäviä.
 
 Tekstin generointi n-gram-mallilla tapahtuu iteratiivisesti hyödyntämällä
 frekvenssimatriisia \(F\). Ensin valitaan alkukonteksti, esimerkiksi
@@ -263,11 +198,7 @@ voivat hyödyntää tokenien välisiä yhteyksiä yhteisen esitystilan kautta.
 Upotusvektorit ovat myös yhteensopivia erikoistokenien kanssa. Esimerkiksi
 aloitusmerkki \(\langle s \rangle\), lopetusmerkki \(\langle /s \rangle\) ja
 tuntematon token \(\langle unk \rangle\) voidaan sisällyttää laajennettuun
-sanastoon
-\[
-  V' = V \cup \{\langle s \rangle, \langle /s \rangle, \langle unk \rangle\},
-\]
-jolloin niille voidaan oppia omat upotuksensa samalla tavalla kuin muillekin
+sanastoon jolloin niille voidaan oppia omat upotuksensa samalla tavalla kuin muillekin
 tokeneille. Näin myös sekvenssien rakenteelliset elementit voidaan käsitellä
 yhtenäisesti muun sanaston kanssa.
 
@@ -381,6 +312,72 @@ havaintofrekvenssien avulla, \(n\)-gram-malli voidaan esittää
 optimointitehtävänä. Tällöin tavoitteena on löytää parametrit \(\theta\), jotka
 maksimoivat havaintoaineiston uskottavuuden \(P(W;\theta)\).
 
+N-gram-mallin oletuksen
+mukaisesti koko havaintoaineiston todennäköisyys voidaan kirjoittaa
+ehdollisten todennäköisyyksien tulona
+\[
+  P(W) \approx \prod_{t=1}^{|W|}
+  P(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
+\]
+
+Kiinteän kontekstin \(c\) tapauksessa havaintojen lukumäärät
+\[
+  (C_{c,1}, C_{c,2}, \ldots, C_{c,|V|})
+\]
+muodostavat multinomijakauman otoksen, jossa parametreina ovat
+todennäköisyydet
+\[
+  \theta_c = (\theta_{c,1}, \theta_{c,2}, \ldots, \theta_{c,|V|}),
+  \qquad
+  \sum_{j=1}^{|V|} \theta_{c,j} = 1.
+\]
+Tällöin kyseisen kontekstin osalta uskottavuusfunktio voidaan kirjoittaa muodossa
+\[
+  L(\theta_c)
+  =
+  \prod_{j=1}^{|V|}
+  \theta_{c,j}^{C_{c,j}}.
+\]
+
+Tämän funktion maksimoiminen on ekvivalenttia sen logaritmin maksimoimiselle,
+joten saadaan Lagrangen funktio
+\[
+  \mathcal{L}_{\mathrm{Lag}}(\theta_c,\lambda)
+  =
+  \sum_{j=1}^{|V|} C_{c,j}\log \theta_{c,j}
+  +
+  \lambda\left(1-\sum_{j=1}^{|V|}\theta_{c,j}\right).
+\]
+Derivoimalla saadaan
+\[
+  \frac{\partial \mathcal{L}_{\mathrm{Lag}}}{\partial \theta_{c,j}}
+  =
+  \frac{C_{c,j}}{\theta_{c,j}}-\lambda
+  = 0,
+  \qquad
+  j=1,2,\ldots,|V|,
+\]
+josta seuraa
+\[
+  \theta_{c,j} = \frac{C_{c,j}}{\lambda}.
+\]
+Kun tämä sijoitetaan normalisaatioehtoon, saadaan
+\[
+  \lambda
+  =
+  \sum_{k=1}^{|V|} C_{c,k},
+\]
+ja siten
+\[
+  \theta_{c,j}
+  =
+  \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}},
+  \qquad
+  j=1,2,\ldots,|V|.
+\]
+
+Tämä on täsmälleen rivikohtaisesti normalisoitu frekvenssimatriisi, joka esitettiin luvussa \ref{sec:n-gram}.
+
 Koska koneoppimisessa optimointiongelmat esitetään tyypillisesti
 minimointimuodossa, on luonnollista määritellä häviöfunktioksi negatiivinen
 log-uskottavuus. Kun havaintoaineisto koostuu konteksti--seuraava tokeni
@@ -450,7 +447,7 @@ tapauksessa suora frekvenssiperusteinen estimaatti ei yleisty hyvin.
 Optimointinäkökulma tekee näkyväksi, että kielimallinnuksen ytimessä on
 ehdollisten todennäköisyyksien parametrinen estimointi. Tästä näkökulmasta on
 luontevaa siirtyä malleihin, joissa todennäköisyyksiä ei enää talleteta
-erillisinä taulukoituina jakaumina, vaan ne opitaan jatkuvassa avaruudessa
+erillisinä taulukoituina jakaumina, vaan ne opitaan jatkuvassa avaruudessa yleisen
 parametrisoidun funktion avulla.
 
 \subsection{Monikerroksinen perseptroni parametrisoituna n-gram-mallina}
