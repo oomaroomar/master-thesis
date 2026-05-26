@@ -307,148 +307,109 @@ myöhempien neuroverkkopohjaisten kielimallien välille.
 
 \subsection{N-gram-malli optimointiongelmana}
 
-Sen sijaan, että mallin parametrit määriteltäisiin suoraan
-havaintofrekvenssien avulla, \(n\)-gram-malli voidaan esittää
-optimointitehtävänä. Tällöin tavoitteena on löytää parametrit \(\theta\), jotka
-maksimoivat havaintoaineiston uskottavuuden \(P(W;\theta)\).
+Luvussa \ref{sec:n-gram} \(n\)-gram-malli esitettiin lukumääriin ja niiden
+normalisointiin perustuvana frekvenssimallina. Sama malli voidaan kuitenkin
+tulkita myös suurimman uskottavuuden estimointina, mikä tekee yhteyden
+myöhempiin parametrisiin kielimalleihin näkyväksi.
 
-N-gram-mallin oletuksen
-mukaisesti koko havaintoaineiston todennäköisyys voidaan kirjoittaa
-ehdollisten todennäköisyyksien tulona
-\[
-  P(W) \approx \prod_{t=1}^{|W|}
-  P(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
-\]
-
-Kiinteän kontekstin \(c\) tapauksessa havaintojen lukumäärät
-\[
-  (C_{c,1}, C_{c,2}, \ldots, C_{c,|V|})
-\]
-muodostavat multinomijakauman otoksen, jossa parametreina ovat
-todennäköisyydet
+Olkoon mallin parametreina jokaiselle kontekstille
+\(c = (w_{t-n+1}, \ldots, w_{t-1})\) määritelty todennäköisyysjakauma
 \[
   \theta_c = (\theta_{c,1}, \theta_{c,2}, \ldots, \theta_{c,|V|}),
   \qquad
-  \sum_{j=1}^{|V|} \theta_{c,j} = 1.
-\]
-Tällöin kyseisen kontekstin osalta uskottavuusfunktio voidaan kirjoittaa muodossa
-\[
-  L(\theta_c)
-  =
-  \prod_{j=1}^{|V|}
-  \theta_{c,j}^{C_{c,j}}.
-\]
-
-Tämän funktion maksimoiminen on ekvivalenttia sen logaritmin maksimoimiselle,
-joten saadaan Lagrangen funktio
-\[
-  \mathcal{L}_{\mathrm{Lag}}(\theta_c,\lambda)
-  =
-  \sum_{j=1}^{|V|} C_{c,j}\log \theta_{c,j}
-  +
-  \lambda\left(1-\sum_{j=1}^{|V|}\theta_{c,j}\right).
-\]
-Derivoimalla saadaan
-\[
-  \frac{\partial \mathcal{L}_{\mathrm{Lag}}}{\partial \theta_{c,j}}
-  =
-  \frac{C_{c,j}}{\theta_{c,j}}-\lambda
-  = 0,
+  \sum_{j=1}^{|V|} \theta_{c,j} = 1,
   \qquad
-  j=1,2,\ldots,|V|,
+  \theta_{c,j} \ge 0,
 \]
-josta seuraa
+missä \(\theta_{c,j} = P_\theta(w_t = v_j \mid c)\). Markov-oletuksen nojalla havaintoaineiston
+\(W = (w_1, \ldots, w_{|W|})\) uskottavuus voidaan kirjoittaa muodossa
 \[
-  \theta_{c,j} = \frac{C_{c,j}}{\lambda}.
-\]
-Kun tämä sijoitetaan normalisaatioehtoon, saadaan
-\[
-  \lambda
-  =
-  \sum_{k=1}^{|V|} C_{c,k},
-\]
-ja siten
-\[
-  \theta_{c,j}
-  =
-  \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}},
-  \qquad
-  j=1,2,\ldots,|V|.
+  P(W;\theta)
+  \approx
+  \prod_{t=1}^{|W|}
+  P_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
 \]
 
-Tämä on täsmälleen rivikohtaisesti normalisoitu frekvenssimatriisi, joka esitettiin luvussa \ref{sec:n-gram}.
-
-Koska koneoppimisessa optimointiongelmat esitetään tyypillisesti
-minimointimuodossa, on luonnollista määritellä häviöfunktioksi negatiivinen
-log-uskottavuus. Kun havaintoaineisto koostuu konteksti--seuraava tokeni
--pareista, voidaan kirjoittaa
-\[
-  J(\theta;W)
-  =
-  -\frac{1}{|W|}
-  \sum_{t=1}^{|W|}
-  \log P_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
-\]
-
-Tämä suure kuvaa keskimääräistä negatiivista log-todennäköisyyttä
-havaintoaineistossa, ja sen minimointi on täsmälleen ekvivalenttia
-uskottavuuden maksimoinnin kanssa. Toisin sanoen
-\[
-  \arg\max_\theta P(W;\theta)
-  =
-  \arg\min_\theta J(\theta;W).
-\]
-
-Mikäli \(n\)-gram-malli parametrisoidaan kontekstikohtaisilla
-todennäköisyyksillä
-\(\theta_c = (\theta_{c,1}, \ldots, \theta_{c,|V|})\), voidaan koko
-havaintoaineiston uskottavuus kirjoittaa muodossa
+Kun aineisto ryhmitellään kontekstin \(c\) ja sitä seuraavan tokenin \(v_j\)
+mukaan, saadaan
 \[
   P(W;\theta)
   =
   \prod_c \prod_{j=1}^{|V|}
   \theta_{c,j}^{C_{c,j}},
 \]
-missä \(C_{c,j}\) on kontekstin \(c\) jälkeen esiintyvän tokenin \(v_j\)
-lukumäärä. Tällöin negatiivinen log-uskottavuus saa muodon
+missä \(C_{c,j}\) on niiden havaintojen lukumäärä, joissa kontekstia \(c\)
+seuraa tokeni \(v_j\).
+
+Koneoppimisessa optimointi esitetään tavallisesti minimointitehtävänä, joten
+määritellään häviöksi negatiivinen log-uskottavuus
 \[
   J(\theta;W)
   =
-  -\frac{1}{|W|}
-  \sum_c \sum_{j=1}^{|V|}
-  C_{c,j}\log \theta_{c,j}.
+  -\log P(W;\theta)
+  =
+  -\sum_c \sum_{j=1}^{|V|}
+  C_{c,j} \log \theta_{c,j}.
+\]
+Koska parametrit \(\theta_c\) esiintyvät vain omaa
+kontekstiaan vastaavissa termeissä, optimointiongelma hajoaa erillisiksi
+kontekstikohtaisiksi osatehtäviksi:
+\[
+  \min_{\theta_c}
+  -\sum_{j=1}^{|V|} C_{c,j} \log \theta_{c,j}
+  \qquad
+  \text{s.e.}
+  \qquad
+  \sum_{j=1}^{|V|}\theta_{c,j} = 1.
 \]
 
-Kunkin kontekstin parametrit ovat toisistaan riippumattomia, ja ne on lisäksi
-rajoitettu todennäköisyysjakaumiksi siten, että
+Tämä voidaan ratkaista Lagrangen menetelmällä. Määritellään
 \[
-  \sum_{j=1}^{|V|}\theta_{c,j}=1,
-  \qquad
-  \theta_{c,j}\ge 0.
+  \mathcal{L}_{\mathrm{Lag}}(\theta_c,\lambda)
+  =
+  \sum_{j=1}^{|V|}
+  C_{c,j}\log \theta_{c,j}
+  +
+  \lambda\left(1-\sum_{j=1}^{|V|}\theta_{c,j}\right).
 \]
-Näin ollen jokainen konteksti muodostaa erillisen multinomiaalisen
-optimointiongelman, jonka ratkaisu saadaan maksimoimalla vastaava
-log-uskottavuus. Tämä johtaa täsmälleen samaan estimaattiin kuin
-rivikohtaisesti normalisoitu frekvenssimatriisi:
+Derivoimalla \(\theta_{c,j}\):n suhteen saadaan
+\[
+  \frac{\partial \mathcal{L}_{\mathrm{Lag}}}{\partial \theta_{c,j}}
+  =
+  \frac{C_{c,j}}{\theta_{c,j}} - \lambda = 0,
+\]
+mistä seuraa
+\[
+  \theta_{c,j} = \frac{C_{c,j}}{\lambda}.
+\]
+Kun tämä sijoitetaan normalisaatioehtoon
+\[
+  \sum_{j=1}^{|V|}\theta_{c,j} = 1,
+\]
+saadaan
+\[
+  \lambda = \sum_{k=1}^{|V|} C_{c,k},
+\]
+ja siten
 \[
   \theta_{c,j}
   =
   \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}}.
 \]
 
-Tämä tulos osoittaa, että lukumatriisiin perustuva \(n\)-gram-malli on
-yhtäpitävä suurimman uskottavuuden estimoinnin kanssa. Samalla käy kuitenkin
-ilmi mallin keskeinen rajoite: jokaiselle mahdolliselle kontekstille tarvitaan
-oma todennäköisyysjakaumansa. Kun kontekstin pituus kasvaa, mahdollisten
-kontekstien määrä kasvaa nopeasti, mikä tekee mallista harvan ja vaikeasti
-skaalautuvan. Lisäksi harvinaisten tai kokonaan havaitsemattomien kontekstien
-tapauksessa suora frekvenssiperusteinen estimaatti ei yleisty hyvin.
+Tulos osoittaa, että suurimman uskottavuuden estimaatti on täsmälleen sama kuin
+luvussa \ref{sec:n-gram} määritelty rivikohtaisesti normalisoitu
+frekvenssimatriisi \(F\). Toisin sanoen klassinen frekvenssipohjainen
+\(n\)-gram-malli voidaan tulkita parametrisen mallin
+maksimiuskottavuusratkaisuna.
 
-Optimointinäkökulma tekee näkyväksi, että kielimallinnuksen ytimessä on
-ehdollisten todennäköisyyksien parametrinen estimointi. Tästä näkökulmasta on
-luontevaa siirtyä malleihin, joissa todennäköisyyksiä ei enää talleteta
-erillisinä taulukoituina jakaumina, vaan ne opitaan jatkuvassa avaruudessa yleisen
-parametrisoidun funktion avulla.
+Tämä näkökulma tekee samalla näkyväksi mallin keskeisen rajoitteen: jokaiselle
+mahdolliselle kontekstille tarvitaan oma erillinen todennäköisyysjakaumansa.
+Kuten luvussa \ref{sec:n-gram} nähtiin, kontekstin pituuden kasvaessa parametrien määrä kasvaa nopeasti, jolloin malli
+muuttuu harvaksi ja yleistää heikosti harvinaisiin tai havaitsemattomiin
+konteksteihin. Tästä syystä on luontevaa siirtyä malleihin, joissa ehdolliset
+todennäköisyydet opitaan jaetun parametrisaation avulla jatkuvassa avaruudessa
+sen sijaan, että ne talletettaisiin erillisinä taulukoituina jakaumina.
 
 \subsection{Monikerroksinen perseptroni parametrisoituna n-gram-mallina}
 
