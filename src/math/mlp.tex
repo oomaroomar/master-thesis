@@ -1,0 +1,245 @@
+\subsection{N-gram-malli optimointiongelmana}
+
+Luvussa \ref{sec:n-gram} \(n\)-gram-malli esitettiin lukumääriin ja niiden
+normalisointiin perustuvana frekvenssimallina. Sama malli voidaan kuitenkin
+tulkita myös suurimman uskottavuuden estimointina, mikä tekee yhteyden
+myöhempiin parametrisiin kielimalleihin näkyväksi.
+
+Olkoon mallin parametreina jokaiselle kontekstille
+\(c = (w_{t-n+1}, \ldots, w_{t-1})\) määritelty todennäköisyysjakauma
+\[
+  \theta_c = (\theta_{c,1}, \theta_{c,2}, \ldots, \theta_{c,|V|}),
+  \qquad
+  \sum_{j=1}^{|V|} \theta_{c,j} = 1,
+  \qquad
+  \theta_{c,j} \ge 0,
+\]
+missä \(\theta_{c,j} = P_\theta(w_t = v_j \mid c)\). Markov-oletuksen nojalla havaintoaineiston
+\(W = (w_1, \ldots, w_{|W|})\) uskottavuus voidaan kirjoittaa muodossa
+\[
+  P(W;\theta)
+  \approx
+  \prod_{t=1}^{|W|}
+  P_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
+\]
+
+Kun aineisto ryhmitellään kontekstin \(c\) ja sitä seuraavan tokenin \(v_j\)
+mukaan, saadaan
+\[
+  P(W;\theta)
+  =
+  \prod_c \prod_{j=1}^{|V|}
+  \theta_{c,j}^{C_{c,j}},
+\]
+missä \(C_{c,j}\) on niiden havaintojen lukumäärä, joissa kontekstia \(c\)
+seuraa tokeni \(v_j\).
+
+Koneoppimisessa optimointi esitetään tavallisesti minimointitehtävänä, joten
+määritellään häviöksi negatiivinen log-uskottavuus
+\[
+  J(\theta;W)
+  =
+  -\log P(W;\theta)
+  =
+  -\sum_c \sum_{j=1}^{|V|}
+  C_{c,j} \log \theta_{c,j}.
+\]
+Koska parametrit \(\theta_c\) esiintyvät vain omaa
+kontekstiaan vastaavissa termeissä, optimointiongelma hajoaa erillisiksi
+kontekstikohtaisiksi osatehtäviksi:
+\[
+  \min_{\theta_c}
+  -\sum_{j=1}^{|V|} C_{c,j} \log \theta_{c,j}
+  \qquad
+  \text{s.e.}
+  \qquad
+  \sum_{j=1}^{|V|}\theta_{c,j} = 1.
+\]
+
+Tämä voidaan ratkaista Lagrangen menetelmällä. Määritellään
+\[
+  \mathcal{L}_{\mathrm{Lag}}(\theta_c,\lambda)
+  =
+  \sum_{j=1}^{|V|}
+  C_{c,j}\log \theta_{c,j}
+  +
+  \lambda\left(1-\sum_{j=1}^{|V|}\theta_{c,j}\right).
+\]
+Derivoimalla \(\theta_{c,j}\):n suhteen saadaan
+\[
+  \frac{\partial \mathcal{L}_{\mathrm{Lag}}}{\partial \theta_{c,j}}
+  =
+  \frac{C_{c,j}}{\theta_{c,j}} - \lambda = 0,
+\]
+mistä seuraa
+\[
+  \theta_{c,j} = \frac{C_{c,j}}{\lambda}.
+\]
+Kun tämä sijoitetaan normalisaatioehtoon
+\[
+  \sum_{j=1}^{|V|}\theta_{c,j} = 1,
+\]
+saadaan
+\[
+  \lambda = \sum_{k=1}^{|V|} C_{c,k},
+\]
+ja siten
+\[
+  \theta_{c,j}
+  =
+  \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}}.
+\]
+
+Tulos osoittaa, että suurimman uskottavuuden estimaatti on täsmälleen sama kuin
+luvussa \ref{sec:n-gram} määritelty rivikohtaisesti normalisoitu
+frekvenssimatriisi \(F\). Toisin sanoen klassinen frekvenssipohjainen
+\(n\)-gram-malli voidaan tulkita parametrisen mallin
+maksimiuskottavuusratkaisuna.
+
+Tämä näkökulma tekee samalla näkyväksi mallin keskeisen rajoitteen: jokaiselle
+mahdolliselle kontekstille tarvitaan oma erillinen todennäköisyysjakaumansa.
+Kuten luvussa \ref{sec:n-gram} nähtiin, kontekstin pituuden kasvaessa parametrien määrä kasvaa nopeasti, jolloin malli
+muuttuu harvaksi ja yleistää heikosti harvinaisiin tai havaitsemattomiin
+konteksteihin. Tästä syystä on luontevaa siirtyä malleihin, joissa ehdolliset
+todennäköisyydet opitaan jaetun parametrisaation avulla jatkuvassa avaruudessa
+sen sijaan, että ne talletettaisiin erillisinä taulukoituina jakaumina.
+
+\subsection{Monikerroksinen perseptroni seuraavan tokenin ennustajana}
+
+Seuraavan tokenin ehdollista jakaumaa voidaan
+approksimoida parametrisoidulla neuroverkolla. Yksi yksinkertainen ja
+historiallisesti keskeinen ratkaisu tähän on monikerroksinen perseptroni
+(engl.\ \emph{multilayer perceptron}, MLP).
+
+MLP on eteenpäinsyöttävä keinotekoinen neuroverkko, joka koostuu
+syötekerroksesta, yhdestä tai useammasta piilokerroksesta sekä
+ulostulokerroksesta. Sen historialliset juuret ovat Frank Rosenblattin
+perseptronitutkimuksessa, erityisesti artikkelissa \emph{The Perceptron: A
+Probabilistic Model for Information Storage and Organization in the Brain}
+\cite{rosenblatt1958perceptron} sekä teoksessa \emph{Principles of
+Neurodynamics: Perceptrons and the Theory of Brain Mechanisms}
+\cite{rosenblatt1962principles}. Näissä töissä esitettiin varhaisia
+perseptronimalleja ja kerroksellisia rakenteita, mutta tehokas yleiskäyttöinen
+menetelmä kaikkien kerrosten parametrien oppimiseen puuttui vielä.
+
+Neuroverkkojen varhaista kehitystä hidasti merkittävästi Marvin Minskyn ja
+Seymour Papertin teos \emph{Perceptrons: An Introduction to Computational
+Geometry} \cite{minsky1969perceptrons}, jossa analysoitiin yksikerroksisten
+perseptronien rajoitteita. Teos osoitti, että yksinkertainen perseptroni ei voi
+ratkaista tiettyjä lineaarisesti erottamattomia ongelmia, kuten XOR-tehtävää.
+Vaikka kritiikki kohdistui ensisijaisesti yksikerroksisiin malleihin, sen
+vaikutus ulottui laajemmin neuroverkkotutkimukseen ja osaltaan vähensi
+kiinnostusta monikerroksisiin verkkoihin useiden vuosien ajaksi.
+
+Monikerroksisten verkkojen tehokkaan opettamisen kannalta keskeinen teoreettinen
+lähtökohta syntyi Seppo Linnainmaan työssä \emph{The Representation of the
+  Cumulative Rounding Error of an Algorithm as a Taylor Expansion of the Local
+Rounding Errors} \cite{linnainmaa1970taylor}, jossa esitettiin käänteisen suunnan automaattinen derivointi menetelmä.
+Paul Werbos puolestaan sovelsi tätä ajatusta neuroverkkoihin väitöskirjassaan
+\emph{Beyond Regression: New Tools for Prediction and Analysis in the Behavioral
+Sciences} \cite{werbos1974beyond} ja myöhemmin artikkelissaan
+\emph{Backpropagation Through Time: What It Does and How to Do It}
+\cite{werbos1990bptt}, jossa termi vastavirta-algoritmi (engl. \emph{backpropagation}) vakiintui.
+
+Monikerroksisten eteenpäinsyöttävien verkkojen läpimurto
+tapahtui kuitenkin vasta, kun David Rumelhart, Geoffrey Hinton ja Ronald
+Williams popularisoivat vastavirta-algoritmin artikkelissaan
+\emph{Learning Representations by Back-Propagating Errors}
+\cite{rumelhart1986learning}. Tämä työ teki MLP:stä käytännöllisen
+gradienttipohjaisesti opetettavan funktionapproksimaattorin ja loi perustan
+myöhemmälle syväoppimiselle.
+
+Matemaattisesti MLP voidaan ymmärtää funktion approksimaattorina, joka muodostaa
+kuvauksen syöteavaruudesta tulosteavaruuteen. Tämä kuvaus toteutetaan
+yhdistettynä funktiona, joka koostuu peräkkäisistä affiineista muunnoksista ja
+niitä seuraavista epälineaarisista aktivaatiofunktioista. Tämän ansiosta MLP
+kykenee mallintamaan sellaisia syötteen ja tulosteen välisiä riippuvuuksia,
+joita lineaarinen malli ei voi esittää. Mallin toimintaa ohjaavat opittavat
+parametrit, tyypillisesti painomatriisit ja bias-vektorit, joiden arvot
+estimoidaan datasta minimoimalla valittua kohdefunktiota numeerisilla
+optimointimenetelmillä, kuten gradienttimenettelyllä
+\cite{goodfellow2016deep}.
+
+Olkoon \(c\) tarkasteltava konteksti ja
+\(x(c)\in\mathbb{R}^{d_0}\) sitä vastaava syötevektori.
+Monikerroksinen perceptroni muuntaa tämän syötteen vaiheittain
+piirre-esitykseksi soveltamalla peräkkäisiä affiinisia muunnoksia ja
+epälineaarisia aktivaatioita. Jos mallissa on \(L\) piilokerrosta,
+voidaan sen laskenta esittää muodossa
+\[
+  h^{(0)} = x(c),
+\]
+\[
+  a^{(\ell)} = W^{(\ell)} h^{(\ell-1)} + b^{(\ell)},
+  \qquad \ell = 1,\dots,L,
+\]
+\[
+  h^{(\ell)} = \phi^{(\ell)}\!\left(a^{(\ell)}\right),
+  \qquad \ell = 1,\dots,L,
+\]
+missä \(W^{(\ell)}\in\mathbb{R}^{d_\ell\times d_{\ell-1}}\) on kerroksen
+\(\ell\) painomatriisi, \(b^{(\ell)}\in\mathbb{R}^{d_\ell}\) sen bias-vektori,
+\(a^{(\ell)}\in\mathbb{R}^{d_\ell}\) affiinisen muunnoksen tulos ja
+\(h^{(\ell)}\in\mathbb{R}^{d_\ell}\) kerroksen \(\ell\) piiloesitys.
+Funktio \(\phi^{(\ell)}\) on kerroksen epälineaarinen aktivaatiofunktio.
+
+Viimeisestä piilokerroksesta muodostetaan ulostulon
+normalisoimattomat pistemäärät eli logitit
+\[
+  z = W^{(\mathrm{out})} h^{(L)} + b^{(\mathrm{out})},
+\]
+missä \(W^{(\mathrm{out})}\in\mathbb{R}^{|V|\times d_L}\),
+\(b^{(\mathrm{out})}\in\mathbb{R}^{|V|}\) ja \(z\in\mathbb{R}^{|V|}\).
+Vektorin \(z\) komponentti \(z_j\) vastaa sanaston tokenin \(v_j\)
+normalisoimatonta pistemäärää. Näistä muodostetaan ehdollinen
+todennäköisyysjakauma softmax-funktiolla:
+\[
+  p_\theta(w_t = v_j \mid c)
+  =
+  \frac{\exp(z_j)}{\sum_{k=1}^{|V|}\exp(z_k)},
+  \qquad j=1,\dots,|V|.
+\]
+
+MLP muuntaa kontekstin ensin yhden tai usean kerroksen kautta
+abstraktiksi piirre-esitykseksi, jonka perusteella se laskee jokaiselle
+sanaston tokenille pistemäärän ja normalisoi nämä pistemäärät
+todennäköisyysjakaumaksi.
+
+Mallin oppiminen perustuu samaan negatiiviseen log-uskottavuuden minimointiin kuin \(n\)-gram-mallissa:
+\[
+  J(\theta)
+  =
+  -\frac{1}{|W|}
+  \sum_{t=1}^{|W|}
+  \log p_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
+\]
+
+Erona perinteiseen frekvenssipohjaiseen \(n\)-gram-malliin, joka estimoi
+jokaiselle mahdolliselle diskreetille kontekstille oman erillisen
+parametrivektorinsa, MLP approksimoi todennäköisyyksiä jatkuvassa avaruudessa.
+Koska erilliset tokenit projisoidaan matalaulotteisiksi tiheiksi
+upotusvektoreiksi \(v \in \mathbb{R}^d\), malli oppii esittämään sanojen
+semanttisia ja syntaktisia samankaltaisuuksia vektoriesitysten avulla.
+MLP:n approksimoima funktio on jatkuva ja tyypillisesti sileä siinä mielessä,
+että pienet muutokset syöteavaruudessa voivat johtaa samankaltaisiin
+ulostulojakaumiin. Tästä syystä malli kykenee yleistämään myös harvinaisiin tai
+aiemmin havaitsemattomiin konteksteihin hyödyntämällä sellaisten
+koulutusdatassa esiintyneiden kontekstien rakennetta, joiden esitykset
+sijaitsevat lähellä niitä yhteisessä avaruudessa \cite{bengio2003neural}. Tämä
+lieventää klassisia \(n\)-gram-malleja vaivaavaa nollatodennäköisyyksien
+ongelmaa ilman erillisiä tasoitusmenetelmiä.
+
+Frekvenssipohjaista mallia koskevat tekniset rajoitteet, kuten
+eksponentiaalinen muistitarpeen kasvu ja lukumatriisin harvuus, voidaan siten
+osittain ratkaista MLP-mallin avulla.
+MLP-rakenteessa opittavat painomatriisit ja bias-vektorit jakautuvat kaikkien
+kontekstien kesken. Siten jokainen harjoitusnäyte päivittää koko neuroverkon
+parametreja, mikä parantaa myös sellaisten lauseiden ennustamista, joita ei ole
+esiintynyt opetusdatassa, mutta jotka jakavat samankaltaisia piirteitä
+opittujen esitysten kautta. Tämä tekee MLP-pohjaisesta \(n\)-gram-mallista
+huomattavasti joustavamman, muistikapasiteetiltaan tehokkaamman ja
+yleistyskykyisemmän kuin perinteinen frekvenssiperusteinen
+taulukkolukuesitys \cite{bengio2003neural,goodfellow2016deep,jurafsky2023speech}.
+
+\section{Vastavirta-algoritmi}
+\section{Attention-mekanismi}

@@ -1,0 +1,162 @@
+\section{Jatkuvat esitykset ja neuroverkkopohjainen kielimallinnus}
+
+\subsection{Upotusvektorit}
+
+One-hot-esitys tarjoaa yksikäsitteisen tavan kuvata tokeneita, mutta sen
+heikkoutena on, ettei se sisällä eksplisiittistä tietoa tokenien välisistä
+suhteista. Jokaisen tokenin vektorikuvaus on ortogonaalinen kaikkiin muihin
+nähden, jolloin esimerkiksi sanan \emph{kissa} suhde sanaan \emph{koira} on
+rakenteellisesti sama kuin sen suhde sanaan \emph{tietokone}. Tämän rajoitteen
+ylittämiseksi käytetään upotusvektoreita (engl.\ \emph{embedding vectors}),
+joissa kukin token kuvataan tiheällä reaaliarvoisella vektorilla.
+
+Olkoon edelleen \(V = \{v_1, v_2, \dots, v_{|V|}\}\) sanasto. Tällöin tokenille
+\(v_j\) määritellään upotus
+\[
+  e(v_j) \in \mathbb{R}^d,
+\]
+missä \(d \ll |V|\) on upotustilan dimensio.
+
+Upotusvektorit voidaan esittää myös matriisimuodossa. Olkoon
+\[
+  E \in \mathbb{R}^{d \times |V|}
+\]
+upotusmatriisi, jonka sarakkeet vastaavat sanaston tokeneita. Tällöin tokenin
+\(v_j\) upotus saadaan one-hot-vektorin \(x(v_j)\) avulla muodossa
+\[
+  e(v_j) = E x(v_j).
+\]
+Koska one-hot-vektori sisältää täsmälleen yhden epä-nollan komponentin, tämä
+kertolasku palauttaa matriisista \(E\) juuri tokenia \(v_j\) vastaavan
+sarakkeen.
+
+Upotusvektorien keskeinen etu liittyy siihen, että samankaltaisten tokenien
+upotukset voivat sijaita lähellä toisiaan upotustilassa. Tällöin tokenien
+geometrinen läheisyys voi heijastaa niiden semanttista tai syntaktista
+samankaltaisuutta. Esimerkiksi sanat ``kuningas'' ja ``kuningatar'' voivat saada
+upotukset, jotka ovat lähellä toisiaan, koska ne esiintyvät samankaltaisissa
+konteksteissa ja jakavat merkityksellisiä piirteitä. Upotusvektorit tarjoavat
+siten rikkaamman ja joustavamman esityksen tokenien välisistä suhteista kuin
+one-hot-esitys, jossa kaikki tokenit ovat yhtä kaukana toisistaan.
+
+Käytännön kielimallinnuksessa upotukset opitaan tavallisesti tehtäväkohtaisesti
+osana laajempaa optimointia. Jos korpus on
+\(W = (w_1, w_2, \dots, w_{|W|})\), voidaan jokainen tokeni \(w_t \in V\)
+korvata sitä vastaavalla upotusvektorilla \(e(w_t)\). Tällöin koko korpusta
+voidaan tarkastella tiheiden vektorien jonona
+\[
+  E_W = (e(w_1), e(w_2), \dots, e(w_{|W|})).
+\]
+Tämä esitystapa on erityisen hyödyllinen neuroverkoissa, joissa upotukset
+muodostavat syötteen myöhemmille kerroksille ja joissa opittavat parametrit
+voivat hyödyntää tokenien välisiä yhteyksiä yhteisen esitystilan kautta.
+
+Upotusvektorit ovat myös yhteensopivia erikoistokenien kanssa. Esimerkiksi
+aloitusmerkki \(\langle s \rangle\), lopetusmerkki \(\langle /s \rangle\) ja
+tuntematon token \(\langle unk \rangle\) voidaan sisällyttää laajennettuun
+sanastoon jolloin niille voidaan oppia omat upotuksensa samalla tavalla kuin muillekin
+tokeneille. Näin myös sekvenssien rakenteelliset elementit voidaan käsitellä
+yhtenäisesti muun sanaston kanssa.
+
+Upotusvektorit muodostavat siten luonnollisen jatkeen one-hot-esitykselle.
+Siinä missä one-hot kuvaa tokenin pelkkänä identiteettinä, upotusvektori tarjoaa
+tiiviin ja optimoitavan esityksen, joka soveltuu tehokkaasti
+neuroverkkopohjaisiin kielimalleihin.
+
+\subsection{Upotusvektorien oppiminen Word2Vec-menetelmällä}
+
+Edellä esitetyt upotusvektorit eivät ole ennalta annettuja, vaan ne opitaan
+tyypillisesti korpuksesta optimointitehtävän avulla. Yksi tunnetuimmista ja
+vaikuttavimmista menetelmistä tähän tarkoitukseen on Word2Vec, jonka
+perusarkkitehtuurit esittelevät Mikolov ym. työssään
+\emph{Efficient Estimation of Word Representations in Vector Space}
+\cite{mikolov2013efficient}. Menetelmän keskeinen ajatus on oppia sellaiset
+vektoriesitykset, että samankaltaisissa konteksteissa esiintyvät sanat saavat
+samankaltaiset upotukset. Tämä perustuu distributionaaliseen periaatteeseen,
+jonka mukaan sanan merkitystä voidaan approksimoida sen käyttöympäristöjen
+perusteella.
+
+Olkoon korpus edelleen \(W = (w_1, w_2, \dots, w_{|W|})\), missä
+\(w_t \in V\). Word2Vec-malleissa tarkastellaan tavallisesti kunkin sanan
+ympärille muodostettua kontekstia, jonka laajuus määrätään ikkunaparametrilla
+\(c \in \mathbb{N}\). Tällöin ajanhetken \(t\) kontekstiksi saadaan esimerkiksi
+joukko
+\[
+  C_t = \{w_{t-c}, \dots, w_{t-1}, w_{t+1}, \dots, w_{t+c}\},
+\]
+olettaen, että indeksit pysyvät korpuksen rajojen sisällä. Word2Vec-menetelmän
+kaksi keskeistä arkkitehtuuria ovat jatkuvien sanojen pussimalli
+(\emph{continuous bag-of-words}, CBOW) ja Skip-gram
+\cite{mikolov2013efficient}.
+
+CBOW-mallissa ennustetaan keskimmäinen sana sen kontekstin perusteella. Toisin
+sanoen mallin tavoitteena on approksimoida todennäköisyyttä
+\[
+  p(w_t \mid w_{t-c}, \dots, w_{t-1}, w_{t+1}, \dots, w_{t+c}).
+\]
+Kontekstin tokenit muunnetaan ensin upotusvektoreiksi, minkä jälkeen niiden
+esitykset yhdistetään tavallisesti summaamalla tai keskiarvoistamalla. Saatua
+kontekstivektoria käytetään ennustamaan kohdesana koko sanaston yli.
+Mikolov ym.\ \cite{mikolov2013efficient} korostavat, että CBOW on
+laskennallisesti tehokas erityisesti suurilla aineistoilla, koska se aggregoi
+kontekstin yhdeksi esitykseksi eikä käsittele jokaista kontekstisanaa täysin
+erillisenä ennustustehtävänä.
+
+Skip-gram-mallissa ennustussuunta on päinvastainen: keskimmäisen sanan avulla
+pyritään ennustamaan sitä ympäröivät kontekstisanat. Tavoitteena on siis
+maksimoida todennäköisyydet
+\[
+  p(w_{t+j} \mid w_t),
+  \qquad
+  -c \le j \le c,\; j \ne 0.
+\]
+Koko korpuksen yli tämä voidaan kirjoittaa maksimoitavana tavoitefunktiona
+muodossa
+\[
+  \sum_{t=1}^{|W|} \sum_{\substack{-c \le j \le c \\ j \ne 0}}
+  \log p(w_{t+j} \mid w_t).
+\]
+Skip-gram soveltuu hyvin tilanteisiin, joissa halutaan oppia laadukkaita
+esityksiä myös harvinaisemmille sanoille, sillä kukin havaittu sana toimii
+useiden kontekstien ennustamisen lähtökohtana
+\cite{mikolov2013efficient}.
+
+Todennäköisyys \(p(w_O \mid w_I)\), missä \(w_I\) on syötesana ja \(w_O\)
+kohdesana, voidaan määritellä softmax-funktion avulla. Jos syötesanaa \(w_I\)
+vastaa vektori \(v_{w_I}\) ja kohdesanaa \(w_O\) vastaava ulostulovektori on
+\(u_{w_O}\), saadaan
+\[
+  p(w_O \mid w_I)
+  =
+  \frac{\exp(u_{w_O}^{\top} v_{w_I})}
+  {\sum_{w \in V} \exp(u_w^{\top} v_{w_I})}.
+\]
+Tässä nimittäjän summa ulottuu koko sanastoon, mikä tekee täsmällisestä
+optimoinnista laskennallisesti raskasta suurilla sanastoilla. Mikolov ym.\
+\cite{mikolov2013efficient} esittävät tehokkaita ratkaisuja tähän ongelmaan,
+jotta sanavektoreita voidaan oppia erittäin suurista korpuksista käytännöllisin
+resurssein.
+
+Word2Vec-mallissa opitaan käytännössä kaksi parametrimatriisia: syötevektorit ja
+ulostulovektorit. Jokaiselle sanaston sanalle \(v_j \in V\) voidaan siis
+assosioida ainakin yksi tiheä vektorikuvaus. Oppimisen jälkeen näistä käytetään
+tavallisesti sanan syötevektoria tai vaihtoehtoisesti syöte- ja
+ulostulovektoreiden yhdistelmää sanan lopullisena esityksenä. Näin muodostuvat
+upotukset heijastavat sanojen yhteisesiintymisrakenteita korpuksessa: vektorit,
+jotka esiintyvät samankaltaisissa käyttöympäristöissä, sijoittuvat tyypillisesti
+lähelle toisiaan upotustilassa.
+
+Mikolov ym.\ \cite{mikolov2013efficient} osoittavat lisäksi, että tällä tavoin
+opitut vektoriesitykset säilyttävät kielellisesti mielekkäitä
+säännönmukaisuuksia. Sanavektorien väliset erot voivat vastata semanttisia tai
+syntaktisia suhteita, mikä näkyy esimerkiksi analogiatehtävissä. Tämän vuoksi
+Word2Vec ei ole ainoastaan tehokas optimointimenetelmä, vaan myös empiirisesti
+toimiva tapa rakentaa sellaisia upotuksia, jotka tiivistävät sanojen välisiä
+suhteita hyödyllisellä tavalla.
+
+Vaikka Word2Vec kehitettiin alun perin sanojen vektoriesitysten oppimiseen, sen
+perusajatus yleistyy myös laajemmin tokenipohjaiseen mallinnukseen. Menetelmä
+havainnollistaa, kuinka diskreetistä tokenijonosta voidaan oppia
+jatkuvaesityksiä pelkästään kontekstuaalisen ennustetehtävän avulla. Tässä
+mielessä se muodostaa tärkeän sillan klassisten jakaumallisten sanamallien ja
+myöhempien neuroverkkopohjaisten kielimallien välille.
