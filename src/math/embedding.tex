@@ -65,98 +65,169 @@ neuroverkkopohjaisiin kielimalleihin.
 
 \subsection{Upotusvektorien oppiminen Word2Vec-menetelmällä}
 
-Edellä esitetyt upotusvektorit eivät ole ennalta annettuja, vaan ne opitaan
-tyypillisesti korpuksesta optimointitehtävän avulla. Yksi tunnetuimmista ja
-vaikuttavimmista menetelmistä tähän tarkoitukseen on Word2Vec, jonka
-perusarkkitehtuurit esittelevät Mikolov ym. työssään
-\emph{Efficient Estimation of Word Representations in Vector Space}
-\cite{mikolov2013efficient}. Menetelmän keskeinen ajatus on oppia sellaiset
-vektoriesitykset, että samankaltaisissa konteksteissa esiintyvät sanat saavat
-samankaltaiset upotukset. Tämä perustuu distributionaaliseen periaatteeseen,
-jonka mukaan sanan merkitystä voidaan approksimoida sen käyttöympäristöjen
-perusteella.
+Upotusvektorit eivät tavallisesti ole ennalta määrättyjä, vaan ne estimoidaan
+aineistosta optimointimenetelmän avulla. Tässä suhteessa yksi keskeisimmistä ja
+vaikutusvaltaisimmista menetelmistä on Word2Vec, jonka Mikolov ym.\ esittelevät
+työssään \emph{Efficient Estimation of Word Representations in Vector Space}
+\cite{mikolov2013efficient}. Menetelmän keskeinen tieteellinen kontribuutio ei
+rajoitu siihen, että sanoille opitaan tiheitä vektoriesityksiä, sillä vastaavia
+ajatuksia oli esitetty neuroverkkopohjaisessa kielimallinnuksessa jo aiemmin.
+Word2Vecin varsinainen merkitys liittyy ennen kaikkea siihen, että se osoitti
+tällaisten representaatioiden oppimisen olevan mahdollista laskennallisesti
+erittäin tehokkaalla tavalla myös hyvin suurissa korpuksissa. Lisäksi se toi
+esiin, että kontekstuaaliseen ennustamiseen perustuva oppiminen voi johtaa
+vektoriavaruuksiin, joissa ilmenee kielellisesti mielekkäitä semanttisia ja
+syntaktisia säännönmukaisuuksia.
 
-Olkoon korpus edelleen \(W = (w_1, w_2, \dots, w_{|W|})\), missä
-\(w_t \in V\). Word2Vec-malleissa tarkastellaan tavallisesti kunkin sanan
-ympärille muodostettua kontekstia, jonka laajuus määrätään ikkunaparametrilla
-\(c \in \mathbb{N}\). Tällöin ajanhetken \(t\) kontekstiksi saadaan esimerkiksi
-joukko
-\[
-  C_t = \{w_{t-c}, \dots, w_{t-1}, w_{t+1}, \dots, w_{t+c}\},
-\]
-olettaen, että indeksit pysyvät korpuksen rajojen sisällä. Word2Vec-menetelmän
-kaksi keskeistä arkkitehtuuria ovat jatkuvien sanojen pussimalli
-(\emph{continuous bag-of-words}, CBOW) ja Skip-gram
+Word2Vec perustuu distributionaaliseen hypoteesiin, jonka mukaan sanan merkitys
+voidaan päätellä sen käyttöympäristöjen perusteella. Toisin sanoen sanat, jotka
+esiintyvät samankaltaisissa konteksteissa, saavat oppimisprosessissa
+samankaltaiset vektoriesitykset. Tämä periaate on laajasti koko modernin
+kieliteknologian taustalla, mutta Word2Vec teki siitä käytännöllisen ja
+skaalautuvan laskennallisen menetelmän. Menetelmä osoitti, että diskreettien
+symbolien semanttista rakennetta voidaan mallintaa jatkuvassa vektoriavaruudessa
+pelkästään paikallisiin konteksteihin perustuvan ennustetehtävän avulla ilman
+käsin suunniteltuja kielellisiä piirteitä.
+
+Olkoon korpus \(W = (w_1, w_2, \dots, w_{|W|})\), missä \(w_t \in V\) on
+sanaston \(V\) sana ajanhetkellä \(t\). Word2Vec-malleissa tarkastellaan
+tyypillisesti kunkin sanan ympärille määriteltyä paikallista kontekstia, jonka
+laajuus määräytyy ikkunaparametrilla \(c \in \mathbb{N}\). Tällöin ajanhetken
+\(t\) kontekstiksi voidaan määritellä
+$$
+C_t = \{w_{t-c}, \dots, w_{t-1}, w_{t+1}, \dots, w_{t+c}\},
+$$
+olettaen, että indeksit pysyvät korpuksen rajojen sisällä. Mikolov ym.\
+\cite{mikolov2013efficient} tarkastelevat kahta vaihtoehtoista
+perusarkkitehtuuria: jatkuvien sanojen pussimallia
+(\emph{continuous bag-of-words}, CBOW) ja Skip-gram-mallia.
+
+CBOW-mallissa pyritään ennustamaan tarkasteltava keskussana sen
+kontekstisanojen perusteella. Tavoitteena on siten approksimoida
+todennäköisyyttä
+$$
+p(w_t \mid w_{t-c}, \dots, w_{t-1}, w_{t+1}, \dots, w_{t+c}).
+$$
+Kontekstin sanat projisoidaan ensin vektoriesityksiksi, minkä jälkeen nämä
+esitykset yhdistetään tavallisesti summaamalla tai keskiarvoistamalla.
+Muodostettua kontekstivektoria käytetään tämän jälkeen kohdesanan
+ennustamiseen koko sanaston yli. CBOW-mallin etuna on sen laskennallinen
+tehokkuus erityisesti suurilla aineistoilla, koska useiden kontekstisanojen
+informaatio voidaan tiivistää yhdeksi esitykseksi ennen ennustevaihetta
 \cite{mikolov2013efficient}.
 
-CBOW-mallissa ennustetaan keskimmäinen sana sen kontekstin perusteella. Toisin
-sanoen mallin tavoitteena on approksimoida todennäköisyyttä
-\[
-  p(w_t \mid w_{t-c}, \dots, w_{t-1}, w_{t+1}, \dots, w_{t+c}).
-\]
-Kontekstin tokenit muunnetaan ensin upotusvektoreiksi, minkä jälkeen niiden
-esitykset yhdistetään tavallisesti summaamalla tai keskiarvoistamalla. Saatua
-kontekstivektoria käytetään ennustamaan kohdesana koko sanaston yli.
-Mikolov ym.\ \cite{mikolov2013efficient} korostavat, että CBOW on
-laskennallisesti tehokas erityisesti suurilla aineistoilla, koska se aggregoi
-kontekstin yhdeksi esitykseksi eikä käsittele jokaista kontekstisanaa täysin
-erillisenä ennustustehtävänä.
-
-Skip-gram-mallissa ennustussuunta on päinvastainen: keskimmäisen sanan avulla
-pyritään ennustamaan sitä ympäröivät kontekstisanat. Tavoitteena on siis
-maksimoida todennäköisyydet
-\[
-  p(w_{t+j} \mid w_t),
-  \qquad
-  -c \le j \le c,\; j \ne 0.
-\]
-Koko korpuksen yli tämä voidaan kirjoittaa maksimoitavana tavoitefunktiona
-muodossa
-\[
-  \sum_{t=1}^{|W|} \sum_{\substack{-c \le j \le c \\ j \ne 0}}
-  \log p(w_{t+j} \mid w_t).
-\]
-Skip-gram soveltuu hyvin tilanteisiin, joissa halutaan oppia laadukkaita
-esityksiä myös harvinaisemmille sanoille, sillä kukin havaittu sana toimii
-useiden kontekstien ennustamisen lähtökohtana
+Skip-gram-mallissa ennustesuunta on päinvastainen. Siinä tavoitteena on
+ennustaa keskussanan avulla sitä ympäröivät kontekstisanat. Tällöin
+maksimoidaan todennäköisyydet
+$$
+p(w_{t+j} \mid w_t),
+\qquad
+-c \le j \le c,\; j \ne 0.
+$$
+Koko korpuksen tasolla vastaava tavoitefunktio voidaan kirjoittaa muodossa
+$$
+\sum_{t=1}^{|W|} \sum_{\substack{-c \le j \le c \\ j \ne 0}}
+\log p(w_{t+j} \mid w_t).
+$$
+Skip-gram-malli osoittautuu erityisen käyttökelpoiseksi silloin, kun tavoitteena
+on oppia informatiivisia esityksiä myös harvinaisemmille sanoille, sillä kukin
+havaittu sana toimii useiden kontekstisanojen ennustamisen lähtökohtana
 \cite{mikolov2013efficient}.
 
-Todennäköisyys \(p(w_O \mid w_I)\), missä \(w_I\) on syötesana ja \(w_O\)
-kohdesana, voidaan määritellä softmax-funktion avulla. Jos syötesanaa \(w_I\)
-vastaa vektori \(v_{w_I}\) ja kohdesanaa \(w_O\) vastaava ulostulovektori on
-\(u_{w_O}\), saadaan
-\[
-  p(w_O \mid w_I)
-  =
-  \frac{\exp(u_{w_O}^{\top} v_{w_I})}
-  {\sum_{w \in V} \exp(u_w^{\top} v_{w_I})}.
-\]
+Olkoon \(w_I\) syötesana ja \(w_O\) kohdesana. Jos syötesanaa vastaava
+vektoriesitys on \(v_{w_I}\) ja kohdesanaa vastaava ulostulovektori on
+\(u_{w_O}\), voidaan todennäköisyys \(p(w_O \mid w_I)\) esittää
+softmax-funktion avulla muodossa
+$$
+p(w_O \mid w_I)
+=
+\frac{\exp(u_{w_O}^{\top} v_{w_I})}
+{\sum_{w \in V} \exp(u_w^{\top} v_{w_I})}.
+$$
+
 Tässä nimittäjän summa ulottuu koko sanastoon, mikä tekee täsmällisestä
-optimoinnista laskennallisesti raskasta suurilla sanastoilla. Mikolov ym.\
-\cite{mikolov2013efficient} esittävät tehokkaita ratkaisuja tähän ongelmaan,
-jotta sanavektoreita voidaan oppia erittäin suurista korpuksista käytännöllisin
-resurssein.
+optimoinnista laskennallisesti raskasta suurilla sanastoilla. Juuri tämän
+ongelman ratkaiseminen on yksi Word2Vecin keskeisistä ansioista. Menetelmä teki
+näkyväksi sen, että suuren sanaston ulostuloprojektio muodostaa
+vektoriesitysten oppimisessa keskeisen laskennallisen pullonkaulan, ja esitti
+tähän käytännöllisiä approksimaatioita. Näistä erityisen merkittävä on
+negatiivinen otanta (\emph{negative sampling}), jossa koko sanaston yli
+määritellyn softmax-todennäköisyyden optimoinnin sijasta ratkaistaan joukko
+binäärisiä luokittelutehtäviä.
 
-Word2Vec-mallissa opitaan käytännössä kaksi parametrimatriisia: syötevektorit ja
-ulostulovektorit. Jokaiselle sanaston sanalle \(v_j \in V\) voidaan siis
-assosioida ainakin yksi tiheä vektorikuvaus. Oppimisen jälkeen näistä käytetään
-tavallisesti sanan syötevektoria tai vaihtoehtoisesti syöte- ja
-ulostulovektoreiden yhdistelmää sanan lopullisena esityksenä. Näin muodostuvat
-upotukset heijastavat sanojen yhteisesiintymisrakenteita korpuksessa: vektorit,
-jotka esiintyvät samankaltaisissa käyttöympäristöissä, sijoittuvat tyypillisesti
-lähelle toisiaan upotustilassa.
+Olkoon \((w_I, w_O)\) havaittu syöte--kohdesana-pari, jossa \(w_O\) esiintyy
+sanan \(w_I\) kontekstissa. Negatiivisessa otannassa valitaan lisäksi
+\(K\) negatiivista sanaa \(w_1^{-}, \dots, w_K^{-}\) jakaumasta
+\(P_n(w)\), joka on tyypillisesti jokin sanaston sanoille määritelty
+näytteenottojakauma. Tällöin mallin tavoitteena ei ole enää optimoida
+todennäköisyyttä \(p(w_O \mid w_I)\) koko sanaston yli, vaan maksimoida
+havaittua paria vastaava binäärinen logistinen tavoite
+$$
+\log \sigma\!\left(u_{w_O}^{\top} v_{w_I}\right)
++
+\sum_{k=1}^{K}
+\log \sigma\!\left(-u_{w_k^{-}}^{\top} v_{w_I}\right),
+$$
+missä \(\sigma(x) = \frac{1}{1 + e^{-x}}\) on logistinen sigmoidifunktio.
+Ensimmäinen termi kasvattaa havaittuun positiiviseen sana--konteksti-pariin
+liittyvän pistetulon \(u_{w_O}^{\top} v_{w_I}\) arvoa, kun taas jälkimmäinen
+termi pienentää satunnaisesti valittujen negatiivisten sanojen
+\(u_{w_k^{-}}^{\top} v_{w_I}\) arvoja. Näin malli oppii erottamaan aidot
+kontekstisanat satunnaisista sanoista ilman, että jokaisella oppimisaskeleella
+tarvitsisi normalisoida jakaumaa koko sanaston yli.
 
-Mikolov ym.\ \cite{mikolov2013efficient} osoittavat lisäksi, että tällä tavoin
-opitut vektoriesitykset säilyttävät kielellisesti mielekkäitä
-säännönmukaisuuksia. Sanavektorien väliset erot voivat vastata semanttisia tai
-syntaktisia suhteita, mikä näkyy esimerkiksi analogiatehtävissä. Tämän vuoksi
-Word2Vec ei ole ainoastaan tehokas optimointimenetelmä, vaan myös empiirisesti
-toimiva tapa rakentaa sellaisia upotuksia, jotka tiivistävät sanojen välisiä
-suhteita hyödyllisellä tavalla.
+Koko aineiston yli tavoite voidaan esittää odotusarvomuodossa
+$$
+\sum_{(w_I, w_O) \in D}
+\left[
+  \log \sigma\!\left(u_{w_O}^{\top} v_{w_I}\right)
+  +
+  \sum_{k=1}^{K}
+  \mathbb{E}_{w_k^{-} \sim P_n}
+  \log \sigma\!\left(-u_{w_k^{-}}^{\top} v_{w_I}\right)
+\right],
+$$
+missä \(D\) on havaittujen syöte--konteksti-parien joukko ja \(K\) on negatiivisten otantojen määrä. Tällä tavoin
+alkuperäinen moniluokkainen softmax-optimointi approksimoidaan joukolla
+logistisia regressiotehtäviä, joissa erotellaan positiiviset havaintoparit
+negatiivisesti näytteistetyistä pareista. Laskennallinen etu syntyy siitä, että
+kunkin havaintoparin kohdalla päivitetään vain positiivista kohdesanaa ja
+\(K\):ta negatiivista sanaa vastaavat parametrit koko sanaston kattavan
+päivityksen sijasta.
 
-Vaikka Word2Vec kehitettiin alun perin sanojen vektoriesitysten oppimiseen, sen
-perusajatus yleistyy myös laajemmin tokenipohjaiseen mallinnukseen. Menetelmä
-havainnollistaa, kuinka diskreetistä tokenijonosta voidaan oppia
-jatkuvaesityksiä pelkästään kontekstuaalisen ennustetehtävän avulla. Tässä
-mielessä se muodostaa tärkeän sillan klassisten jakaumallisten sanamallien ja
-myöhempien neuroverkkopohjaisten kielimallien välille.
+Word2Vec-mallissa opitaan kaksi parametrimatriisia: syötevektorit ja
+ulostulovektorit. Jokaiselle sanaston sanalle \(v_j \in V\) assosioituu siten
+ainakin yksi tiheä vektoriesitys. Oppimisen jälkeen sanan lopullisena
+esityksenä käytetään tavallisesti syötevektoria tai vaihtoehtoisesti syöte- ja
+ulostulovektoreiden yhdistelmää. Näin saadut upotukset heijastavat korpuksessa
+havaittuja yhteisesiintymisrakenteita siten, että samankaltaisissa
+käyttöympäristöissä esiintyvät sanat sijoittuvat tyypillisesti lähelle toisiaan
+upotustilassa.
+
+Mikolov ym.\ \cite{mikolov2013efficient} osoittavat lisäksi, että Word2Vecin
+oppimat vektoriesitykset eivät ainoastaan ryhmittele semanttisesti läheisiä
+sanoja, vaan niihin syntyy myös lineaarisia relaatiota vastaavia
+säännönmukaisuuksia. Sanavektorien erotukset voivat vastata esimerkiksi
+sukupuoleen, lukuun tai taivutusmuotoon liittyviä semanttisia ja syntaktisia
+eroja, mikä ilmenee analogiatehtävissä. Tämä havainto on menetelmän kannalta
+erityisen merkittävä, sillä se viittaa siihen, että kontekstuaaliseen
+ennustamiseen perustuva optimointi tuottaa emergentisti sellaisia
+vektoriavaruuden rakenteita, jotka eivät ole eksplisiittisesti koodattuja
+malliin, mutta jotka vastaavat kielellisesti tulkittavia suhteita. Näin
+Word2Vec osoitti, että jakaumallinen oppiminen ei tuota ainoastaan
+samankaltaisuusmittaa, vaan voi synnyttää myös abstraktimpia relaatioita
+mallintavia geometrisia rakenteita.
+
+Vaikka Word2Veciä ei nykyisissä suurissa kielimalleissa tyypillisesti käytetä
+sellaisenaan erillisenä menetelmänä, sen vaikutus näkyy edelleen usealla
+tasolla. Ensinnäkin se vakiinnutti distributionaalisen hypoteesin
+neuroverkkopohjaisen kielimallinnuksen keskeiseksi oppimisperiaatteeksi.
+Toiseksi se toi esiin suuren sanaston ulostuloprojektion laskennallisen
+haasteen sekä popularisoi tehokkaita approksimointimenetelmiä, kuten
+negatiivisen otannan. Kolmanneksi se osoitti vakuuttavasti, että
+yksinkertainenkin kontekstuaalinen ennustetehtävä voi johtaa
+vektoriavaruuksiin, joissa semanttiset ja syntaktiset suhteet ilmenevät
+lineaarisina rakenteina. Näistä syistä Word2Vecia voidaan pitää tärkeänä
+siirtymävaiheena klassisten jakaumallisten sanamallien ja myöhempien
+syvien neuroverkkojen, mukaan lukien nykyaikaiset suuret kielimallit,
+välillä.
