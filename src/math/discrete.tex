@@ -7,7 +7,7 @@ käyttämistä tokeneista ja olkoon
 \(W = (w_1, w_2, \dots, w_{|W|})\) korpus eli havaittu tokenijono. Tällöin
 \(w_t \in V\) merkitsee korpuksen ajanhetken \(t\) tokenia. Tokenilla voidaan
 tarkoittaa esimerkiksi sanaa, osasanaa, merkkiä tai muuta diskreettiä
-tekstiyksikköä riippuen käytetystä tokenisointimenetelmästä.
+tekstiyksikköä riippuen käytetystä tokenisointimenetelmästä \cite{jurafsky2023speech}.
 
 \subsection{Tokenien one-hot-enkoodaus}
 
@@ -25,13 +25,13 @@ vektorina \(x(v_j) \in \{0,1\}^{|V|}\), jossa
 
 Tällainen esitys ilmaisee ainoastaan tokenin identiteetin: eri tokeneilla on
 toisistaan poikkeavat vektoriesitykset, mutta niihin ei sisälly eksplisiittistä
-semanttista tai syntaktista rakennetta. Menetelmän etuna on yksikäsitteisyys ja
+semanttista tai syntaktista rakennetta \cite{mikolov2013efficient}. Menetelmän etuna on yksikäsitteisyys ja
 sen yksinkertainen yhteys sanaston indeksöintiin.
 
 Käytännön kielimallinnuksessa sanastoa täydennetään usein erikoistokeneilla,
 joilla kuvataan sekvenssin rakennetta ja käsitellään harvinaisia havaintoja.
 Tällaisia ovat esimerkiksi aloitus- ja lopetusmerkit \(\langle s \rangle\) ja
-\(\langle /s \rangle\) sekä tuntemattoman tokenin merkki \(\langle unk \rangle\).
+\(\langle /s \rangle\) sekä tuntemattoman tokenin merkki \(\langle unk \rangle\) \cite{jurafsky2023speech}.
 
 Aloitus- ja lopetusmerkit ovat erityisen hyödyllisiä silloin, kun mallin
 ennustettavaa kontekstia halutaan määritellä myös sekvenssin reuna-alueilla.
@@ -62,7 +62,7 @@ yksinkertaisen esitystavan, jonka varaan voidaan rakentaa sekä tilastollisia
 \subsection{N-gram-mallit}\label{sec:n-gram}
 
 N-gram-malli on klassinen tilastollinen kielimalli, jossa sekvenssin seuraavan
-tokenin todennäköisyyttä estimoidaan rajallisen kontekstin perusteella.
+tokenin todennäköisyyttä estimoidaan rajallisen kontekstin perusteella \cite{jurafsky2023speech}.
 Menetelmä perustuu \((n-1)\):n kertaluvun Markov-oletukseen, jonka mukaan
 tokenin \(w_t\) todennäköisyys riippuu vain sitä välittömästi edeltävistä
 \((n-1)\) tokenista eikä koko aiemmasta historiasta. Markov-oletuksen perusteella
@@ -137,6 +137,6 @@ lisää sekä muistin- että laskentatehon tarvetta
 Diskreetit esitykset ja frekvenssipohjaiset \(n\)-gram-mallit tarjoavat
 käsitteellisesti selkeän lähtökohdan kielimallinnukselle. Niiden keskeinen
 rajoite on kuitenkin heikko yleistyskyky harvinaisiin ja havaitsemattomiin
-konteksteihin. Tämän vuoksi on hyödyllistä tarkastella samaa ongelmaa
+konteksteihin astuen esiin niin sanottuna "ulottuvuuksien kirouksena" (engl. \textit{curse of dimensionality}) \cite{bengio2003neural}. Tämän vuoksi on hyödyllistä tarkastella samaa ongelmaa
 optimointitehtävänä, mikä muodostaa luontevan siirtymän kohti jatkuvia
 vektoriesityksiä ja parametrisoituja neuroverkkopohjaisia malleja.
