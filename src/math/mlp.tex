@@ -114,39 +114,26 @@ historiallisesti keskeinen ratkaisu tähän on monikerroksinen perseptroni
 MLP on eteenpäinsyöttävä keinotekoinen neuroverkko, joka koostuu
 syötekerroksesta, yhdestä tai useammasta piilokerroksesta sekä
 ulostulokerroksesta. Sen historialliset juuret ovat Frank Rosenblattin
-perseptronitutkimuksessa, erityisesti artikkelissa \emph{The Perceptron: A
-Probabilistic Model for Information Storage and Organization in the Brain}
-\cite{rosenblatt1958perceptron} sekä teoksessa \emph{Principles of
-Neurodynamics: Perceptrons and the Theory of Brain Mechanisms}
-\cite{rosenblatt1962principles}. Näissä töissä esitettiin varhaisia
+perseptronitutkimuksessa \cite{rosenblatt1958perceptron}\cite{rosenblatt1962principles}. Näissä töissä esitettiin varhaisia
 perseptronimalleja ja kerroksellisia rakenteita, mutta tehokas yleiskäyttöinen
 menetelmä kaikkien kerrosten parametrien oppimiseen puuttui vielä.
 
 Neuroverkkojen varhaista kehitystä hidasti merkittävästi Marvin Minskyn ja
-Seymour Papertin teos \emph{Perceptrons: An Introduction to Computational
-Geometry} \cite{minsky1969perceptrons}, jossa analysoitiin yksikerroksisten
-perseptronien rajoitteita. Teos osoitti, että yksinkertainen perseptroni ei voi
+Seymour Papertin teos, jossa analysoitiin yksikerroksisten
+perseptronien rajoitteita\\\cite{minsky1969perceptrons}. Teos osoitti, että yksinkertainen perseptroni ei voi
 ratkaista tiettyjä lineaarisesti erottamattomia ongelmia, kuten XOR-tehtävää.
 Vaikka kritiikki kohdistui ensisijaisesti yksikerroksisiin malleihin, sen
 vaikutus ulottui laajemmin neuroverkkotutkimukseen ja osaltaan vähensi
 kiinnostusta monikerroksisiin verkkoihin useiden vuosien ajaksi.
 
 Monikerroksisten verkkojen tehokkaan opettamisen kannalta keskeinen teoreettinen
-lähtökohta syntyi Seppo Linnainmaan työssä \emph{The Representation of the
-  Cumulative Rounding Error of an Algorithm as a Taylor Expansion of the Local
-Rounding Errors} \cite{linnainmaa1970taylor}, jossa esitettiin käänteisen suunnan automaattinen derivointi menetelmä.
+lähtökohta syntyi Seppo Linnainmaan työssä, jossa esitettiin käänteisen suunnan automaattinen derivointi menetelmä\cite{linnainmaa1970taylor}.
 Paul Werbos puolestaan sovelsi tätä ajatusta neuroverkkoihin väitöskirjassaan
-\emph{Beyond Regression: New Tools for Prediction and Analysis in the Behavioral
-Sciences} \cite{werbos1974beyond} ja myöhemmin artikkelissaan
-\emph{Backpropagation Through Time: What It Does and How to Do It}
-\cite{werbos1990bptt}, jossa termi vastavirta-algoritmi (engl. \emph{backpropagation}) vakiintui.
+ja myöhemmin artikkelissaan, jossa termi vastavirta-algoritmi (engl. \emph{backpropagation}) vakiintui \cite{werbos1974beyond}\cite{werbos1990bptt}.
 
 Monikerroksisten eteenpäinsyöttävien verkkojen läpimurto
 tapahtui kuitenkin vasta, kun David Rumelhart, Geoffrey Hinton ja Ronald
-Williams popularisoivat vastavirta-algoritmin artikkelissaan
-\emph{Learning Representations by Back-Propagating Errors}
-\cite{rumelhart1986learning}. Tämä työ teki MLP:stä käytännöllisen
-gradienttipohjaisesti opetettavan funktionapproksimaattorin ja loi perustan
+Williamsin teos popularisoi vastavirta-algoritmin\cite{rumelhart1986learning}. Tämä työ teki MLP:stä käytännöllisen gradienttipohjaisesti opetettavan funktionapproksimaattorin ja loi perustan
 myöhemmälle syväoppimiselle.
 
 Matemaattisesti MLP voidaan ymmärtää funktion approksimaattorina, joka muodostaa
@@ -166,17 +153,13 @@ Monikerroksinen perceptroni muuntaa tämän syötteen vaiheittain
 piirre-esitykseksi soveltamalla peräkkäisiä affiinisia muunnoksia ja
 epälineaarisia aktivaatioita. Jos mallissa on \(L\) piilokerrosta,
 voidaan sen laskenta esittää muodossa
-\[
-  h^{(0)} = x(c),
-\]
-\[
-  a^{(\ell)} = W^{(\ell)} h^{(\ell-1)} + b^{(\ell)},
-  \qquad \ell = 1,\dots,L,
-\]
-\[
-  h^{(\ell)} = \phi^{(\ell)}\!\left(a^{(\ell)}\right),
-  \qquad \ell = 1,\dots,L,
-\]
+\begin{align*}
+  h^{(0)} &= x(c),\\
+  a^{(\ell)} &= W^{(\ell)} h^{(\ell-1)} + b^{(\ell)},
+  & \ell = 1,\dots,L, \\
+  h^{(\ell)} &= \phi^{(\ell)}\!\left(a^{(\ell)}\right),
+  & \ell = 1,\dots,L,
+\end{align*}
 missä \(W^{(\ell)}\in\mathbb{R}^{d_\ell\times d_{\ell-1}}\) on kerroksen
 \(\ell\) painomatriisi, \(b^{(\ell)}\in\mathbb{R}^{d_\ell}\) sen bias-vektori,
 \(a^{(\ell)}\in\mathbb{R}^{d_\ell}\) affiinisen muunnoksen tulos ja

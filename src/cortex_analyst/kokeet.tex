@@ -9,11 +9,11 @@ Koska kielimallit ovat tilastollisia järjestelmiä, sama syöte ei välttämät
 Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmälle 10 kertaa. Jokaisesta suorituksesta tallennetaan järjestelmän tuottama SQL-kysely, joita verrataan keskenään. Käytetyt kysymykset ovat seuraavat:
 \begin{enumerate}[label=\Alph*.]
     \label{it:q_consistency}
-  \item How many total contacts did we handle in January 2026?
-  \item What's our answer rate for calls in February 2026?
-  \item What percentage of contacts that were answered within our service level target were closed by the customer versus closed by the agent?
-  \item What was our peak contact hours by day of week? Show me the distribution of when contacts arrive throughout the day, broken down by hour and weekday.
-  \item What's the success rate of our callbacks? Show me how many callbacks resulted in a conversation versus no answer, and what the average time between the original inbound contact and the callback was.
+  \item \textit{How many total contacts did we handle in January 2026?}
+  \item \textit{What's our answer rate for calls in February 2026?}
+  \item \textit{What percentage of contacts that were answered within our service level target were closed by the customer versus closed by the agent?}
+  \item \textit{What was our peak contact hours by day of week? Show me the distribution of when contacts arrive throughout the day, broken down by hour and weekday.}
+  \item \textit{What's the success rate of our callbacks? Show me how many callbacks resulted in a conversation versus no answer, and what the average time between the original inbound contact and the callback was.}
 \end{enumerate}
 
 Määritellyssä semanttisessa näkymässä on kuvattu metriikoihin SQL-kyselyt, jotka vastaavat suoraan kysymyksiin A ja B. Kysymykset C-E ovat huomattavasti monimutkaisempia, ja niihin ei ole ennalta validoituja SQL-kyselyitä semanttisessa näkymässä. Kysymys D vaatii, että kentästä \texttt{CONTACT\_CONNECTED\_DATETIME} erotetaan kellonaika tunnin tarkkuudella, ja viikonpäivä pitää hakea kalenteritaulusta. Kysymys E on rakenteeltaan monitulkintainen. Erityisesti takaisinsoiton ja alkuperäisen sisääntulevan kontaktin välisen ajan keskiarvoa koskeva osa voidaan tulkita vaativan kahden eri rivin välistä vertailua, vaikka käytetyssä aineistossa vastaus voidaan muodostaa yhdeltä takaisinsoittoa kuvaavalta riviltä.
@@ -26,38 +26,38 @@ Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyk
     \label{it:q_sensitivity}
   \item Variaatioita kysymyksestä A:
     \begin{enumerate}[label=\arabic*.]
-      \item What was the total number of contacts we handled in January 2026?
-      \item How many contacts did we handle overall in January 2026?
-      \item What is the total contact volume for January 2026?
-      \item How many total customer contacts were handled during January 2026?
+      \item \textit{What was the total number of contacts we handled in January 2026?}
+      \item \textit{How many contacts did we handle overall in January 2026?}
+      \item \textit{What is the total contact volume for January 2026?}
+      \item \textit{How many total customer contacts were handled during January 2026?}
     \end{enumerate}
   \item Variaatioita kysymyksestä B:
     \begin{enumerate}[label=\arabic*.]
-      \item What was our call answer rate in February 2026?
-      \item What percentage of incoming calls were answered in February 2026?
-      \item What percentage of calls were answered in February 2026?
-      \item How did our call answer rate perform during February 2026?
+      \item \textit{What was our call answer rate in February 2026?}
+      \item \textit{What percentage of incoming calls were answered in February 2026?}
+      \item \textit{What percentage of calls were answered in February 2026?}
+      \item \textit{How did our call answer rate perform during February 2026?}
     \end{enumerate}
   \item Variaatioita kysymyksestä C:
     \begin{enumerate}[label=\arabic*.]
-      \item Of the contacts answered within our service-level target, what share were closed by the customer compared to those closed by the agent?
-      \item For interactions resolved within the service level target, what percentage were customer-closed versus agent-closed?
-      \item Within our service level target, how is the closure split: what percent of contacts were closed by customers versus agents?
-      \item Among contacts answered within SLA, what proportion ended with customer closure versus agent closure?
+      \item \textit{Of the contacts answered within our service-level target, what share were closed by the customer compared to those closed by the agent?}
+      \item \textit{For interactions resolved within the service level target, what percentage were customer-closed versus agent-closed?}
+      \item \textit{Within our service level target, how is the closure split: what percent of contacts were closed by customers versus agents?}
+      \item \textit{Among contacts answered within SLA, what proportion ended with customer closure versus agent closure?}
     \end{enumerate}
   \item Variaatioita kysymyksestä D:
     \begin{enumerate}[label=\arabic*.]
-      \item When do contacts most frequently arrive during the week? Break this down by weekday and hour.
-      \item Show the hourly contact-arrival distribution for every day of the week, highlighting which hours were highest on each weekday.
-      \item What times during the day (hour-by-hour) drive the most contacts, split by weekday. Please summarize peak hours and the overall distribution.
-      \item Across the week, when do contacts arrive most often? Provide an hour-by-hour breakdown for each weekday and identify the peak contact hours.
+      \item \textit{When do contacts most frequently arrive during the week? Break this down by weekday and hour.}
+      \item \textit{Show the hourly contact-arrival distribution for every day of the week, highlighting which hours were highest on each weekday.}
+      \item \textit{What times during the day (hour-by-hour) drive the most contacts, split by weekday. Please summarize peak hours and the overall distribution.}
+      \item \textit{Across the week, when do contacts arrive most often? Provide an hour-by-hour breakdown for each weekday and identify the peak contact hours.}
     \end{enumerate}
   \item Variaatioita kysymyksestä E:
     \begin{enumerate}[label=\arabic*.]
-      \item What percentage of our callback attempts lead to an actual conversation? Please break down callbacks that reached a conversation vs. those with no answer, and calculate the average delay from the original inbound to the callback.
-      \item How effective are our callbacks? Show the success rate by counting callbacks that resulted in a conversation versus no answer, and report the average time-to-callback from the initial inbound contact.
-      \item For our callback campaign, what's the outcomes split and average response speed? Provide counts of conversations vs. no-answer callbacks, the resulting success rate, and the average elapsed time between inbound contact and callback.
-      \item Can you analyze callback performance for me: success rate (conversation vs no answer) with the number of callbacks in each outcome category, plus the average time lag from the inbound contact to when the callback occurred?
+      \item \textit{What percentage of our callback attempts lead to an actual conversation? Please break down callbacks that reached a conversation vs. those with no answer, and calculate the average delay from the original inbound to the callback.}
+      \item \textit{How effective are our callbacks? Show the success rate by counting callbacks that resulted in a conversation versus no answer, and report the average time-to-callback from the initial inbound contact.}
+      \item \textit{For our callback campaign, what's the outcomes split and average response speed? Provide counts of conversations vs. no-answer callbacks, the resulting success rate, and the average elapsed time between inbound contact and callback.}
+      \item \textit{Can you analyze callback performance for me: success rate (conversation vs no answer) with the number of callbacks in each outcome category, plus the average time lag from the inbound contact to when the callback occurred?}
     \end{enumerate}
 \end{enumerate}
 
