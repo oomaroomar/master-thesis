@@ -1,13 +1,13 @@
 \section{Gradienttimenetelmä}
 
-Tässä luvussa tarkastellaan gradienttimenetelmää sekä sen stokastista versiota. Esitys pidetään ensimmäisen kertaluvun optimointimenetelmien viitekehyksessä, sillä myöhemmin käsiteltävät adaptiiviset menetelmät voidaan tulkita tämän perusasetelman muunnelmiksi.
+Tässä luvussa tarkastellaan gradienttimenetelmää sekä sen stokastista muunnelmaa. Esitys rajataan ensimmäisen kertaluvun optimointimenetelmien viitekehykseen, sillä tutkielmassa myöhemmin käsiteltävät adaptiiviset menetelmät voidaan luontevasti tulkita tämän perusasetelman laajennuksiksi.
 
 Olkoon \(L : \mathbb{R}^d \to \mathbb{R}\) jatkuvasti derivoituva funktio. Tarkastellaan minimointitehtävää
-\begin{equation*}
+\begin{align*}
   \min_{\theta \in \mathbb{R}^d} L(\theta).
-\end{equation*}
-Parametrivektoria merkitään symbolilla \(\theta \in \mathbb{R}^d\), ja pistetuloa avaruudessa \(\mathbb{R}^d\) merkitään muodossa \(\langle \cdot,\cdot\rangle\). Gradienttimenetelmän perusajatus saadaan tavoitefunktion ensimmäisen kertaluvun paikallisesta approksimaatiosta. Jos \(\theta_t \in \mathbb{R}^d\) on nykyinen iteraatti ja \(v \in \mathbb{R}^d\) pieni siirtymä, niin Taylorin kaavan nojalla
-\begin{equation*}
+\end{align*}
+Parametrivektoria merkitään vektorilla \(\theta \in \mathbb{R}^d\) ja avaruuden \(\mathbb{R}^d\) sisätuloa muodossa \(\langle \cdot,\cdot\rangle\). Gradienttimenetelmän perusajatus pohjautuu kohdefunktion ensimmäisen kertaluvun paikalliseen approksimaatioon. Olkoon \(\theta_t \in \mathbb{R}^d\) optimoinnin nykyinen iteraatti ja \(v \in \mathbb{R}^d\) pieni siirtymävektori, jolloin Taylorin lauseen nojalla saadaan
+\begin{align*}
   L(\theta_t + v)
   =
   L(\theta_t)
@@ -17,15 +17,15 @@ Parametrivektoria merkitään symbolilla \(\theta \in \mathbb{R}^d\), ja pistetu
   o(\|v\|_2),
   \qquad
   \text{kun } \|v\|_2 \to 0.
-\end{equation*}
-Tästä seuraa, että funktion paikallista muutosta hallitsee ensisijaisesti lineaarinen termi \(\langle \nabla L(\theta_t), v\rangle\). Jos askelen pituutta rajoitetaan ehdolla \(\|v\|_2 \le \varepsilon\), on luonnollista tarkastella ongelmaa
-\begin{equation*}
+\end{align*}
+Tästä seuraa, että funktion arvon paikallista muutosta approksimoi ensisijaisesti lineaarinen termi \(\langle \nabla L(\theta_t), v\rangle\). Rajoittamalla siirtymän pituutta ehdolla \(\|v\|_2 \le \varepsilon\) saadaan uusi minimointitehtävä
+\begin{align*}
   \min_{\|v\|_2 \le \varepsilon}
   \langle \nabla L(\theta_t), v\rangle.
-\end{equation*}
+\end{align*}
 
-Jos \(\nabla L(\theta_t) \neq 0\), Cauchyn--Schwarzin epäyhtälö antaa arvion
-\begin{equation*}
+Olettamalla, että \(\nabla L(\theta_t) \neq 0\), Cauchyn--Schwarzin epäyhtälöstä seuraa arvio
+\begin{align*}
   \langle \nabla L(\theta_t), v\rangle
   \ge
   -
@@ -33,36 +33,34 @@ Jos \(\nabla L(\theta_t) \neq 0\), Cauchyn--Schwarzin epäyhtälö antaa arvion
   \ge
   -
   \varepsilon \|\nabla L(\theta_t)\|_2.
-\end{equation*}
-Yhtäsuuruus saavutetaan täsmälleen silloin, kun \(v\) on gradientin vastainen suunta. Täten lineaarisen approksimaation kannalta optimaalinen askel on
-\begin{equation*}
+\end{align*}
+Yhtäsuuruus toteutuu täsmälleen silloin, kun vektori \(v\) on vastakkaissuuntainen gradienttiin nähden. Näin ollen lineaarisen approksimaation kannalta optimaalinen siirtymä on
+\begin{align*}
   v^\ast
   =
   -
   \varepsilon
   \frac{\nabla L(\theta_t)}{\|\nabla L(\theta_t)\|_2}.
-\end{equation*}
-Tämä motivoi gradienttimenetelmän iteraation
-\begin{equation*}
+\end{align*}
+Tämä ohjaa siirtymään kohti jyrkintä laskua, mikä motivoi gradienttimenetelmän iteratiivisen päivitysaskeleen
+\begin{align*}
   \theta_{t+1}
   =
   \theta_t - \eta \nabla L(\theta_t),
-\end{equation*}
-missä \(\eta > 0\) on askelpituus.
+\end{align*}
+missä \(\eta > 0\) on askelpituuden määrittävä oppimisnopeus (engl. \emph{learning rate}).
 
-Edellinen johtopäätös perustuu kuitenkin vain paikalliseen lineaariseen malliin. Jotta voidaan osoittaa, että askel todella pienentää tavoitefunktion arvoa, tarvitaan lisäoletus gradientin säännöllisyydestä.
+Edellä esitetty johtopäätös nojaa kuitenkin ainoastaan paikalliseen lineaariseen malliin. Sen osoittamiseksi, että askel todella pienentää kohdefunktion arvoa, edellytetään lisäoletusta gradientin säännöllisyydestä.
 
 \begin{lemma}
-  Olkoon \(L : \mathbb{R}^d \to \mathbb{R}\) jatkuvasti derivoituva, ja oletetaan, että gradientti \(\nabla L\) on Lipschitz-jatkuva vakiolla \(M > 0\), siis
-  \begin{equation*}
+  Olkoon \(L : \mathbb{R}^d \to \mathbb{R}\) jatkuvasti derivoituva funktio ja oletetaan, että gradientti \(\nabla L\) on Lipschitz-jatkuva vakiolla \(M > 0\). Tällöin kaikilla \(\theta,\theta' \in \mathbb{R}^d\) pätee
+  \begin{align*}
     \|\nabla L(\theta) - \nabla L(\theta')\|_2
     \le
     M \|\theta - \theta'\|_2
-    \qquad
-    \text{kaikilla } \theta,\theta' \in \mathbb{R}^d.
-  \end{equation*}
-  Tällöin kaikilla \(\theta,h \in \mathbb{R}^d\) pätee
-  \begin{equation*}
+  \end{align*}
+  ja vastaavasti kaikilla \(\theta,h \in \mathbb{R}^d\) on voimassa epäyhtälö
+  \begin{align*}
     L(\theta + h)
     \le
     L(\theta)
@@ -70,22 +68,22 @@ Edellinen johtopäätös perustuu kuitenkin vain paikalliseen lineaariseen malli
     \langle \nabla L(\theta), h\rangle
     +
     \frac{M}{2}\|h\|_2^2.
-  \end{equation*}
+  \end{align*}
 \end{lemma}
 
 \begin{proof}
   Määritellään apufunktio \(\varphi : [0,1] \to \mathbb{R}\) asettamalla
-  \begin{equation*}
+  \begin{align*}
     \varphi(t) = L(\theta + th).
-  \end{equation*}
-  Ketjusäännön nojalla
-  \begin{equation*}
+  \end{align*}
+  Ketjusäännön nojalla sen derivaatta on
+  \begin{align*}
     \varphi'(t)
     =
     \langle \nabla L(\theta + th), h\rangle.
-  \end{equation*}
+  \end{align*}
   Analyysin peruslauseesta seuraa, että
-  \begin{equation*}
+  \begin{align*}
     L(\theta + h) - L(\theta)
     =
     \varphi(1) - \varphi(0)
@@ -93,44 +91,44 @@ Edellinen johtopäätös perustuu kuitenkin vain paikalliseen lineaariseen malli
     \int_0^1 \varphi'(t)\,dt
     =
     \int_0^1 \langle \nabla L(\theta + th), h\rangle\,dt.
-  \end{equation*}
-  Lisäämällä ja vähentämällä termi \(\nabla L(\theta)\) saadaan
-  \begin{equation*}
+  \end{align*}
+  Lisäämällä ja vähentämällä termi \(\nabla L(\theta)\) integraalin sisällä saadaan
+  \begin{align*}
     L(\theta + h) - L(\theta)
     =
     \int_0^1 \langle \nabla L(\theta), h\rangle\,dt
     +
     \int_0^1
     \langle \nabla L(\theta + th) - \nabla L(\theta), h\rangle\,dt.
-  \end{equation*}
-  Tästä seuraa
-  \begin{equation*}
+  \end{align*}
+  Ensimmäinen termi ei riipu muuttujasta \(t\), joten
+  \begin{align*}
     L(\theta + h) - L(\theta)
     =
     \langle \nabla L(\theta), h\rangle
     +
     \int_0^1
     \langle \nabla L(\theta + th) - \nabla L(\theta), h\rangle\,dt.
-  \end{equation*}
-  Cauchyn--Schwarzin epäyhtälön ja Lipschitz-oletuksen perusteella
-  \begin{equation*}
+  \end{align*}
+  Cauchyn--Schwarzin epäyhtälön ja Lipschitz-oletuksen perusteella yhdistetty termi voidaan ylhäältä arvioida seuraavasti:
+  \begin{align*}
     \langle \nabla L(\theta + th) - \nabla L(\theta), h\rangle
     \le
     \|\nabla L(\theta + th) - \nabla L(\theta)\|_2 \|h\|_2
     \le
     Mt \|h\|_2^2.
-  \end{equation*}
-  Integroimalla saadaan
-  \begin{equation*}
+  \end{align*}
+  Integroimalla epäyhtälö saadaan
+  \begin{align*}
     \int_0^1
     \langle \nabla L(\theta + th) - \nabla L(\theta), h\rangle\,dt
     \le
     \int_0^1 Mt \|h\|_2^2\,dt
     =
     \frac{M}{2}\|h\|_2^2.
-  \end{equation*}
-  Siis
-  \begin{equation*}
+  \end{align*}
+  Siispä
+  \begin{align*}
     L(\theta + h)
     \le
     L(\theta)
@@ -138,22 +136,22 @@ Edellinen johtopäätös perustuu kuitenkin vain paikalliseen lineaariseen malli
     \langle \nabla L(\theta), h\rangle
     +
     \frac{M}{2}\|h\|_2^2,
-  \end{equation*}
-  mikä oli todistettava.
+  \end{align*}
+  mikä päättää todistuksen.
 \end{proof}
 
-Edellinen lemma tunnetaan laskeutumislemmana. Sijoittamalla siihen \(h = -\eta \nabla L(\theta)\) saadaan
-\begin{equation*}
+Koneoppimiskirjallisuudessa tämä tulos tunnetaan laskeutumislemmana (engl. \emph{descent lemma}). Sijoittamalla siihen \(h = -\eta \nabla L(\theta)\) saadaan
+\begin{align*}
   L(\theta - \eta \nabla L(\theta))
   \le
   L(\theta)
   -
   \eta \|\nabla L(\theta)\|_2^2
   +
-  \frac{M\eta^2}{2}\|\nabla L(\theta)\|_2^2.
-\end{equation*}
-Toisin sanoen
-\begin{equation*}
+  \frac{M\eta^2}{2}\|\nabla L(\theta)\|_2^2,
+\end{align*}
+joka voidaan kirjoittaa muodossa
+\begin{align*}
   L(\theta - \eta \nabla L(\theta))
   \le
   L(\theta)
@@ -163,55 +161,49 @@ Toisin sanoen
     1 - \frac{M\eta}{2}
   \right)
   \|\nabla L(\theta)\|_2^2.
-\end{equation*}
-Erityisesti, jos
-\begin{equation*}
-  0 < \eta < \frac{2}{M},
-\end{equation*}
-niin
-\begin{equation*}
+\end{align*}
+Ehto takaa, että mikäli oppimisnopeus valitaan avoimelta väliltä \(0 < \eta < \frac{2}{M}\), saavutetaan aito lasku:
+\begin{align*}
   L(\theta - \eta \nabla L(\theta)) < L(\theta)
   \qquad
-  \text{aina kun } \nabla L(\theta) \neq 0.
-\end{equation*}
-Näin ollen gradienttimenetelmä tuottaa aidosti laskeutuvan askeleen jokaisessa ei-stationaarisessa pisteessä, kun askelpituus on riittävän pieni. Tämä havainto antaa myös täsmällisen matemaattisen perustelun sille, miksi oppimisnopeuden valinta on olennainen osa optimointia.
+  \text{aina, kun } \nabla L(\theta) \neq 0.
+\end{align*}
+Matemaattisesti tämä todistaa, että sopivalla askelpituudella gradienttimenetelmä laskeutuu jokaisessa ei-stationaarisessa pisteessä, alleviivaten oppimisnopeuden oikeaoppisen valinnan keskeistä roolia optimoinnissa.
 
-% From here on we go into stochastic GD
-
-Koneoppimisessa tavoitefunktio on tavallisesti empiirinen riski
-\begin{equation*}
+Koneoppimisessa minimoitava kohdefunktio muodostetaan tyypillisesti empiirisenä riskinä:
+\begin{align*}
   L(\theta)
   =
   \frac{1}{N}\sum_{i=1}^N \ell(\theta; z_i),
-\end{equation*}
-missä \(z_1,\dots,z_N\) ovat opetusdatan alkiot ja \(\ell(\theta; z_i)\) on havaintoon \(z_i\) liittyvä häviö. Tällöin täysi gradientti on
-\begin{equation*}
+\end{align*}
+missä \(z_1,\dots,z_N\) ovat opetusdatan näytteitä ja \(\ell(\theta; z_i)\) on havaintoon \(z_i\) liittyvä häviöfunktio. Täysi gradientti on siten aineiston yli laskettu keskiarvo
+\begin{align*}
   \nabla L(\theta)
   =
   \frac{1}{N}\sum_{i=1}^N \nabla \ell(\theta; z_i).
-\end{equation*}
-Jos havaintojen lukumäärä \(N\) on suuri, tämän gradientin laskeminen jokaisella iteraatiolla on laskennallisesti raskasta. Tämän vuoksi käytetään stokastista gradienttimenetelmää, jossa täysi gradientti korvataan satunnaisesti valitun mini-erän avulla muodostetulla estimaatilla.
+\end{align*}
+Kielimallien suurilla dataseteillä tapahtuvassa opetuksessa (\(N\) on äärimmäisen suuri) tarkan gradientin laskeminen jokaisella iteraatiolla on resursseiltaan liian kallista. Tämän ongelman kiertämiseksi hyödynnetään stokastista gradienttimenetelmää (engl. \emph{stochastic gradient descent}, SGD), jossa täysi gradientti approksimoidaan satunnaisesti poimitun suppeamman osajoukon eli mini-erän (engl. \emph{mini-batch}) avulla.
 
-Olkoon \(B_t \subset \{1,\dots,N\}\) ajanhetkellä \(t\) valittu mini-erä. Määritellään
-\begin{equation*}
+Olkoon \(B_t \subset \{1,\dots,N\}\) satunnaisesti hetkellä \(t\) muodostettu mini-erä. Tällöin suuntavektori \(g_t\) lasketaan kaavalla
+\begin{align*}
   g_t
   =
   \frac{1}{|B_t|}
   \sum_{i \in B_t}
-  \nabla \ell(\theta_t; z_i),
-\end{equation*}
-ja suoritetaan päivitys
-\begin{equation*}
+  \nabla \ell(\theta_t; z_i)
+\end{align*}
+ja parametrit päivitetään muodossa
+\begin{align*}
   \theta_{t+1}
   =
   \theta_t - \eta g_t.
-\end{equation*}
-Jos mini-erä valitaan satunnaisesti siten, että kukin havainto tulee symmetrisesti kohdelluksi, saadaan ehdollisen odotusarvon mielessä
-\begin{equation*}
+\end{align*}
+Olettamalla, että jokainen havaintojoukko poimitaan riippumattomasti ja todennäköisyyksien ollessa yhtenäiset, approksimaatio vastaa ehdollisen odotusarvon mielessä täyttä gradienttia:
+\begin{align*}
   \mathbb{E}[g_t \mid \theta_t]
   =
   \nabla L(\theta_t).
-\end{equation*}
-Täten stokastinen gradientti on täyden gradientin harhaton estimaattori. Menetelmä voidaan siis tulkita gradienttimenetelmän satunnaistettuna approksimaationa, jossa tarkka laskeutumissuunta korvataan kohinaisella mutta odotusarvossa oikealla suunnalla.
+\end{align*}
+Stokastinen gradientti toimii siis kohdefunktion todellisen muutosnopeuden harhattomana estimaattorina. Vaikka iteratiivinen suunta on yksittäisellä askeleella kohinainen, odotusarvoisesti malli suuntaa oikeaan kohteeseen.
 
-On kuitenkin syytä huomata, että stokastinen gradienttimenetelmä ei yleensä tuota monotonisesti alenevaa tavoitefunktion arvosarjaa. Yksittäisten iteraatioiden käyttäytymiseen vaikuttaa gradienttiestimaatin satunnaisuus, ja lisäksi sama askelpituus \(\eta\) käytetään kaikkiin parametrisuuntiin riippumatta tavoitefunktion paikallisesta kaarevuudesta. Jos Hessin matriisin ominaisarvot eroavat toisistaan huomattavasti, menetelmä voi edetä hitaasti niissä suunnissa, joissa kaarevuus on pieni, ja samanaikaisesti oskilloida niissä suunnissa, joissa kaarevuus on suuri. Juuri nämä seikat motivoivat adaptiivisten optimointimenetelmien käyttöä. Niissä pyritään joko skaalaamaan gradienttia parametrikohtaisesti tai tasoittamaan peräkkäisten gradienttien vaihtelua siten, että optimointi olisi vakaampaa ja tehokkaampaa kuin perusmuotoisessa stokastisessa gradienttimenetelmässä.
+Tästä huolimatta stokastinen gradienttimenetelmä ei varianssinsa vuoksi tyypillisesti onnistu tuottamaan monotonisesti alenevaa kohdefunktion arvosarjaa. Tilannetta vaikeuttaa se rajoite, että sama adaptiivisuutta vailla oleva askelpituus \(\eta\) operoi kaikissa parametrisuunnissa yhtäläisesti lokaalista kaarevuudesta riippumatta. Mikäli mallin Hessin matriisin ominaisarvot poikkeavat toisistaan huomattavasti, optimointi ohjautuu tehottomasti. Menetelmä saattaa jumiutua ja edetä hitaasti loivissa suunnissa, samalla kun se oskilloi holtittomasti jyrkissä lokaaleissa profiileissa. Nämä piirteet ovat pääasiallinen motivaattori adaptiivisille optimointimenetelmille, joissa askelmääritystä hienosäädetään parametrikohtaisesti hyödyntäen historian kerryttämää informaatiota, mikä tekee modernin verkkorakenteen opettamisesta merkittävästi vakaampaa ja tehokkaampaa.
