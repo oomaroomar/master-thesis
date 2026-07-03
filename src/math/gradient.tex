@@ -228,3 +228,76 @@ Kaarevuuden epätasaisuutta mitataan Hessin matriisin ehtoluvulla
 olettaen \(\lambda_d > 0\). Kun ehtoluku on suuri, lokaali geometria on anisotrooppinen: osa suunnista on jyrkkiä ja osa loivia. Tällöin yksi globaali oppimisnopeus \(\eta\) joudutaan valitsemaan jyrkimmän suunnan ehdoilla, mikä hidastaa etenemistä loivemmissa suunnissa \cite{luenberger2015linear}. Tästä syystä suuri ehtoluku on keskeinen syy siihen, että tavallinen gradienttimenetelmä ja stokastinen gradienttimenetelmä voivat edetä tehottomasti.
 
 Tämä motivoi adaptiivisia optimointimenetelmiä, joissa päivityksiä skaalataan parametrikohtaisesti tai suunnittain kohdefunktion lokaalin geometrian perusteella. Tavoitteena on yhdistää vakaus jyrkissä suunnissa ja tehokas eteneminen loivissa suunnissa.
+
+\subsection{Adaptiiviset optimointimenetelmät}
+
+Edellä tarkasteltu häiriöalttius osoittaa, että yksi kaikissa parametrisuunnissa yhtäläinen oppimisnopeus on usein tehoton valinta. Jyrkät suunnat edellyttävät pientä askelpituutta numeerisen vakauden säilyttämiseksi, kun taas loivissa suunnissa sama askelpituus voi johtaa hyvin hitaaseen etenemiseen. Adaptiivisten optimointimenetelmien tavoitteena on lieventää tätä ongelmaa muokkaamalla päivityssuuntaa tai askelpituutta gradienttihistorian perusteella. Käytännössä tämä tarkoittaa sitä, että menetelmä hyödyntää aiempien gradienttien ensimmäistä ja mahdollisesti myös toista momenttia parametripäivitysten skaalaamiseksi.
+
+Tarkastellaan yleisesti tilannetta, jossa hetkellä \(t\) käytettävissä on gradienttiestimaatti \(g_t\). Täysi-gradienttisessa menetelmässä voidaan kirjoittaa \(g_t = \nabla J(\theta_t)\), kun taas stokastisessa tapauksessa \(g_t\) on mini-erän avulla muodostettu harhaton estimaatti täydestä gradientista. Tavallinen gradienttimenetelmä tai stokastinen gradienttimenetelmä päivittää parametrit muodossa
+\begin{align*}
+  \theta_{t+1} = \theta_t - \eta g_t,
+\end{align*}
+missä \(\eta > 0\) on oppimisnopeus. Adaptiivisissa menetelmissä tätä perusmuotoa täydennetään muodostamalla gradienttihistoriasta uusia apumuuttujia, joiden avulla päivitys saadaan paremmin vastaamaan optimointiongelman lokaalia rakennetta.
+
+\paragraph{Liikemäärämenetelmä.}
+
+Yksi yksinkertaisimmista tavoista parantaa perusmuotoista gradienttipäivitystä on käyttää liikemäärää (engl. \emph{momentum}). Menetelmässä muodostetaan gradienttien eksponentiaalisesti painotettu liukuva keskiarvo
+\begin{align*}
+  m_t
+  =
+  \beta_1 m_{t-1} + (1-\beta_1) g_t,
+\end{align*}
+missä \(m_0 = 0\) ja parametri \(\beta_1 \in [0,1)\) määrää muistin pituuden. Tämän jälkeen parametripäivitys tehdään muodossa
+\begin{align*}
+  \theta_{t+1} = \theta_t - \eta m_t.
+\end{align*}
+Muuttuja \(m_t\) voidaan tulkita gradientin ensimmäisen momentin estimaatiksi. Koska \(m_t\) yhdistää useiden peräkkäisten iteraatioiden gradientti-informaatiota, menetelmä vaimentaa stokastisesta vaihtelusta aiheutuvaa kohinaa ja voi samalla nopeuttaa etenemistä suunnissa, joissa gradientti säilyttää pitkään saman suuntaisena.
+
+Alkuaskelilla estimaatti \(m_t\) on kuitenkin systemaattisesti harhainen kohti nollaa, koska rekursio käynnistetään arvosta \(m_0 = 0\). Tämän vuoksi voidaan käyttää harhakorjattua estimaattia
+\begin{align*}
+  \hat m_t = \frac{m_t}{1-\beta_1^t},
+\end{align*}
+jolloin päivitys voidaan kirjoittaa myös muodossa
+\begin{align*}
+  \theta_{t+1} = \theta_t - \eta \hat m_t.
+\end{align*}
+Pelkkä liikemäärämenetelmä ei kuitenkaan vielä skaalaa askelpituutta parametrikohtaisesti, vaan se vaikuttaa ensisijaisesti päivityssuunnan tasoittumiseen. Tämän vuoksi se ei yksinään täysin ratkaise tilannetta, jossa eri parametrisuunnissa esiintyy voimakkaasti toisistaan poikkeavaa kaarevuutta.
+
+\paragraph{Adam-algoritmi.}
+
+Adam (engl. \emph{adaptive moment estimation}) yhdistää liikemääräajatuksen parametrikohtaiseen askelpituuden skaalaamiseen. Menetelmässä ylläpidetään samanaikaisesti estimaattia gradientin ensimmäisestä momentista ja neliöidyn gradientin toisesta momentista. Ensimmäinen momentti määritellään kuten liikemäärämenetelmässä:
+\begin{align*}
+  m_t
+  =
+  \beta_1 m_{t-1} + (1-\beta_1) g_t.
+\end{align*}
+Toisen momentin estimaatti muodostetaan kaavalla
+\begin{align*}
+  v_t
+  =
+  \beta_2 v_{t-1} + (1-\beta_2)(g_t \odot g_t),
+\end{align*}
+missä \(v_0 = 0\), parametri \(\beta_2 \in [0,1)\) määrää toisen momentin muistin pituuden ja symboli \(\odot\) tarkoittaa vektorien koordinaattikohtaista tuloa. Vektorin \(v_t\) jokainen komponentti arvioi vastaavan gradienttikomponentin neliöllistä mittakaavaa.
+
+Myös estimaatit \(m_t\) ja \(v_t\) ovat alkuvaiheessa harhaisia kohti nollaa, joten Adamissa käytetään harhakorjattuja muotoja
+\begin{align*}
+  \hat m_t = \frac{m_t}{1-\beta_1^t},
+  \qquad
+  \hat v_t = \frac{v_t}{1-\beta_2^t}.
+\end{align*}
+Näiden avulla parametripäivitys kirjoitetaan muodossa
+\begin{align*}
+  \theta_{t+1}
+  =
+  \theta_t
+  -
+  \eta
+  \frac{\hat m_t}{\sqrt{\hat v_t} + \varepsilon},
+\end{align*}
+missä neliöjuuri, jako ja yhteenlasku suoritetaan koordinaattikohtaisesti ja \(\varepsilon > 0\) on pieni numeerista vakautta parantava vakio.
+
+Adam-päivityksen keskeinen piirre on se, että askelpituus mukautuu parametrikohtaisesti. Jos jonkin komponentin gradientit ovat historiallisesti suuria, vastaava komponentti vektorissa \(\hat v_t\) kasvaa, jolloin päivitys kyseisessä suunnassa pienenee. Vastaavasti niissä suunnissa, joissa gradienttien mittakaava on pieni, suhteellinen askelpituus säilyy suurempana. Tällä tavoin Adam toimii eräänlaisena diagonaalisena esiehdollistajana: se ei käytä Hessin matriisia eksplisiittisesti, mutta se pyrkii tasapainottamaan eri parametrisuuntien välistä mittakaavaeroa gradienttihistorian perusteella.
+
+Liikemäärämenetelmän ja Adamin välinen ero voidaan tiivistää seuraavasti. Liikemäärä hyödyntää gradientin ensimmäistä momenttia ja stabiloi päivityssuuntaa, kun taas Adam hyödyntää lisäksi toista momenttia parametrikohtaisen skaalauksen muodostamiseksi. Tästä syystä Adam soveltuu erityisen hyvin tilanteisiin, joissa optimointiongelman lokaali geometria on epätasainen ja gradienttikomponenttien mittakaavat poikkeavat voimakkaasti toisistaan.
+
+Käytännössä Adam on yksi käytetyimmistä syvien neuroverkkojen optimointimenetelmistä juuri tämän mukautuvuuden vuoksi. Se ei kuitenkaan ole ainoa mahdollinen adaptiivinen menetelmä, vaan samaan menetelmäperheeseen kuuluvat esimerkiksi Adagrad, RMSProp ja AMSGrad. Tässä työssä tarkastelu rajataan kuitenkin liikemäärämenetelmään ja Adamiin, sillä ne havainnollistavat riittävän hyvin sekä gradienttihistorian tasoittamisen että parametrikohtaisen askelpituuden mukauttamisen keskeiset periaatteet.
