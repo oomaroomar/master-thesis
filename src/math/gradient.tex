@@ -277,81 +277,104 @@ Vaikka tämä tarkastelu perustuu lokaaliin toisen kertaluvun approksimaatioon, 
 
 \subsection{Adaptiiviset optimointimenetelmät}
 
-Edellä tarkasteltu häiriöalttius osoittaa, että yksi kaikissa parametrisuunnissa yhtäläinen askelpituus on usein tehoton valinta. Jyrkät suunnat edellyttävät pientä askelpituutta numeerisen vakauden säilyttämiseksi, kun taas loivissa suunnissa sama askelpituus voi johtaa hyvin hitaaseen etenemiseen. Adaptiivisten optimointimenetelmien tavoitteena on lieventää tätä ongelmaa muokkaamalla päivityssuuntaa tai askelpituutta gradienttihistorian perusteella. Käytännössä tämä tarkoittaa sitä, että menetelmä hyödyntää aiempien gradienttien ensimmäistä ja mahdollisesti myös toista momenttia parametripäivitysten skaalaamiseksi.
+Edellisessä alaluvussa todettiin, että stokastinen gradienttimenetelmä käyttää samaa globaalia oppimisnopeutta kaikissa parametrisuunnissa. Tämä voi olla tehotonta erityisesti silloin, kun kohdefunktion lokaali kaarevuus tai gradienttien mittakaava vaihtelee voimakkaasti parametrien välillä. Tällöin vakaa oppimisnopeus on valittava jyrkkien suuntien ehdoilla, mikä hidastaa etenemistä loivemmissa suunnissa. Adaptiivisten optimointimenetelmien keskeinen idea on lieventää tätä ongelmaa skaalaamalla päivitystä parametrikohtaisesti gradienttihistorian perusteella.
 
-Tarkastellaan yleisesti tilannetta, jossa hetkellä \(t\) käytettävissä on gradienttiestimaatti \(g_t\). Täysi-gradienttisessa menetelmässä voidaan kirjoittaa \(g_t = \nabla J(\theta_t)\), kun taas stokastisessa tapauksessa \(g_t\) on mini-erän avulla muodostettu harhaton estimaatti täydestä gradientista. Tavallinen gradienttimenetelmä tai stokastinen gradienttimenetelmä päivittää parametrit muodossa
+Yleisellä tasolla adaptiivinen menetelmä voidaan kirjoittaa muodossa
 \begin{align*}
-  \theta_{t+1} = \theta_t - \eta g_t,
-\end{align*}
-missä \(\eta > 0\) on askelpituus. Adaptiivisissa menetelmissä tätä perusmuotoa täydennetään muodostamalla gradienttihistoriasta uusia apumuuttujia, joiden avulla päivitys saadaan paremmin vastaamaan optimointiongelman lokaalia rakennetta.
-
-\paragraph{Liikemäärämenetelmä.}
-
-Yksi yksinkertaisimmista tavoista parantaa perusmuotoista gradienttipäivitystä on käyttää liikemäärää (engl. \emph{momentum}). Tässä tarkastellaan eksponentiaalisesti painotettuun liukuvaan keskiarvoon perustuvaa muotoa. Menetelmässä muodostetaan gradienttien eksponentiaalisesti painotettu liukuva keskiarvo
-\begin{align*}
-  m_t
+  \theta_{t+1}
   =
-  \beta_1 m_{t-1} + (1-\beta_1) g_t,
+  \theta_t - \eta_t D_t g_t,
 \end{align*}
-missä \(m_0 = 0\) ja parametri \(\beta_1 \in [0,1)\) määrää muistin pituuden. Tämän jälkeen parametripäivitys tehdään muodossa
-\begin{align*}
-  \theta_{t+1} = \theta_t - \eta m_t.
-\end{align*}
-Muuttuja \(m_t\) voidaan tulkita gradientin ensimmäisen momentin eksponentiaalisesti painotetuksi estimaatiksi. Koska \(m_t\) yhdistää useiden peräkkäisten iteraatioiden gradientti-informaatiota, menetelmä vaimentaa stokastisesta vaihtelusta aiheutuvaa kohinaa ja voi samalla nopeuttaa etenemistä suunnissa, joissa gradientti säilyttää pitkään saman suuntaisena.
+missä \(g_t\) on hetkellä \(t\) laskettu stokastinen gradientti, \(\eta_t > 0\) on globaali oppimisnopeus ja \(D_t \in \mathbb{R}^{d \times d}\) on tavallisesti diagonaalinen, positiivinen skaalausmatriisi, joka riippuu aiemmista gradienteista. Tällöin kunkin parametrin efektiivinen askelpituus määräytyy sekä globaalin oppimisnopeuden että kyseisen parametrin omaan gradienttihistoriaan perustuvan skaalauksen kautta. Intuitiivisesti usein suuria gradientteja saavat komponentit voidaan päivittää varovaisemmin, kun taas harvemmin aktivoituville tai pienempiä gradientteja saaville komponenteille voidaan sallia suhteellisesti suurempia askelia.
 
-Alkuaskelilla estimaatti \(m_t\) on kuitenkin systemaattisesti harhainen kohti nollaa, koska rekursio käynnistetään arvosta \(m_0 = 0\). Tämän vuoksi voidaan haluttaessa käyttää harhakorjattua estimaattia
-\begin{align*}
-  \hat m_t = \frac{m_t}{1-\beta_1^t},
-\end{align*}
-jolloin päivitys voidaan kirjoittaa myös muodossa
-\begin{align*}
-  \theta_{t+1} = \theta_t - \eta \hat m_t.
-\end{align*}
-Pelkkä liikemäärämenetelmä ei kuitenkaan vielä skaalaa askelpituutta parametrikohtaisesti, vaan se vaikuttaa ensisijaisesti päivityssuunnan tasoittumiseen. Tämän vuoksi se ei yksinään täysin ratkaise tilannetta, jossa eri parametrisuunnissa esiintyy voimakkaasti toisistaan poikkeavaa kaarevuutta.
+Adaptiivisten menetelmien kehitys syväoppimisessa on rakentunut erityisesti AdaGradin, RMSPropin ja Adamin ympärille. Näistä AdaGrad tuo esiin parametrikohtaisen oppimisnopeuden perusidean, RMSProp korjaa AdaGradin käytännöllistä heikkoutta ja Adam yhdistää adaptiivisen skaalaamisen sekä momentumin. Modernissa neuroverkkojen ja erityisesti transformer-arkkitehtuurien opetuksessa myös AdamW on saavuttanut vakiintuneen aseman \cite{duchi2011adaptive,tieleman2012lecture,kingma2015adam,loshchilov2019decoupled}.
 
-\paragraph{Adam-algoritmi.}
-
-Adam (engl. \emph{adaptive moment estimation}) yhdistää liikemääräajatuksen parametrikohtaiseen askelpituuden skaalaamiseen. Menetelmässä ylläpidetään samanaikaisesti estimaattia gradientin ensimmäisestä momentista ja neliöidyn gradientin toisen raakamomentin eksponentiaalisesti painotetusta keskiarvosta. Ensimmäinen momentti määritellään kuten liikemäärämenetelmässä:
+\paragraph{AdaGrad.}
+AdaGrad (\emph{adaptive gradient}) oli ensimmäisiä laajasti tunnettuja menetelmiä, joissa oppimisnopeus mukautetaan parametrikohtaisesti gradienttihistorian perusteella \cite{duchi2011adaptive}. Menetelmässä ylläpidetään neliöityjen gradienttien kumulatiivista summaa
 \begin{align*}
-  m_t
+  s_t
   =
-  \beta_1 m_{t-1} + (1-\beta_1) g_t.
+  \sum_{\tau=1}^t g_\tau^2,
 \end{align*}
-Toisen momentin estimaatti muodostetaan kaavalla
-\begin{align*}
-  v_t
-  =
-  \beta_2 v_{t-1} + (1-\beta_2)(g_t \odot g_t),
-\end{align*}
-missä \(v_0 = 0\), parametri \(\beta_2 \in [0,1)\) määrää toisen momentin muistin pituuden ja symboli \(\odot\) tarkoittaa vektorien koordinaattikohtaista tuloa. Vektorin \(v_t\) jokainen komponentti arvioi vastaavan gradienttikomponentin neliöllistä mittakaavaa.
-
-Myös estimaatit \(m_t\) ja \(v_t\) ovat alkuvaiheessa harhaisia kohti nollaa, joten Adamissa käytetään harhakorjattuja muotoja
-\begin{align*}
-  \hat m_t = \frac{m_t}{1-\beta_1^t},
-  \qquad
-  \hat v_t = \frac{v_t}{1-\beta_2^t}.
-\end{align*}
-Näiden avulla parametripäivitys kirjoitetaan muodossa
+missä potenssi ja myöhemmin esiintyvät neliöjuuri- ja jakolaskuoperaatiot tulkitaan komponenttikohtaisesti. Päivitys kirjoitetaan tällöin muodossa
 \begin{align*}
   \theta_{t+1}
   =
   \theta_t
   -
   \eta
-  \frac{\hat m_t}{\sqrt{\hat v_t} + \varepsilon},
+  \frac{g_t}{\sqrt{s_t} + \varepsilon},
 \end{align*}
-missä neliöjuuri, jako ja yhteenlasku suoritetaan koordinaattikohtaisesti ja \(\varepsilon > 0\) on pieni numeerista vakautta parantava vakio.
+missä \(\varepsilon > 0\) on pieni vakio numeerisen stabiilisuuden vuoksi.
 
-Adam-päivityksen keskeinen piirre on se, että askelpituus mukautuu parametrikohtaisesti. Jos jonkin komponentin gradientit ovat historiallisesti suuria, vastaava komponentti vektorissa \(\hat v_t\) kasvaa, jolloin päivitys kyseisessä suunnassa pienenee. Vastaavasti niissä suunnissa, joissa gradienttien mittakaava on pieni, suhteellinen askelpituus säilyy suurempana. Päivitys voidaan kirjoittaa myös muodossa
+AdaGradin keskeinen ominaisuus on, että parametreille, joiden gradientit ovat toistuvasti suuria, kertyy nopeasti suuri nimittäjä, jolloin niiden efektiivinen oppimisnopeus pienenee. Vastaavasti parametrit, joiden gradientit ovat harvoja tai pieniä, voivat saada suhteellisesti suurempia päivityksiä. Tämän vuoksi menetelmä soveltuu erityisen hyvin tilanteisiin, joissa gradientit ovat harvoja. AdaGradin keskeinen heikkous on kuitenkin se, että kertymä \(s_t\) kasvaa monotonisesti, minkä seurauksena askelpituudet voivat ajan myötä pienentyä liikaa ja optimointi hidastua olennaisesti.
+
+\paragraph{RMSProp.}
+RMSProp kehitettiin käytännölliseksi korjaukseksi AdaGradin liian nopeasti pieneneville askelpituuksille \cite{tieleman2012lecture,goodfellow2016deep}. Sen sijaan, että neliöityjä gradientteja summattaisiin koko optimoinnin ajalta, RMSProp käyttää eksponentiaalisesti painotettua liukuvaa keskiarvoa
+\begin{align*}
+  v_t
+  =
+  \rho v_{t-1} + (1-\rho) g_t^2,
+\end{align*}
+missä \(\rho \in (0,1)\) on muistiparametri. Päivityssääntö on
 \begin{align*}
   \theta_{t+1}
   =
-  \theta_t - \eta D_t \hat m_t,
-  \qquad
-  D_t = \operatorname{diag}\!\left(\frac{1}{\sqrt{\hat v_t} + \varepsilon}\right),
+  \theta_t
+  -
+  \eta
+  \frac{g_t}{\sqrt{v_t} + \varepsilon}.
 \end{align*}
-missä diagonaalimatriisi \(D_t\) tulkitaan koordinaattikohtaisena skaalauksena. Tässä mielessä Adam toimii diagonaalisena esiehdollistajana: se ei käytä Hessin matriisia eksplisiittisesti, mutta se pyrkii tasapainottamaan eri parametrisuuntien välistä mittakaavaeroa gradienttihistorian perusteella.
 
-Liikemäärämenetelmän ja Adamin välinen ero voidaan tiivistää seuraavasti. Liikemäärä hyödyntää gradientin ensimmäistä momenttia ja stabiloi päivityssuuntaa, kun taas Adam hyödyntää lisäksi toista raakamomenttia parametrikohtaisen skaalauksen muodostamiseksi. Tästä syystä Adam soveltuu erityisesti tilanteisiin, joissa optimointiongelman lokaali geometria on epätasainen ja gradienttikomponenttien mittakaavat poikkeavat toisistaan.
+RMSProp säilyttää AdaGradin perusintuition parametrikohtaisesta skaalaamisesta, mutta käyttää pitkän aikavälin kertymän sijasta paikallisempaa gradienttien mittakaavan estimaattia. Tämä estää oppimisnopeuden systemaattista sammumista ja tekee menetelmästä käytännössä huomattavasti käyttökelpoisemman syvien neuroverkkojen opetuksessa. Toisaalta RMSProp on luonteeltaan ennen kaikkea heuristinen menetelmä, eikä sen asema ole teoreettisesti yhtä kanoninen kuin AdaGradin.
 
-Käytännössä Adam on yksi käytetyimmistä syvien neuroverkkojen optimointimenetelmistä juuri tämän mukautuvuuden vuoksi. Se ei kuitenkaan ole ainoa mahdollinen adaptiivinen menetelmä, vaan samaan menetelmäperheeseen kuuluvat esimerkiksi Adagrad, RMSProp ja AMSGrad. Tässä työssä tarkastelu rajataan kuitenkin liikemäärämenetelmään ja Adamiin, sillä ne havainnollistavat riittävän hyvin sekä gradienttihistorian tasoittamisen että parametrikohtaisen askelpituuden mukauttamisen keskeiset periaatteet.
+\paragraph{Adam.}
+Adam (\emph{adaptive moment estimation}) yhdistää kaksi ideaa: gradientin ensimmäisen momentin eli suunnatun liukuvan keskiarvon sekä toisen momentin eli neliöityjen gradienttien liukuvan keskiarvon \cite{kingma2015adam}. Menetelmässä määritellään rekursiot
+\begin{align*}
+  m_t
+  &=
+  \beta_1 m_{t-1} + (1-\beta_1) g_t, \\
+  v_t
+  &=
+  \beta_2 v_{t-1} + (1-\beta_2) g_t^2,
+\end{align*}
+missä \(\beta_1,\beta_2 \in (0,1)\) ovat muistiparametreja. Koska \(m_t\) ja \(v_t\) alustetaan tavallisesti nollaksi, ne ovat alkuvaiheessa harhaisia kohti nollaa. Tämän vuoksi käytetään harhakorjattuja estimaatteja
+\begin{align*}
+  \hat{m}_t
+  &=
+  \frac{m_t}{1-\beta_1^t}, \\
+  \hat{v}_t
+  &=
+  \frac{v_t}{1-\beta_2^t}.
+\end{align*}
+Päivitys saa tällöin muodon
+\begin{align*}
+  \theta_{t+1}
+  =
+  \theta_t
+  -
+  \eta
+  \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \varepsilon}.
+\end{align*}
+
+Adamia voidaan tulkita menetelmäksi, jossa \(m_t\) vakauttaa päivityssuuntaa momentum-tyyppisesti, kun taas \(v_t\) skaalaa askelpituutta parametrikohtaisesti gradienttien havaittuun mittakaavaan nähden. Tämä tekee menetelmästä käytännössä usein hyvin tehokkaan ja suhteellisen robustin oppimisnopeuden valinnalle. Näistä syistä Adamista on tullut yksi käytetyimmistä optimointimenetelmistä syväoppimisessa.
+
+Adam ei kuitenkaan ole ongelmaton. Käytännössä on havaittu, että adaptiiviset menetelmät eivät kaikissa tilanteissa tuota yhtä hyvää yleistymistä kuin huolellisesti viritetty SGD momentumilla, ja myös Adamin konvergenssiominaisuuksista on esitetty kriittisiä huomioita \cite{reddi2018convergence,wilson2017marginal}. Tämän vuoksi adaptiivisuutta ei tule tulkita yleispätevänä ratkaisuna kaikkiin optimoinnin haasteisiin, vaan pikemminkin käytännöllisenä keinona muokata päivityksen geometriaa ja vähentää oppimisnopeuden herkkyyttä.
+
+\paragraph{AdamW.}
+AdamW on Adamin muunnelma, jossa painojen kutistaminen (\emph{weight decay}) erotetaan itse adaptiivisesta gradienttipäivityksestä \cite{loshchilov2019decoupled}. Tavallisessa \(L_2\)-regularisoinnin ja Adamin yhdistelmässä regularisaatiotermi sekoittuu adaptiiviseen skaalaukseen tavalla, joka ei vastaa puhdasta painojen kutistamista. AdamW:ssä parametripäivitys kirjoitetaan tyypillisesti muodossa
+\begin{align*}
+  \theta_{t+1}
+  =
+  \theta_t
+  -
+  \eta
+  \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \varepsilon}
+  -
+  \eta \lambda \theta_t,
+\end{align*}
+missä \(\lambda \ge 0\) on painojen kutistamisen voimakkuutta säätelevä parametri.
+
+Tämä erotus on osoittautunut käytännössä tärkeäksi erityisesti syvissä neuroverkoissa ja transformer-malleissa. Niinpä AdamW:tä pidetään nykyisin usein tarkoituksenmukaisempana valintana kuin alkuperäistä Adamia silloin, kun mallin opetuksessa käytetään eksplisiittistä painojen kutistamista.
+
+Lopuksi on syytä huomata, että hyvin suurissa kielimalleissa myös optimointimenetelmän muistikustannus muodostuu olennaiseksi. Tämän vuoksi on kehitetty muistitehokkaampia adaptiivisia menetelmiä, kuten Adafactor \cite{shazeer2018adafactor}, joissa pyritään säilyttämään adaptiivisen skaalaamisen keskeiset edut pienemmällä muistinkulutuksella. Tässä tutkielmassa tarkastelun painopiste rajataan kuitenkin AdaGrad-, RMSProp- ja Adam-tyyppisiin menetelmiin, sillä ne muodostavat historiallisesti ja käsitteellisesti keskeisimmän perustan myöhemmille adaptiivisille optimointialgoritmeille.
