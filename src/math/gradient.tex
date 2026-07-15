@@ -236,62 +236,44 @@ mistä seuraa
 \begin{align*}
   \lambda_1 \le L.
 \end{align*}
-Tämä rajoittaa askelpituuden kokoa, sillä laskeutumislemma (\ref{lem:gradient_descent_lemma}) takaa kohdefunktion arvon pienenemisen vain jos
-\begin{align*}
-  \eta \le \frac{1}{L}
-  \le \frac{1}{\lambda_1},
-\end{align*}
-mikä tekee etenemisen loivimmissa suunnissa hidasta.
+Tämä rajoittaa oppimisnopeuden kokoa, sillä liian suuri askel voi johtaa epävakaaseen käyttäytymiseen jyrkimmissä suunnissa. Keskeisempi ongelma on kuitenkin se, että gradienttimenetelmä käyttää samaa oppimisnopeutta kaikissa parametrisuunnissa. Jos kohdefunktion lokaali kaarevuus vaihtelee suunnasta toiseen voimakkaasti, oppimisnopeus on valittava suurimman kaarevuuden ehdoilla. Tällöin menetelmä pysyy vakaana jyrkissä suunnissa, mutta etenee samalla hitaasti loivissa suunnissa.
 
-Jos \(\lambda_d > 0\), voidaan Hessin matriisin ehtoluku määritellä muodossa
+Tätä voidaan havainnollistaa tarkastelemalla funktion käyttäytymistä stationaarisen pisteen \(\theta^\ast\) ympärillä, missä \(\nabla J(\theta^\ast)=0\). Jos \(J\) on kahdesti jatkuvasti derivoituva, niin lähellä pistettä \(\theta^\ast\) gradienttia voidaan approksimoida lineaarisesti:
 \begin{align*}
-  \kappa = \frac{\lambda_1}{\lambda_d}.
+  \nabla J(\theta_t)
+  \approx
+  \nabla^2 J(\theta^\ast)(\theta_t-\theta^\ast).
 \end{align*}
-Ehtoluvun merkitys näkyy erityisen selvästi positiividefiniitissä kvadraattisessa mallissa \cite{nocedal2006numerical,luenberger2015linear}. Tarkastellaan funktiota
-\begin{align*}
-  q(\theta)
-  =
-  \frac{1}{2}
-  \langle \theta - \theta^\ast, H_t(\theta - \theta^\ast)\rangle,
-\end{align*}
-jonka minimikohta on \(\theta^\ast\), ja merkitään virhevektoria \(e_t = \theta_t - \theta^\ast\). Tällöin gradienttimenetelmän iteraatio saa muodon
+Merkitään \(H^\ast = \nabla^2 J(\theta^\ast)\) ja \(e_t = \theta_t-\theta^\ast\). Tällöin gradienttimenetelmän päivitys saa lokaalisesti approksimaation
 \begin{align*}
   e_{t+1}
-  =
-  (I - \eta H_t)e_t.
+  \approx
+  (I-\eta H^\ast)e_t.
 \end{align*}
-Koska \(H_t\) on symmetrinen, se voidaan diagonalisoida ortonormaalissa ominaisvektorikannassa. Tällöin jokainen komponentti etenee riippumattomasti kaavan
+
+Koska \(H^\ast\) on symmetrinen, se voidaan diagonalisoida ortonormaalissa ominaisvektorikannassa. Oletetaan lisäksi, että \(\theta^\ast\) on lokaali minimi, jolloin \(H^\ast \succeq 0\). Jos ominaisarvot järjestetään muotoon
+\begin{align*}
+  \lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_d \ge 0,
+\end{align*}
+niin virheen komponentit toteuttavat approksimatiivisesti relaation
 \begin{align*}
   e_{t+1}^{(k)}
-  =
-  (1 - \eta \lambda_k)e_t^{(k)},
-  \qquad k = 1,\dots,d
+  \approx
+  (1-\eta\lambda_k)e_t^{(k)},
+  \qquad
+  k=1,\dots,d.
 \end{align*}
-mukaan. Askelpituus on siis valittava jyrkimmän suunnan ehdoilla, esimerkiksi siten että \(0 < \eta \le \frac{1}{\lambda_1}\), jotta iteraatio pysyy vakaana kaikissa suunnissa. Tällöin loivimman suunnan supistumiskerroin on
-\begin{align*}
-  1 - \eta \lambda_d.
-\end{align*}
-Erityisesti valinnalla \(\eta = \frac{1}{\lambda_1}\) saadaan
-\begin{align*}
-  1 - \eta \lambda_d
-  =
-  1 - \frac{\lambda_d}{\lambda_1}
-  =
-  1 - \frac{1}{\kappa}.
-\end{align*}
-Jos \(\kappa\) on suuri, tämä kerroin on lähellä arvoa \(1\), jolloin eteneminen loivimmassa suunnassa on hidasta \cite{luenberger2015linear,nocedal2006numerical}. Näin suuri ehtoluku heijastaa sitä, että yksi globaali askelpituus joudutaan valitsemaan jyrkimpien suuntien ehdoilla, mikä tekee gradienttimenetelmästä tehottoman loivemmissa suunnissa.
+Sama oppimisnopeus \(\eta\) vaikuttaa siis eri suuntiin eri tavoin. Suurta ominaisarvoa vastaavissa suunnissa tekijä \(1-\eta\lambda_k\) muuttuu nopeasti, joten vakaus edellyttää pientä oppimisnopeutta. Jos \(\eta\) valitaan lähelle arvoa \(\frac{1}{\lambda_1}\), saadaan jyrkimmässä suunnassa \(1-\eta\lambda_1 \approx 0\),
+jolloin eteneminen on nopeaa. Sen sijaan loivimmassa suunnassa pätee tällöin \(1-\eta\lambda_d \approx 1\),
+mikä merkitsee hidasta supistumista. Toisin sanoen menetelmä voi olla jyrkissä suunnissa lähes optimaalinen, mutta loivissa suunnissa samalla hyvin hidas.
 
-Lisäksi kaikille indekseille \(i,j \in \{1,\dots,d\}\), joille \(\lambda_j > 0\), pätee
+Näin gradienttimenetelmä voi joutua tilanteeseen, jossa oppimisnopeus on jyrkkien suuntien kannalta jo lähes suurin sallittu, mutta loivissa suunnissa eteneminen on silti hidasta. Juuri tämä kaarevuuden epätasaisuus tekee menetelmästä tehottoman huonosti ehdollistuneissa ongelmissa. Ilmiötä voidaan tiivistää Hessin ehtoluvulla
 \begin{align*}
-  \frac{\lambda_i}{\lambda_j}
-  \le
-  \frac{\lambda_1}{\lambda_d}
-  =
-  \kappa.
+  \kappa = \frac{\lambda_1}{\lambda_d},
 \end{align*}
-Jo kahden ominaisarvon suuri suhde antaa siis alarajan varsinaiselle ehtoluvulle. Toisin sanoen, jos joidenkin kahden suunnan lokaalit kaarevuudet eroavat huomattavasti toisistaan, ongelma on ainakin kyseisessä pisteessä huonosti ehdollistunut.
+kun \(\lambda_d>0\). Suuri ehtoluku tarkoittaa, että kaarevuus vaihtelee huomattavasti eri suunnissa, jolloin yksi globaali oppimisnopeus soveltuu väistämättä huonosti ainakin osaan suunnista.
 
-Yleisessä ei-konveksissa tapauksessa edellä kuvattu tulkinta on paikallinen, koska Hessin matriisi riippuu pisteestä \(\theta_t\), eikä se välttämättä ole positiividefiniitti. Tästä huolimatta sama perusilmiö säilyy: suuri positiivinen lokaali kaarevuus pakottaa pieneen askelpituuteen, kun taas suunnissa, joissa ominaisarvo on pieni ja positiivinen tai itseisarvoltaan lähellä nollaa, eteneminen voi olla hidasta. Siten spektrin epätasaisuus on myös ei-konveksissa optimoinnissa keskeinen ensimmäisen kertaluvun menetelmien tehottomuuden lähde, vaikka johtopäätös koskee ensisijaisesti lokaalia dynamiikkaa \cite{nesterov2018lectures,goodfellow2016deep}.
+Vaikka tämä tarkastelu perustuu lokaaliin toisen kertaluvun approksimaatioon, sama perusilmiö esiintyy laajemminkin: jos eri parametrisuunnissa kohdefunktion geometria on voimakkaasti erimittakaavainen, tavallinen gradienttimenetelmä etenee helposti hitaasti \cite{nocedal2006numerical,luenberger2015linear}. Tämä motivoi menetelmiä, joissa päivitystä skaalataan tai mukautetaan parametrikohtaisesti gradienttihistorian avulla.
 
 \subsection{Adaptiiviset optimointimenetelmät}
 
