@@ -23,7 +23,7 @@ Tästä seuraa, että funktion arvon paikallista muutosta approksimoi ensisijais
   \min_{\|v\|_2 \le \varepsilon}
   \langle \nabla J(\theta_t), v\rangle.
 \end{align*}
-Olettamalla, että \(\nabla J(\theta_t) \neq 0\), Cauchyn--Schwarzin epäyhtälöstä seuraa arvio
+Olettamalla, että \(\nabla J(\theta_t) \neq 0\), Cauchy--Schwarzin epäyhtälöstä seuraa arvio
 \begin{align*}
   \langle \nabla J(\theta_t), v\rangle
   \ge
@@ -33,7 +33,7 @@ Olettamalla, että \(\nabla J(\theta_t) \neq 0\), Cauchyn--Schwarzin epäyhtäl�
   -
   \varepsilon \|\nabla J(\theta_t)\|_2.
 \end{align*}
-Yhtäsuuruus toteutuu täsmälleen silloin, kun vektori \(v\) on vastakkaissuuntainen gradienttiin nähden.  Näin ollen lineaarisen approksimaation kannalta optimaalinen siirtymä on
+Yhtäsuuruus toteutuu täsmälleen silloin, kun vektori \(v\) on vastakkaissuuntainen gradienttiin nähden. Näin ollen lineaarisen approksimaation kannalta optimaalinen siirtymä on
 \begin{align*}
   v^\ast
   =
@@ -61,7 +61,7 @@ Edellä esitetty johtopäätös nojaa kuitenkin ainoastaan paikalliseen lineaari
 \end{definition}
 
 \begin{lemma}[Neliöllinen yläraja]\label{lemma:quadratic_upper_bound}
-  Olkoon \(J:\mathbb{R}^d \to \mathbb{R}\)  \(L\)-sileä funktio. Tällöin kaikilla \(\theta,h \in \mathbb{R}^d\) on voimassa epäyhtälö
+  Olkoon \(J:\mathbb{R}^d \to \mathbb{R}\) \(L\)-sileä funktio. Tällöin kaikilla \(\theta,h \in \mathbb{R}^d\) on voimassa epäyhtälö
   \begin{align*}
     J(\theta + h)
     \le
@@ -88,12 +88,13 @@ Edellä esitetty johtopäätös nojaa kuitenkin ainoastaan paikalliseen lineaari
     +
     \int_0^1
     \langle \nabla J(\theta + th) - \nabla J(\theta), h\rangle\,dt \\
-    &= \langle \nabla J(\theta), h\rangle
+    &=
+    \langle \nabla J(\theta), h\rangle
     +
     \int_0^1
     \langle \nabla J(\theta + th) - \nabla J(\theta), h\rangle\,dt.
   \end{align*}
-  Cauchyn--Schwarzin epäyhtälön ja sileys-oletuksen perusteella yhdistetty termi voidaan rajata ylhäältä:
+  Cauchy--Schwarzin epäyhtälön ja sileysoletuksen perusteella integraalissa oleva termi voidaan rajata ylhäältä:
   \begin{align*}
     \langle \nabla J(\theta + th) - \nabla J(\theta), h\rangle
     \le
@@ -131,22 +132,32 @@ Sijoittamalla \(h = -\eta \nabla J(\theta)\) saadaan
   \eta \|\nabla J(\theta)\|_2^2
   +
   \frac{L\eta^2}{2}\|\nabla J(\theta)\|_2^2 \\
-  &= J(\theta)
+  &=
+  J(\theta)
   -
   \eta
   \left(
     1 - \frac{L\eta}{2}
   \right)
-  \|\nabla J(\theta)\|_2^2,
-\end{align*} josta seuraa
-\begin{lemma}[Laskeutumislemma]
+  \|\nabla J(\theta)\|_2^2.
+\end{align*}
+Tästä nähdään, että kohdefunktion arvo pienenee jokaisella ei-stationaarisella askeleella jo ehdolla \(0 < \eta < \frac{2}{L}\). Erityisesti, jos lisäksi \(0 < \eta \le \frac{1}{L}\), niin
+\begin{align*}
+  1 - \frac{L\eta}{2} \ge \frac{1}{2},
+\end{align*}
+mistä seuraa vahvempi arvio.
+
+\begin{lemma}[Laskeutumislemma]\label{lem:gradient_descent_lemma}
   Olkoon \(J:\mathbb{R}^d \to \mathbb{R}\) \(L\)-sileä funktio. Tällöin gradienttimenetelmän päivityssääntö \(\theta_{t+1}=\theta_t - \eta \nabla J(\theta_t)\) takaa
   \begin{align*}
-    J(\theta_{t+1}) \leq J(\theta_t) - \frac{\eta}{2}\|\nabla J(\theta_t)\|_2^2,
+    J(\theta_{t+1})
+    \le
+    J(\theta_t) - \frac{\eta}{2}\|\nabla J(\theta_t)\|_2^2,
   \end{align*}
-  kun oppimisnopeus \(\eta < \frac{1}{L}\).
+  kun \(0 < \eta \le \frac{1}{L}\).
 \end{lemma}
-Tämä todistaa, että sopivalla oppimisnopeudella gradienttimenetelmä laskeutuu jokaisessa ei-stationaarisessa pisteessä, joka korostaa oppimisnopeuden valinnan keskeistä roolia optimoinnissa.
+
+Tämä todistaa, että sopivalla oppimisnopeudella gradienttimenetelmä laskeutuu jokaisessa ei-stationaarisessa pisteessä, mikä korostaa askelpituuden valinnan keskeistä roolia optimoinnissa.
 
 Koneoppimisessa minimoitava kohdefunktio muodostetaan tyypillisesti empiirisenä riskinä:
 \begin{align*}
@@ -160,13 +171,13 @@ missä \(z_1,\dots,z_N\) ovat opetusdatan näytteitä ja \(\ell(\theta; z_i)\) o
   =
   \frac{1}{N}\sum_{i=1}^N \nabla \ell(\theta; z_i).
 \end{align*}
-Kielimallien suurilla dataseteillä tapahtuvassa opetuksessa (\(N\) on äärimmäisen suuri) tarkan gradientin laskeminen jokaisella iteraatiolla on resursseiltaan liian kallista (ks. esim. \cite{goodfellow2016deep}). Tämän ongelman kiertämiseksi hyödynnetään stokastista gradienttimenetelmää (engl. \emph{stochastic gradient descent}, SGD)\cite{robbins1951stochastic}, jossa täysi gradientti approksimoidaan satunnaisesti poimitun suppeamman osajoukon eli mini-erän (engl. \emph{mini-batch}) avulla.
+Kielimallien suurilla dataseteillä tapahtuvassa opetuksessa (\(N\) on äärimmäisen suuri) tarkan gradientin laskeminen jokaisella iteraatiolla on resursseiltaan liian kallista (ks. esim. \cite{goodfellow2016deep}). Tämän ongelman kiertämiseksi hyödynnetään stokastista gradienttimenetelmää (engl. \emph{stochastic gradient descent}, SGD) \cite{robbins1951stochastic}, jossa täysi gradientti approksimoidaan satunnaisesti poimitun suppeamman osajoukon eli mini-erän (engl. \emph{mini-batch}) avulla.
 
-Olkoon \(B_t \subset \{1,\dots,N\}\) satunnaisesti hetkellä \(t\) muodostettu mini-erä. Tällöin suuntavektori \(g_t\) lasketaan kaavalla
+Olkoon \(B_t \subset \{1,\dots,N\}\) satunnaisesti hetkellä \(t\) muodostettu mini-erä, jonka koko on \(|B_t| = b\). Tällöin gradienttiestimaatti \(g_t\) lasketaan kaavalla
 \begin{align*}
   g_t
   =
-  \frac{1}{|B_t|}
+  \frac{1}{b}
   \sum_{i \in B_t}
   \nabla \ell(\theta_t; z_i)
 \end{align*}
@@ -176,19 +187,19 @@ ja parametrit päivitetään muodossa
   =
   \theta_t - \eta g_t.
 \end{align*}
-Olettamalla, että jokainen havaintojoukko poimitaan riippumattomasti ja todennäköisyyksien ollessa yhtenäiset, approksimaatio vastaa ehdollisen odotusarvon mielessä täyttä gradienttia:
+Jos mini-erä valitaan hetkellä \(t\) tasaisesti kaikkien \(b\)-alkioisten indeksijoukkojen joukosta, niin pätee
 \begin{align*}
   \mathbb{E}[g_t \mid \theta_t]
   =
   \nabla J(\theta_t).
 \end{align*}
-Stokastinen gradientti toimii siis kohdefunktion todellisen muutosnopeuden harhattomana estimaattorina. Vaikka iteratiivinen suunta on yksittäisellä askeleella kohinainen, odotusarvoisesti malli suuntaa oikeaan kohteeseen.
+Stokastinen gradientti on siis täydellisen gradientin harhaton estimaatti ehdollisen odotusarvon mielessä. Vaikka yksittäinen askel on kohinainen, odotusarvoisesti päivityssuunta vastaa täyden gradientin määräämää suuntaa.
 
-Tästä huolimatta stokastinen gradienttimenetelmä ei varianssinsa vuoksi tyypillisesti onnistu tuottamaan monotonisesti alenevaa kohdefunktion arvosarjaa. Tilannetta vaikeuttaa se rajoite, että sama adaptiivisuutta vailla oleva askelpituus \(\eta\) operoi kaikissa parametrisuunnissa yhtäläisesti lokaalista kaarevuudesta riippumatta. Mikäli mallin Hessin matriisin ominaisarvot poikkeavat toisistaan huomattavasti, optimointi ohjautuu tehottomasti. Menetelmä saattaa jumiutua ja edetä hitaasti loivissa suunnissa, samalla kun se oskilloi holtittomasti jyrkissä lokaaleissa profiileissa. Nämä piirteet ovat pääasiallinen motivaattori adaptiivisille optimointimenetelmille, joissa askelmääritystä hienosäädetään parametrikohtaisesti hyödyntäen historian kerryttämää informaatiota, mikä tekee modernin verkkorakenteen opettamisesta merkittävästi vakaampaa ja tehokkaampaa.
+Tästä huolimatta stokastinen gradienttimenetelmä ei varianssinsa vuoksi yleensä tuota monotonisesti alenevaa kohdefunktion arvosarjaa. Tilannetta vaikeuttaa se rajoite, että sama adaptiivisuutta vailla oleva askelpituus \(\eta\) operoi kaikissa parametrisuunnissa yhtäläisesti paikallisesta kaarevuudesta riippumatta. Erityisesti, jos eri suunnissa esiintyvä kaarevuus poikkeaa huomattavasti toisistaan, optimointi voi edetä tehottomasti. Tämä on keskeinen motiivi adaptiivisille optimointimenetelmille, joissa askelpituutta tai päivityssuuntaa muokataan parametrikohtaisesti gradienttihistorian avulla.
 
 \subsection{Häiriöalttius ja optimoinnin haasteet}
 
-Stokastisen gradienttimenetelmän keskeinen haaste liittyy siihen, että kohdefunktion lokaali kaarevuus voi vaihdella huomattavasti eri parametrisuunnissa. Tätä ilmiötä kutsutaan numeeriseksi häiriöalttiudeksi (engl. \emph{ill-conditioning}). Ilmiön täsmällisemmäksi tarkastelemiseksi oletetaan, että kohdefunktio \(J\) on \(L\)-sileyden lisäksi kahdesti jatkuvasti derivoituva. Tällöin pisteen \(\theta_t\) ympäristössä pätee toisen kertaluvun Taylorin approksimaatio
+Stokastisen gradienttimenetelmän keskeinen haaste liittyy siihen, että kohdefunktion lokaali kaarevuus voi vaihdella huomattavasti eri parametrisuunnissa. Tätä ilmiötä kutsutaan numeeriseksi häiriöalttiudeksi (engl. \emph{ill-conditioning}). Olkoon kohdefunktio \(J\) \(L\)-sileä ja kahdesti jatkuvasti derivoituva. Tällöin pisteen \(\theta_t\) ympäristössä pätee toisen kertaluvun Taylorin approksimaatio
 \begin{align*}
   J(\theta_t + \Delta\theta)
   \approx
@@ -201,47 +212,100 @@ Stokastisen gradienttimenetelmän keskeinen haaste liittyy siihen, että kohdefu
 \end{align*}
 Merkitään Hessin matriisia pisteessä \(\theta_t\) symbolilla
 \begin{align*}
-  H_t = \nabla^2 J(\theta_t),
+  H_t = \nabla^2 J(\theta_t).
 \end{align*}
-ja olkoot \(\lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_d\) matriisin \(H_t\) ominaisarvot. Tällöin \(\lambda_1\) vastaa jyrkintä lokaalia kaarevuussuuntaa ja \(\lambda_d\) loivinta suuntaa.
-
-Koska \(J\) on \(L\)-sileä, gradientti on \(L\)-Lipschitz, mistä kahdesti derivoituvassa tapauksessa seuraa
+Koska \(H_t\) on symmetrinen, sen ominaisarvot ovat reaalisia. Olettaen, että lokaali kvadraattinen malli on konveksi, eli \(H_t \succeq 0\), niin voidaan järjestää ominaisarvot muodossa
 \begin{align*}
-  H_t \preceq LI.
+  \lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_d \ge 0,
 \end{align*}
-Tästä saadaan erityisesti
+missä \(\lambda_1\) vastaa jyrkintä lokaalia kaarevuussuuntaa ja \(\lambda_d\) loivinta suuntaa.
+
+Koska \(J\) on \(L\)-sileä ja kahdesti jatkuvasti derivoituva, Hessin operaattorinormille pätee
+\begin{align*}
+  \|H_t\|_2 \le L.
+\end{align*}
+Koska lisäksi \(H_t\) on symmetrinen, tästä seuraa matriisiepäyhtälö
+\begin{align*}
+  -LI \preceq H_t \preceq LI,
+\end{align*} missä \(\preceq\) on Löwner-järjestys.
+Erityisesti lokaalisesti konveksissa tapauksessa \(H_t \succeq 0\) saadaan
+\begin{align*}
+  0 \preceq H_t \preceq LI,
+\end{align*}
+mistä seuraa
 \begin{align*}
   \lambda_1 \le L.
 \end{align*}
-Aiemmin esitetyn laskeutumislemman mukaan ehto \(\eta < \frac{1}{L}\) riittää takaamaan kohdefunktion arvon pienenemisen gradienttiaskeleella. Koska \(\lambda_1 \le L\), pätee samalla
+Tämä rajoittaa askelpituuden kokoa, sillä laskeutumislemma (\ref{lem:gradient_descent_lemma}) takaa kohdefunktion arvon pienenemisen vain jos
 \begin{align*}
-  \eta < \frac{1}{L}
-  \quad \Longrightarrow \quad
-  \eta < \frac{1}{\lambda_1}.
+  \eta \le \frac{1}{L}
+  \le \frac{1}{\lambda_1},
 \end{align*}
-Laskeutumislemman askelpituusehto voidaan siis tulkita lokaalin kaarevuuden näkökulmasta: valittu oppimisnopeus on riittävän pieni myös Hessin suurimman ominaisarvon määräämässä jyrkimmässä suunnassa.
+mikä tekee etenemisen loivimmissa suunnissa hidasta.
 
-Kaarevuuden epätasaisuutta mitataan Hessin matriisin ehtoluvulla
+Jos \(\lambda_d > 0\), voidaan Hessin matriisin ehtoluku määritellä muodossa
 \begin{align*}
-  \kappa = \frac{\lambda_1}{\lambda_d},
+  \kappa = \frac{\lambda_1}{\lambda_d}.
 \end{align*}
-olettaen \(\lambda_d > 0\). Kun ehtoluku on suuri, lokaali geometria on anisotrooppinen: osa suunnista on jyrkkiä ja osa loivia. Tällöin yksi globaali oppimisnopeus \(\eta\) joudutaan valitsemaan jyrkimmän suunnan ehdoilla, mikä hidastaa etenemistä loivemmissa suunnissa \cite{luenberger2015linear}. Tästä syystä suuri ehtoluku on keskeinen syy siihen, että tavallinen gradienttimenetelmä ja stokastinen gradienttimenetelmä voivat edetä tehottomasti.
+Ehtoluvun merkitys näkyy erityisen selvästi positiividefiniitissä kvadraattisessa mallissa \cite{nocedal2006numerical,luenberger2015linear}. Tarkastellaan funktiota
+\begin{align*}
+  q(\theta)
+  =
+  \frac{1}{2}
+  \langle \theta - \theta^\ast, H_t(\theta - \theta^\ast)\rangle,
+\end{align*}
+jonka minimikohta on \(\theta^\ast\), ja merkitään virhevektoria \(e_t = \theta_t - \theta^\ast\). Tällöin gradienttimenetelmän iteraatio saa muodon
+\begin{align*}
+  e_{t+1}
+  =
+  (I - \eta H_t)e_t.
+\end{align*}
+Koska \(H_t\) on symmetrinen, se voidaan diagonalisoida ortonormaalissa ominaisvektorikannassa. Tällöin jokainen komponentti etenee riippumattomasti kaavan
+\begin{align*}
+  e_{t+1}^{(k)}
+  =
+  (1 - \eta \lambda_k)e_t^{(k)},
+  \qquad k = 1,\dots,d
+\end{align*}
+mukaan. Askelpituus on siis valittava jyrkimmän suunnan ehdoilla, esimerkiksi siten että \(0 < \eta \le \frac{1}{\lambda_1}\), jotta iteraatio pysyy vakaana kaikissa suunnissa. Tällöin loivimman suunnan supistumiskerroin on
+\begin{align*}
+  1 - \eta \lambda_d.
+\end{align*}
+Erityisesti valinnalla \(\eta = \frac{1}{\lambda_1}\) saadaan
+\begin{align*}
+  1 - \eta \lambda_d
+  =
+  1 - \frac{\lambda_d}{\lambda_1}
+  =
+  1 - \frac{1}{\kappa}.
+\end{align*}
+Jos \(\kappa\) on suuri, tämä kerroin on lähellä arvoa \(1\), jolloin eteneminen loivimmassa suunnassa on hidasta \cite{luenberger2015linear,nocedal2006numerical}. Näin suuri ehtoluku heijastaa sitä, että yksi globaali askelpituus joudutaan valitsemaan jyrkimpien suuntien ehdoilla, mikä tekee gradienttimenetelmästä tehottoman loivemmissa suunnissa.
 
-Tämä motivoi adaptiivisia optimointimenetelmiä, joissa päivityksiä skaalataan parametrikohtaisesti tai suunnittain kohdefunktion lokaalin geometrian perusteella. Tavoitteena on yhdistää vakaus jyrkissä suunnissa ja tehokas eteneminen loivissa suunnissa.
+Lisäksi kaikille indekseille \(i,j \in \{1,\dots,d\}\), joille \(\lambda_j > 0\), pätee
+\begin{align*}
+  \frac{\lambda_i}{\lambda_j}
+  \le
+  \frac{\lambda_1}{\lambda_d}
+  =
+  \kappa.
+\end{align*}
+Jo kahden ominaisarvon suuri suhde antaa siis alarajan varsinaiselle ehtoluvulle. Toisin sanoen, jos joidenkin kahden suunnan lokaalit kaarevuudet eroavat huomattavasti toisistaan, ongelma on ainakin kyseisessä pisteessä huonosti ehdollistunut.
+
+Yleisessä ei-konveksissa tapauksessa edellä kuvattu tulkinta on paikallinen, koska Hessin matriisi riippuu pisteestä \(\theta_t\), eikä se välttämättä ole positiividefiniitti. Tästä huolimatta sama perusilmiö säilyy: suuri positiivinen lokaali kaarevuus pakottaa pieneen askelpituuteen, kun taas suunnissa, joissa ominaisarvo on pieni ja positiivinen tai itseisarvoltaan lähellä nollaa, eteneminen voi olla hidasta. Siten spektrin epätasaisuus on myös ei-konveksissa optimoinnissa keskeinen ensimmäisen kertaluvun menetelmien tehottomuuden lähde, vaikka johtopäätös koskee ensisijaisesti lokaalia dynamiikkaa \cite{nesterov2018lectures,goodfellow2016deep}.
 
 \subsection{Adaptiiviset optimointimenetelmät}
 
-Edellä tarkasteltu häiriöalttius osoittaa, että yksi kaikissa parametrisuunnissa yhtäläinen oppimisnopeus on usein tehoton valinta. Jyrkät suunnat edellyttävät pientä askelpituutta numeerisen vakauden säilyttämiseksi, kun taas loivissa suunnissa sama askelpituus voi johtaa hyvin hitaaseen etenemiseen. Adaptiivisten optimointimenetelmien tavoitteena on lieventää tätä ongelmaa muokkaamalla päivityssuuntaa tai askelpituutta gradienttihistorian perusteella. Käytännössä tämä tarkoittaa sitä, että menetelmä hyödyntää aiempien gradienttien ensimmäistä ja mahdollisesti myös toista momenttia parametripäivitysten skaalaamiseksi.
+Edellä tarkasteltu häiriöalttius osoittaa, että yksi kaikissa parametrisuunnissa yhtäläinen askelpituus on usein tehoton valinta. Jyrkät suunnat edellyttävät pientä askelpituutta numeerisen vakauden säilyttämiseksi, kun taas loivissa suunnissa sama askelpituus voi johtaa hyvin hitaaseen etenemiseen. Adaptiivisten optimointimenetelmien tavoitteena on lieventää tätä ongelmaa muokkaamalla päivityssuuntaa tai askelpituutta gradienttihistorian perusteella. Käytännössä tämä tarkoittaa sitä, että menetelmä hyödyntää aiempien gradienttien ensimmäistä ja mahdollisesti myös toista momenttia parametripäivitysten skaalaamiseksi.
 
 Tarkastellaan yleisesti tilannetta, jossa hetkellä \(t\) käytettävissä on gradienttiestimaatti \(g_t\). Täysi-gradienttisessa menetelmässä voidaan kirjoittaa \(g_t = \nabla J(\theta_t)\), kun taas stokastisessa tapauksessa \(g_t\) on mini-erän avulla muodostettu harhaton estimaatti täydestä gradientista. Tavallinen gradienttimenetelmä tai stokastinen gradienttimenetelmä päivittää parametrit muodossa
 \begin{align*}
   \theta_{t+1} = \theta_t - \eta g_t,
 \end{align*}
-missä \(\eta > 0\) on oppimisnopeus. Adaptiivisissa menetelmissä tätä perusmuotoa täydennetään muodostamalla gradienttihistoriasta uusia apumuuttujia, joiden avulla päivitys saadaan paremmin vastaamaan optimointiongelman lokaalia rakennetta.
+missä \(\eta > 0\) on askelpituus. Adaptiivisissa menetelmissä tätä perusmuotoa täydennetään muodostamalla gradienttihistoriasta uusia apumuuttujia, joiden avulla päivitys saadaan paremmin vastaamaan optimointiongelman lokaalia rakennetta.
 
 \paragraph{Liikemäärämenetelmä.}
 
-Yksi yksinkertaisimmista tavoista parantaa perusmuotoista gradienttipäivitystä on käyttää liikemäärää (engl. \emph{momentum}). Menetelmässä muodostetaan gradienttien eksponentiaalisesti painotettu liukuva keskiarvo
+Yksi yksinkertaisimmista tavoista parantaa perusmuotoista gradienttipäivitystä on käyttää liikemäärää (engl. \emph{momentum}). Tässä tarkastellaan eksponentiaalisesti painotettuun liukuvaan keskiarvoon perustuvaa muotoa. Menetelmässä muodostetaan gradienttien eksponentiaalisesti painotettu liukuva keskiarvo
 \begin{align*}
   m_t
   =
@@ -251,9 +315,9 @@ missä \(m_0 = 0\) ja parametri \(\beta_1 \in [0,1)\) määrää muistin pituude
 \begin{align*}
   \theta_{t+1} = \theta_t - \eta m_t.
 \end{align*}
-Muuttuja \(m_t\) voidaan tulkita gradientin ensimmäisen momentin estimaatiksi. Koska \(m_t\) yhdistää useiden peräkkäisten iteraatioiden gradientti-informaatiota, menetelmä vaimentaa stokastisesta vaihtelusta aiheutuvaa kohinaa ja voi samalla nopeuttaa etenemistä suunnissa, joissa gradientti säilyttää pitkään saman suuntaisena.
+Muuttuja \(m_t\) voidaan tulkita gradientin ensimmäisen momentin eksponentiaalisesti painotetuksi estimaatiksi. Koska \(m_t\) yhdistää useiden peräkkäisten iteraatioiden gradientti-informaatiota, menetelmä vaimentaa stokastisesta vaihtelusta aiheutuvaa kohinaa ja voi samalla nopeuttaa etenemistä suunnissa, joissa gradientti säilyttää pitkään saman suuntaisena.
 
-Alkuaskelilla estimaatti \(m_t\) on kuitenkin systemaattisesti harhainen kohti nollaa, koska rekursio käynnistetään arvosta \(m_0 = 0\). Tämän vuoksi voidaan käyttää harhakorjattua estimaattia
+Alkuaskelilla estimaatti \(m_t\) on kuitenkin systemaattisesti harhainen kohti nollaa, koska rekursio käynnistetään arvosta \(m_0 = 0\). Tämän vuoksi voidaan haluttaessa käyttää harhakorjattua estimaattia
 \begin{align*}
   \hat m_t = \frac{m_t}{1-\beta_1^t},
 \end{align*}
@@ -265,7 +329,7 @@ Pelkkä liikemäärämenetelmä ei kuitenkaan vielä skaalaa askelpituutta param
 
 \paragraph{Adam-algoritmi.}
 
-Adam (engl. \emph{adaptive moment estimation}) yhdistää liikemääräajatuksen parametrikohtaiseen askelpituuden skaalaamiseen. Menetelmässä ylläpidetään samanaikaisesti estimaattia gradientin ensimmäisestä momentista ja neliöidyn gradientin toisesta momentista. Ensimmäinen momentti määritellään kuten liikemäärämenetelmässä:
+Adam (engl. \emph{adaptive moment estimation}) yhdistää liikemääräajatuksen parametrikohtaiseen askelpituuden skaalaamiseen. Menetelmässä ylläpidetään samanaikaisesti estimaattia gradientin ensimmäisestä momentista ja neliöidyn gradientin toisen raakamomentin eksponentiaalisesti painotetusta keskiarvosta. Ensimmäinen momentti määritellään kuten liikemäärämenetelmässä:
 \begin{align*}
   m_t
   =
@@ -296,8 +360,16 @@ Näiden avulla parametripäivitys kirjoitetaan muodossa
 \end{align*}
 missä neliöjuuri, jako ja yhteenlasku suoritetaan koordinaattikohtaisesti ja \(\varepsilon > 0\) on pieni numeerista vakautta parantava vakio.
 
-Adam-päivityksen keskeinen piirre on se, että askelpituus mukautuu parametrikohtaisesti. Jos jonkin komponentin gradientit ovat historiallisesti suuria, vastaava komponentti vektorissa \(\hat v_t\) kasvaa, jolloin päivitys kyseisessä suunnassa pienenee. Vastaavasti niissä suunnissa, joissa gradienttien mittakaava on pieni, suhteellinen askelpituus säilyy suurempana. Tällä tavoin Adam toimii eräänlaisena diagonaalisena esiehdollistajana: se ei käytä Hessin matriisia eksplisiittisesti, mutta se pyrkii tasapainottamaan eri parametrisuuntien välistä mittakaavaeroa gradienttihistorian perusteella.
+Adam-päivityksen keskeinen piirre on se, että askelpituus mukautuu parametrikohtaisesti. Jos jonkin komponentin gradientit ovat historiallisesti suuria, vastaava komponentti vektorissa \(\hat v_t\) kasvaa, jolloin päivitys kyseisessä suunnassa pienenee. Vastaavasti niissä suunnissa, joissa gradienttien mittakaava on pieni, suhteellinen askelpituus säilyy suurempana. Päivitys voidaan kirjoittaa myös muodossa
+\begin{align*}
+  \theta_{t+1}
+  =
+  \theta_t - \eta D_t \hat m_t,
+  \qquad
+  D_t = \operatorname{diag}\!\left(\frac{1}{\sqrt{\hat v_t} + \varepsilon}\right),
+\end{align*}
+missä diagonaalimatriisi \(D_t\) tulkitaan koordinaattikohtaisena skaalauksena. Tässä mielessä Adam toimii diagonaalisena esiehdollistajana: se ei käytä Hessin matriisia eksplisiittisesti, mutta se pyrkii tasapainottamaan eri parametrisuuntien välistä mittakaavaeroa gradienttihistorian perusteella.
 
-Liikemäärämenetelmän ja Adamin välinen ero voidaan tiivistää seuraavasti. Liikemäärä hyödyntää gradientin ensimmäistä momenttia ja stabiloi päivityssuuntaa, kun taas Adam hyödyntää lisäksi toista momenttia parametrikohtaisen skaalauksen muodostamiseksi. Tästä syystä Adam soveltuu erityisen hyvin tilanteisiin, joissa optimointiongelman lokaali geometria on epätasainen ja gradienttikomponenttien mittakaavat poikkeavat voimakkaasti toisistaan.
+Liikemäärämenetelmän ja Adamin välinen ero voidaan tiivistää seuraavasti. Liikemäärä hyödyntää gradientin ensimmäistä momenttia ja stabiloi päivityssuuntaa, kun taas Adam hyödyntää lisäksi toista raakamomenttia parametrikohtaisen skaalauksen muodostamiseksi. Tästä syystä Adam soveltuu erityisesti tilanteisiin, joissa optimointiongelman lokaali geometria on epätasainen ja gradienttikomponenttien mittakaavat poikkeavat toisistaan.
 
 Käytännössä Adam on yksi käytetyimmistä syvien neuroverkkojen optimointimenetelmistä juuri tämän mukautuvuuden vuoksi. Se ei kuitenkaan ole ainoa mahdollinen adaptiivinen menetelmä, vaan samaan menetelmäperheeseen kuuluvat esimerkiksi Adagrad, RMSProp ja AMSGrad. Tässä työssä tarkastelu rajataan kuitenkin liikemäärämenetelmään ja Adamiin, sillä ne havainnollistavat riittävän hyvin sekä gradienttihistorian tasoittamisen että parametrikohtaisen askelpituuden mukauttamisen keskeiset periaatteet.
