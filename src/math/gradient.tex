@@ -1,12 +1,18 @@
 \section{Gradienttimenetelmä}
 
-Tässä luvussa tarkastellaan gradienttimenetelmää sekä sen stokastista muunnelmaa. Esitys rajataan ensimmäisen kertaluvun optimointimenetelmien viitekehykseen, sillä tutkielmassa myöhemmin käsiteltävät adaptiiviset menetelmät voidaan luontevasti tulkita tämän perusasetelman laajennuksiksi.
-
-Olkoon \(J : \mathbb{R}^d \to \mathbb{R}\) jatkuvasti derivoituva funktio. Tarkastellaan minimointitehtävää
+Gradienttimenetelmä ja sen stokastinen muunnelma ovat ensimmäisen
+kertaluvun optimointimenetelmiä, joissa kohdefunktion gradienttia
+hyödynnetään parametrivektorin päivittämisessä. Tarkastellaan
+minimointitehtävää
 \begin{align*}
-  \min_{\theta \in \mathbb{R}^d} J(\theta).
+  \min_{\theta \in \mathbb{R}^d} J(\theta),
 \end{align*}
-Parametrivektoria merkitään vektorilla \(\theta \in \mathbb{R}^d\) ja avaruuden \(\mathbb{R}^d\) sisätuloa muodossa \(\langle \cdot,\cdot\rangle\). Gradienttimenetelmän perusajatus pohjautuu kohdefunktion ensimmäisen kertaluvun paikalliseen approksimaatioon. Olkoon \(\theta_t \in \mathbb{R}^d\) optimoinnin nykyinen iteraatti ja \(v \in \mathbb{R}^d\) pieni siirtymävektori, jolloin Taylorin lauseen nojalla saadaan
+missä \(J : \mathbb{R}^d \to \mathbb{R}\) on jatkuvasti derivoituva
+kohdefunktio ja \(\theta \in \mathbb{R}^d\) on sen parametrivektori. Gradienttimenetelmän perusajatus
+perustuu kohdefunktion ensimmäisen kertaluvun paikalliseen approksimaatioon.
+Olkoon \(\theta_t \in \mathbb{R}^d\) ajanhetken \(t\) parametrivektori ja
+\(v \in \mathbb{R}^d\) pieni siirtymävektori. Taylorin lauseen nojalla
+saadaan
 \begin{align*}
   J(\theta_t + v)
   =
@@ -18,6 +24,7 @@ Parametrivektoria merkitään vektorilla \(\theta \in \mathbb{R}^d\) ja avaruude
   \qquad
   \text{kun } \|v\|_2 \to 0.
 \end{align*}
+
 Tästä seuraa, että funktion arvon paikallista muutosta approksimoi ensisijaisesti lineaarinen termi \(\langle \nabla J(\theta_t), v\rangle\). Rajoittamalla siirtymän pituutta ehdolla \(\|v\|_2 \le \varepsilon\) saadaan uusi minimointitehtävä
 \begin{align*}
   \min_{\|v\|_2 \le \varepsilon}
@@ -49,10 +56,15 @@ Tämä ohjaa siirtymään kohti jyrkintä laskua, mikä motivoi gradienttimenete
 \end{align*}
 missä \(\eta > 0\) on askelpituuden määrittävä oppimisnopeus (engl. \emph{learning rate}).
 
-Edellä esitetty johtopäätös nojaa kuitenkin ainoastaan paikalliseen lineaariseen malliin. Sen osoittamiseksi, että askel todella pienentää kohdefunktion arvoa, edellytetään lisäoletusta gradientin säännöllisyydestä. Seuraava tulos on klassinen optimointiteoriassa (ks. esim. \cite[luku 1.2.3]{nesterov2018lectures}).
+Päivitys perustuu kuitenkin kohdefunktion ensimmäisen kertaluvun
+paikalliseen approksimaatioon, eikä se sellaisenaan takaa kohdefunktion
+arvon pienenemistä. Tämän takuun saavuttamiseksi tarvitaan gradientin
+säännöllisyyttä koskevia lisäoletuksia.
 
 \begin{definition}\label{def:l_smooth}
-  Jatkuvasti derivoituva funktio \(J : \mathbb{R}^d \to \mathbb{R}\) on \(L\)-sileä, jos sen gradientti \(\nabla J\) on \(L\)-Lipschitz, eli kaikilla \(\theta,\theta' \in \mathbb{R}^d\) pätee
+  Jatkuvasti derivoituva funktio \(J : \mathbb{R}^d \to \mathbb{R}\) on
+  \(L\)-sileä, jos sen gradientti \(\nabla J\) on \(L\)-Lipschitz, eli
+  kaikilla \(\theta,\theta' \in \mathbb{R}^d\) pätee
   \begin{align*}
     \|\nabla J(\theta) - \nabla J(\theta')\|_2
     \le
@@ -60,8 +72,12 @@ Edellä esitetty johtopäätös nojaa kuitenkin ainoastaan paikalliseen lineaari
   \end{align*}
 \end{definition}
 
+Olettaen, että kohdefunktio on \(L\)-sileä, sen muutokselle voidaan
+johtaa neliöllinen yläraja.
+
 \begin{lemma}[Neliöllinen yläraja]\label{lemma:quadratic_upper_bound}
-  Olkoon \(J:\mathbb{R}^d \to \mathbb{R}\) \(L\)-sileä funktio. Tällöin kaikilla \(\theta,h \in \mathbb{R}^d\) on voimassa epäyhtälö
+  Olkoon \(J:\mathbb{R}^d \to \mathbb{R}\) \(L\)-sileä funktio. Tällöin
+  kaikilla \(\theta,h \in \mathbb{R}^d\) on voimassa epäyhtälö
   \begin{align*}
     J(\theta + h)
     \le
@@ -80,7 +96,8 @@ Edellä esitetty johtopäätös nojaa kuitenkin ainoastaan paikalliseen lineaari
     =
     \int_0^1 \langle \nabla J(\theta + th), h\rangle\,dt.
   \end{align*}
-  Lisäämällä ja vähentämällä termi \(\langle\nabla J(\theta), h\rangle\) integraalin sisällä saadaan
+  Lisäämällä ja vähentämällä termi
+  \(\langle\nabla J(\theta), h\rangle\) integraalin sisällä saadaan
   \begin{align*}
     J(\theta + h) - J(\theta)
     &=
@@ -94,21 +111,22 @@ Edellä esitetty johtopäätös nojaa kuitenkin ainoastaan paikalliseen lineaari
     \int_0^1
     \langle \nabla J(\theta + th) - \nabla J(\theta), h\rangle\,dt.
   \end{align*}
-  Cauchy--Schwarzin epäyhtälön ja sileysoletuksen perusteella integraalissa oleva termi voidaan rajata ylhäältä:
+  Cauchy--Schwarzin epäyhtälön ja sileysoletuksen perusteella
+  integraalissa oleva termi voidaan rajata ylhäältä:
   \begin{align*}
     \langle \nabla J(\theta + th) - \nabla J(\theta), h\rangle
-    \le
-    \|\nabla J(\theta + th) - \nabla J(\theta)\|_2 \|h\|_2
-    \le
+    &\le
+    \|\nabla J(\theta + th) - \nabla J(\theta)\|_2 \|h\|_2 \\
+    &\le
     Lt \|h\|_2^2.
   \end{align*}
   Integroimalla epäyhtälö saadaan
   \begin{align*}
     \int_0^1
     \langle \nabla J(\theta + th) - \nabla J(\theta), h\rangle\,dt
-    \le
-    \int_0^1 Lt \|h\|_2^2\,dt
-    =
+    &\le
+    \int_0^1 Lt \|h\|_2^2\,dt \\
+    &=
     \frac{L}{2}\|h\|_2^2.
   \end{align*}
   Siispä
@@ -123,7 +141,8 @@ Edellä esitetty johtopäätös nojaa kuitenkin ainoastaan paikalliseen lineaari
   \end{align*}
 \end{proof}
 
-Sijoittamalla \(h = -\eta \nabla J(\theta)\) saadaan
+Soveltamalla neliöllistä ylärajaa gradienttimenetelmän päivitykseen
+\(h=-\eta\nabla J(\theta)\) saadaan
 \begin{align*}
   J(\theta - \eta \nabla J(\theta))
   &\le
@@ -141,11 +160,18 @@ Sijoittamalla \(h = -\eta \nabla J(\theta)\) saadaan
   \right)
   \|\nabla J(\theta)\|_2^2.
 \end{align*}
-Tästä nähdään, että kohdefunktion arvo pienenee jokaisella ei-stationaarisella askeleella jo ehdolla \(0 < \eta < \frac{2}{L}\). Erityisesti, jos lisäksi \(0 < \eta \le \frac{1}{L}\), niin
+Erityisesti, jos \(0<\eta\le 1/L\), niin
 \begin{align*}
-  1 - \frac{L\eta}{2} \ge \frac{1}{2},
+  J(\theta - \eta \nabla J(\theta))
+  \le
+  J(\theta)
+  -
+  \frac{\eta}{2}\|\nabla J(\theta)\|_2^2.
 \end{align*}
-mistä seuraa vahvempi arvio.
+Näin ollen kohdefunktion arvo pienenee jokaisessa pisteessä, jossa
+\(\nabla J(\theta)\neq 0\), kun askelpituus toteuttaa ehdon
+\(0<\eta\le 1/L\), mikä todistaa seuraavan klassisen tuloksen
+optimointiteoriassa \cite{nesterov2018lectures}.
 
 \begin{lemma}[Laskeutumislemma]\label{lem:gradient_descent_lemma}
   Olkoon \(J:\mathbb{R}^d \to \mathbb{R}\) \(L\)-sileä funktio. Tällöin gradienttimenetelmän päivityssääntö \(\theta_{t+1}=\theta_t - \eta \nabla J(\theta_t)\) takaa
@@ -157,7 +183,14 @@ mistä seuraa vahvempi arvio.
   kun \(0 < \eta \le \frac{1}{L}\).
 \end{lemma}
 
-Tämä todistaa, että sopivalla oppimisnopeudella gradienttimenetelmä laskeutuu jokaisessa ei-stationaarisessa pisteessä, mikä korostaa askelpituuden valinnan keskeistä roolia optimoinnissa.
+Lemma osoittaa, että kohdefunktion arvo pienenee jokaisessa
+ei-stationaarisessa pisteessä, kun oppimisnopeus valitaan ehdon
+\(0 < \eta \le 1/L\) mukaisesti. Käytännössä oppimisnopeuden valinta ei
+kuitenkaan ole suoraviivaista, sillä kohdefunktion kaarevuus voi vaihdella
+merkittävästi eri parametrisuunnissa. Tällöin yksi kiinteä oppimisnopeus
+voi olla joissakin suunnissa liian suuri ja toisissa tarpeettoman pieni.
+Adaptiivisilla menetelmillä askelpituutta voidaan mukauttaa optimoinnin
+aikana, kuten alaluvussa \ref{subsec:häiriöalttius} käsitellään.
 
 Koneoppimisessa minimoitava kohdefunktio muodostetaan tyypillisesti empiirisenä riskinä:
 \begin{align*}
@@ -197,7 +230,7 @@ Stokastinen gradientti on siis täydellisen gradientin harhaton estimaatti ehdol
 
 Tästä huolimatta stokastinen gradienttimenetelmä ei varianssinsa vuoksi yleensä tuota monotonisesti alenevaa kohdefunktion arvosarjaa. Tilannetta vaikeuttaa se rajoite, että sama adaptiivisuutta vailla oleva askelpituus \(\eta\) operoi kaikissa parametrisuunnissa yhtäläisesti paikallisesta kaarevuudesta riippumatta. Erityisesti, jos eri suunnissa esiintyvä kaarevuus poikkeaa huomattavasti toisistaan, optimointi voi edetä tehottomasti. Tämä on keskeinen motiivi adaptiivisille optimointimenetelmille, joissa askelpituutta tai päivityssuuntaa muokataan parametrikohtaisesti gradienttihistorian avulla.
 
-\subsection{Häiriöalttius ja optimoinnin haasteet}
+\subsection{Häiriöalttius ja optimoinnin haasteet}\label{subsec:häiriöalttius}
 
 Stokastisen gradienttimenetelmän keskeinen haaste liittyy siihen, että kohdefunktion lokaali kaarevuus voi vaihdella huomattavasti eri parametrisuunnissa. Tätä ilmiötä kutsutaan numeeriseksi häiriöalttiudeksi (engl. \emph{ill-conditioning}). Olkoon kohdefunktio \(J\) \(L\)-sileä ja kahdesti jatkuvasti derivoituva. Tällöin pisteen \(\theta_t\) ympäristössä pätee toisen kertaluvun Taylorin approksimaatio
 \begin{align*}
@@ -279,7 +312,7 @@ Vaikka tämä tarkastelu perustuu lokaaliin toisen kertaluvun approksimaatioon, 
 
 Edellisessä alaluvussa todettiin, että stokastinen gradienttimenetelmä käyttää samaa globaalia oppimisnopeutta kaikissa parametrisuunnissa. Tämä voi olla tehotonta erityisesti silloin, kun kohdefunktion lokaali kaarevuus tai gradienttien mittakaava vaihtelee voimakkaasti parametrien välillä. Tällöin vakaa oppimisnopeus on valittava jyrkkien suuntien ehdoilla, mikä hidastaa etenemistä loivemmissa suunnissa. Adaptiivisten optimointimenetelmien keskeinen idea on lieventää tätä ongelmaa skaalaamalla päivitystä parametrikohtaisesti gradienttihistorian perusteella.
 
-Yleisellä tasolla adaptiivinen menetelmä voidaan kirjoittaa muodossa
+Yleinen adaptiivinen menetelmä voidaan kirjoittaa muodossa
 \begin{align*}
   \theta_{t+1}
   =
@@ -310,7 +343,7 @@ missä \(\varepsilon > 0\) on pieni vakio numeerisen stabiilisuuden vuoksi.
 AdaGradin keskeinen ominaisuus on, että parametreille, joiden gradientit ovat toistuvasti suuria, kertyy nopeasti suuri nimittäjä, jolloin niiden efektiivinen oppimisnopeus pienenee. Vastaavasti parametrit, joiden gradientit ovat harvoja tai pieniä, voivat saada suhteellisesti suurempia päivityksiä. Tämän vuoksi menetelmä soveltuu erityisen hyvin tilanteisiin, joissa gradientit ovat harvoja. AdaGradin keskeinen heikkous on kuitenkin se, että kertymä \(s_t\) kasvaa monotonisesti, minkä seurauksena askelpituudet voivat ajan myötä pienentyä liikaa ja optimointi hidastua olennaisesti.
 
 \paragraph{RMSProp.}
-RMSProp kehitettiin käytännölliseksi korjaukseksi AdaGradin liian nopeasti pieneneville askelpituuksille \cite{tieleman2012lecture,goodfellow2016deep}. Sen sijaan, että neliöityjä gradientteja summattaisiin koko optimoinnin ajalta, RMSProp käyttää eksponentiaalisesti painotettua liukuvaa keskiarvoa
+RMSProp (\emph{root mean square propagation}) kehitettiin käytännölliseksi korjaukseksi AdaGradin liian nopeasti pieneneville askelpituuksille. Menetelmällä on poikkeuksellinen historia, sillä sitä ei alun perin esitelty vertaisarvioidussa tieteellisessä artikkelissa, vaan se tuotiin julkisuuteen Geoffrey Hintonin pitämällä Coursera-verkkokurssilla \cite{tieleman2012lecture}. Tästä epävirallisesta julkaisukanavastaan huolimatta RMSPropista tuli nopeasti yksi syväoppimisen vakiintuneimmista optimointimenetelmistä, ja sen toimintaperiaate on dokumentoitu laajasti alan perusteoksiin \cite{goodfellow2016deep}. Sen sijaan, että neliöityjä gradientteja summattaisiin koko optimoinnin ajalta, RMSProp käyttää eksponentiaalisesti painotettua liukuvaa keskiarvoa
 \begin{align*}
   v_t
   =
@@ -375,6 +408,6 @@ AdamW on Adamin muunnelma, jossa painojen kutistaminen (\emph{weight decay}) ero
 \end{align*}
 missä \(\lambda \ge 0\) on painojen kutistamisen voimakkuutta säätelevä parametri.
 
-Tämä erotus on osoittautunut käytännössä tärkeäksi erityisesti syvissä neuroverkoissa ja transformer-malleissa. Niinpä AdamW:tä pidetään nykyisin usein tarkoituksenmukaisempana valintana kuin alkuperäistä Adamia silloin, kun mallin opetuksessa käytetään eksplisiittistä painojen kutistamista.
+Tämä erotus on osoittautunut käytännössä tärkeäksi erityisesti syvissä neuroverkoissa ja transformer-malleissa \cite{vaswani2017attention}. Niinpä AdamW:tä pidetään nykyisin usein tarkoituksenmukaisempana valintana kuin alkuperäistä Adamia silloin, kun mallin opetuksessa käytetään eksplisiittistä painojen kutistamista.
 
 Lopuksi on syytä huomata, että hyvin suurissa kielimalleissa myös optimointimenetelmän muistikustannus muodostuu olennaiseksi. Tämän vuoksi on kehitetty muistitehokkaampia adaptiivisia menetelmiä, kuten Adafactor \cite{shazeer2018adafactor}, joissa pyritään säilyttämään adaptiivisen skaalaamisen keskeiset edut pienemmällä muistinkulutuksella. Tässä tutkielmassa tarkastelun painopiste rajataan kuitenkin AdaGrad-, RMSProp- ja Adam-tyyppisiin menetelmiin, sillä ne muodostavat historiallisesti ja käsitteellisesti keskeisimmän perustan myöhemmille adaptiivisille optimointialgoritmeille.
