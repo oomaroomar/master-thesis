@@ -1,653 +1,604 @@
-\section{Nykyaikaisen suuren kielimallin arkkitehtuuri}
-\label{sec:llm-architecture}
+\section{Dekooderipohjainen transformer-arkkitehtuuri suurille kielimalleille}
 
-Edellisissä luvuissa käsiteltiin kielimallinnusta diskreettien esitysten,
-neuraalisten upotusmallien ja gradienttipohjaisen optimoinnin näkökulmasta.
-Tässä luvussa kuvataan arkkitehtuuria, joka muodostaa monien nykyaikaisten
-suurten kielimallien (large language model, LLM) perustan: pelkkään dekooderiin
-perustuvaa Transformer-arkkitehtuuria. Vaikka käytännön LLM-järjestelmät
-eroavat toisistaan parametrimäärän, opetusdatan, optimointimenetelmien ja
-jälkiopetusmenetelmien osalta, niillä on usein sama keskeinen tavoite. Malli
-arvioi todennäköisyysjakauman seuraavalle tokenille aiempien tokenien jonon
-perusteella.
+Luvussa \ref{sec:discrete} tarkasteltiin kielimallinnusta frekvenssipohjaisena
+\(n\)-gram-ongelmana ja luvussa \ref{sec:mlp} parametrisoituna neuroverkkopohjaisena
+ennustetehtävänä. Molemmissa tapauksissa tavoitteena on estimoida seuraavan
+tokenin ehdollinen todennäköisyys aiemmin havaitun kontekstin perusteella.
+Nykyaikaiset suuret kielimallit (engl.\ \emph{large language models}, LLM)
+perustuvat samaan autoregressiiviseen periaatteeseen, mutta niiden
+parametrisointi ja kontekstin käsittely eroavat olennaisesti kiinteän
+konteksti-ikkunan \(n\)-gram-malleista.
 
-Nykyaikaisia LLM-malleja voidaan siten pitää neuraalisina
-todennäköisyyspohjaisina kielimalleina. Niiden keskeinen arkkitehtoninen ero
-varhaisempiin neuraalisiin kielimalleihin verrattuna on itsehuomion
-(self-attention) käyttö. Itsehuomio mahdollistaa sen, että malli voi yhdistää
-dynaamisesti tietoa saatavilla olevan kontekstinsa eri sijainneista sen sijaan,
-että se perustuisi kiinteänkokoiseen aiempien sanojen ikkunaan. Tämä ominaisuus
-on tehnyt Transformer-pohjaisista malleista erittäin tehokkaita tekstin
-pitkän kantaman riippuvuuksien mallintamisessa.
+Tässä luvussa tarkastellaan erityisesti dekooderipohjaista Transformer-
+arkkitehtuuria, joka muodostaa useiden nykyaikaisten generatiivisten
+kielimallien, kuten GPT-malliperheen, matemaattisen perustan. Transformer
+esiteltiin alun perin Vaswanin ym.\ työssä
+\emph{Attention Is All You Need} \cite{vaswani2017attention} vuonna 2017.
+Alkuperäinen arkkitehtuuri oli konekäännökseen suunniteltu
+enkooderi--dekooderi-rakenne. Pian tämän jälkeen osoitettiin, että pelkkään
+Transformer-dekooderiin perustuva autoregressiivinen kielimalli voidaan
+esikouluttaa suurilla tekstiaineistoilla ja soveltaa useisiin
+kielenkäsittelytehtäviin \cite{radford2018improving}.
 
-Vaswani et al.~\cite{vaswani2017attention} esittelivät Transformer-
-arkkitehtuurin alun perin konekääntämistä varten. Alkuperäinen malli sisälsi
-sekä enkooderin että dekooderin. Monet generatiiviset LLM-mallit, mukaan lukien
-GPT-malliperheen mallit, käyttävät sen sijaan pelkkään dekooderiin perustuvaa
-arkkitehtuuria, jossa käytetään kausaalista itsehuomiota. Tällainen malli sopii
-autoregressiiviseen tekstintuottoon: se ennustaa yhden tokenin kerrallaan ja
-rajoittuu käyttämään vain jonossa aiemmin saatavilla ollutta tietoa.
+\subsection{Kiinteästä konteksti-ikkunasta itsehuomioon}
 
-\subsection{Kiinteän kontekstin kielimalleista Transformereihin}
-\label{subsec:fixed-context-to-transformers}
+Luvussa \ref{sec:n-gram} esitetyn \(n\)-gram-mallin mukaan tokenin \(w_t\)
+todennäköisyys approksimoidaan rajallisen, ennalta määrätyn mittaisen
+kontekstin perusteella:
+\begin{align*}
+  P(w_t \mid w_1,\ldots,w_{t-1})
+  \approx
+  P(w_t \mid w_{t-n+1},\ldots,w_{t-1}).
+\end{align*}
+Luvussa \ref{sec:mlp} tarkasteltu MLP-pohjainen kielimalli käyttää myös
+kiinteän pituista kontekstia. Vaikka upotusvektorit ja jaettu
+parametrisointi parantavat tällaisen mallin yleistyskykyä verrattuna
+frekvenssipohjaiseen \(n\)-gram-malliin, kontekstin pituus on edelleen
+arkkitehtuurin ennalta määräämä.
 
-Klassinen \(n\)-grammikielimalli approksimoi seuraavan sanan
-todennäköisyyttä käyttäen kiinteää määrää sitä edeltäviä sanoja. Esimerkiksi
-\(n\)-grammimalli voi arvioida todennäköisyyden
+Transformer-mallin keskeinen ajatus on korvata kiinteä konteksti-ikkuna
+itsehuomiomekanismilla (engl.\ \emph{self-attention}). Itsehuomion avulla tokenien esityksiä voidaan rikastaa ympäröivän kontekstin perusteella. Näin malli voi
+hyödyntää koko käytettävissä olevaa aiempaa kontekstia ilman,
+että jokaiselle mahdolliselle kontekstille tarvitsisi muodostaa erillistä
+parametrivektoria.
 
-$$
-p(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
-$$
+\subsection{Skaalattu pistetulohuomio}
 
-Varhaiset neuraaliset kielimallit säilyttävät tämän kiinteän kontekstin
-muotoilun, mutta korvaavat lukumäärätaulukot opituilla sana-upotuksilla ja
-epälineaarisilla neuroverkoilla. Esimerkiksi monikerroksinen perseptroni voi
-ottaa syötteekseen edeltävien \(n-1\) tokenin upotukset ja ennustaa
-todennäköisyysjakauman seuraavalle tokenille.
+Olkoon ensimmäisen kerroksen tokeniesityksistä muodostettu matriisi
+\begin{align*}
+  H^{(0)}
+  =
+  \begin{bmatrix}
+    (h_1^{(0)})^{\top} \\
+    (h_2^{(0)})^{\top} \\
+    \vdots \\
+    (h_T^{(0)})^{\top}
+  \end{bmatrix}
+  \in \mathbb{R}^{T \times d}.
+\end{align*}
+Jokaisesta tokeniesityksestä muodostetaan kolme lineaarista projektiota:
+kysely (engl.\ \emph{query}), avain (engl.\ \emph{key}) ja arvo
+(engl.\ \emph{value}). Olkoon
+\begin{align*}
+  W_Q &\in \mathbb{R}^{d \times d_k}, \\
+  W_K &\in \mathbb{R}^{d \times d_k}, \\
+  W_V &\in \mathbb{R}^{d \times d_v}
+\end{align*}
+opittavia painomatriiseja. Tällöin kysely-, avain- ja arvomatriisit ovat
+\begin{align*}
+  Q &= H W_Q, \\
+  K &= H W_K, \\
+  V &= H W_V,
+\end{align*}
+missä
+\begin{align*}
+  Q,K &\in \mathbb{R}^{T \times d_k}, \\
+  V &\in \mathbb{R}^{T \times d_v}.
+\end{align*}
 
-Kiinteän kontekstin malleilla on merkittävä rajoite: valitun
-konteksti-ikkunan ulkopuolella oleva tieto ei voi vaikuttaa ennusteeseen
-suoraan. Ikkunakokoa voidaan kasvattaa, mutta tällöin yksinkertainen
-monikerroksinen perseptroni vastaanottaa suuremman syötevek\-torin ja sen on
-opittava, miten kukin sijainti vaikuttaa ennusteeseen. Tämä lähestymistapa ei
-skaalaudu tehokkaasti pitkiin dokumentteihin tai keskusteluihin.
+Kyselyvektori kuvaa sitä, millaista informaatiota tokenin esitys hakee
+kontekstista. Avainvektori puolestaan kuvaa, millaista informaatiota kyseinen
+token tarjoaa muiden tokenien käyttöön. Arvovektori sisältää sen informaation,
+joka yhdistetään painotettuna tokenin uuteen esitykseen.
 
-Toistuvat neuroverkot olivat tärkeä välivaihe kielimallien kehityksessä.
-Toistuvassa mallissa piilotila päivitetään yksi token kerrallaan, ja se voi
-periaatteessa tiivistää kaiken aiemman tiedon. Toistuvia arkkitehtuureja on
-kuitenkin vaikea rinnakkaistaa sekvenssin eri sijaintien osalta opetuksen
-aikana, ja niillä voi olla vaikeuksia säilyttää tietoa pitkien sekvenssien
-yli.
+Huomiopisteet saadaan kyselyiden ja avainten välisinä pistetuloina:
+\begin{align*}
+  S = \frac{QK^{\top}}{\sqrt{d_k}}
+  \in \mathbb{R}^{T \times T}.
+\end{align*}
+Matriisin \(S\) alkio \(S_{ij}\) mittaa, kuinka paljon position \(i\) tokenin
+kysely vastaa position \(j\) tokenin avainta. Nimittäjä
+\(\sqrt{d_k}\) skaalataaan mukaan, jotta pistetulojen suuruus ei kasvaisi
+hallitsemattomasti avain- ja kyselyvektorien dimension kasvaessa
+\cite{vaswani2017attention}.
 
-Transformerit ratkaisevat näitä rajoitteita itsehuomion avulla. Sen sijaan,
-että kaikki aiempi tieto pakattaisiin yhteen toistuvaan tilaan, kukin tokenin
-sijainti voi kohdistaa huomionsa suoraan muihin olennaisiin tokenisijainteihin.
-Opetuksen aikana kaikkien sekvenssin sijaintien esitykset voidaan laskea
-rinnakkain, kunhan huomiomaski estää pääsyn tuleviin tokeneihin. Tämä joustavan
-kontekstin hyödyntämisen ja tehokkaan rinnakkaisen opetuksen yhdistelmä on
-keskeinen Transformer-pohjaisten kielimallien menestyksen syy.
-
-\subsection{Tokenit, tokenisointi ja syöteupotukset}
-\label{subsec:tokens-and-embeddings}
-
-Kielimallit käsittelevät tokeneita eivätkä suoraan sanoja tai merkkejä. Token
-on rajallisen sanaston alkio. Nykyaikaisissa LLM-malleissa tokenit ovat yleensä
-sanatasoa pienempiä yksiköitä eli alisanayksiköitä. Yleinen sana voidaan
-esittää yhdellä tokenilla, kun taas harvinainen sana, yhdyssana tai
-epätavallisen päätteen sisältävä sana voidaan jakaa useaksi tokeniksi.
-
-Alisanatokenisointi muodostaa käytännöllisen kompromissin sana- ja
-merkkitason mallinnuksen välillä. Sanatasoisten sanastojen on käsiteltävä
-erittäin suurta mahdollista sanajoukkoa, ja ne käsittelevät aiemmin
-näkemättömiä sanoja huonosti. Merkkitasoiset sanastot ovat pieniä, mutta
-merkkisekvenssit ovat pitkiä. Alisanatokenisoinnilla voidaan esittää
-mielivaltaista tekstiä hallittavan kokoisella sanastolla samalla, kun usein
-esiintyvät merkkijonot säilytetään yksittäisinä tokeneina. Esimerkkejä
-alisanatokenisointimenetelmistä ovat byte-pair encoding, WordPiece ja unigram
-language model -tokenisointi.
-
-Olkoon sanaston koko \(V\). Tekstisekvenssi muunnetaan tokenisaattorilla
-kokonaislukutunnisteiden jonoksi
-
-$$
-x_1, x_2, \ldots, x_T,
-$$
-
-missä \(x_t \in \{1, \ldots, V\}\) ja \(T\) on sekvenssin pituus. Malli ei
-käsittele kokonaislukutunnisteita numeerisina suureina. Sen sijaan kukin
-tunniste indeksoi opitun upotusvektorin.
-
-Olkoon
-
-$$
-E \in \mathbb{R}^{V \times d}
-$$
-
-tokenupotusmatriisi, missä \(d\) on mallin piilodimensio. Tokenin \(x_t\)
-upotus on
-
-$$
-e_t = E[x_t],
-$$
-
-missä \(e_t \in \mathbb{R}^{d}\). Jos token esitetään vaihtoehtoisesti
-one-hot-vektorina \(o_t \in \mathbb{R}^{V}\), sen upotus voidaan kirjoittaa
-muotoon
-
-$$
-e_t = E^{\mathsf{T}} o_t.
-$$
-
-Upotusmatriisi opitaan yhdessä mallin muiden parametrien kanssa
-gradienttipohjaisella optimoinnilla. Samankaltaisissa konteksteissa esiintyvät
-tokenit voivat kehittää toisiaan muistuttavia upotusesityksiä. Transformerissa
-tokenin merkitys määräytyy kuitenkin viime kädessä kontekstuaalisesta
-esityksestä, joka muodostuu useiden laskentakerrosten jälkeen.
-
-\subsection{Sijaintitieto}
-\label{subsec:positional-information}
-
-Itsehuomio vertailee tokeniesityksiä, mutta huomio ei yksinään koodaa tokenien
-järjestystä. Ilman sijaintitietoa sekvenssit ``koira ajoi kissaa takaa'' ja
-``kissa ajoi koiraa takaa'' sisältäisivät saman tokenupotusten joukon. Niiden
-järjestys ei olisi mallin käytettävissä.
-
-Tästä syystä tokeniesityksiin lisätään tai niihin sisällytetään muulla tavoin
-sijaintitietoa. Alkuperäisessä Transformerissa tokenin \(x_t\) upotukseen
-lisätään sijaintikoodaus \(p_t\):
-
-$$
-h_t^{(0)} = e_t + p_t.
-$$
-
-Yläindeksi \((0)\) tarkoittaa syöte-esitystä ennen ensimmäistä
-Transformer-kerrosta. Vaswani et al.~\cite{vaswani2017attention} ehdottivat
-sinimuotoisia sijaintikoodauksia, jotka määritellään sijainnille \(t\) ja
-dimension indeksille \(i\) seuraavasti:
-
-$$
-p_{t,2i}
-=
-\sin\left(
-  \frac{t}{10000^{2i/d}}
-\right),
-$$
-
-sekä
-
-$$
-p_{t,2i+1}
-=
-\cos\left(
-  \frac{t}{10000^{2i/d}}
-\right).
-$$
-
-Toiset mallit käyttävät opittuja sijaintiupotuksia. Monet nykyaikaiset
-LLM-mallit hyödyntävät suhteellisia tai rotaatioon perustuvia
-sijaintimenetelmiä, kuten rotaatiopositio-upotuksia (rotary position
-embeddings), sillä nämä menetelmät voivat koodata sijaintien välisiä suhteita
-ja mahdollisesti yleistyä tehokkaammin pitkiin konteksteihin. Keskeinen periaate
-on kuitenkin sama: neuroverkon on saatava tietoa tokenien järjestyksestä.
-
-\(T\) tokenin sekvenssin alkuperäiset tokeniesitykset voidaan kirjoittaa
-matriisina
-
-$$
-H^{(0)}
-=
-\begin{bmatrix}
-  h_1^{(0)} \\
-  h_2^{(0)} \\
-  \vdots \\
-  h_T^{(0)}
-\end{bmatrix}
-\in \mathbb{R}^{T \times d}.
-$$
-
-Tämä matriisi toimii ensimmäisen Transformer-lohkon syötteenä.
-
-\subsection{Itsehuomio}
-\label{subsec:self-attention}
-
-Itsehuomio mahdollistaa sen, että sekvenssin jokainen sijainti voi yhdistää
-tietoa muista sijainneista. Termi ``itse'' tarkoittaa, että kyselyt, avaimet ja
-arvot johdetaan kaikki samasta syötesekvenssistä.
-
-Kun syöte-esitysmatriisi on
-
-$$
-H \in \mathbb{R}^{T \times d},
-$$
-
-malli laskee kysely-, avain- ja arvomatriisit:
-
-$$
-Q = HW_Q,
-$$
-
-$$
-K = HW_K,
-$$
-
-$$
-V = HW_V,
-$$
-
-missä \(W_Q\), \(W_K\) ja \(W_V\) ovat opittuja parametrimatriiseja.
-Matriisit \(Q\), \(K\) ja \(V\) sisältävät yhden kyselyvektorin, avainvektorin
-ja arvovektorin kutakin syötesekvenssin sijaintia varten.
-
-Tokenin kysely edustaa sitä, millaista tietoa token etsii. Toisen tokenin avain
-edustaa tietotyyppiä, jota tämä token voi tarjota. Kyselyn ja avaimen
-yhteensopivuutta mitataan niiden pistetulolla. Arvot sisältävät tiedon, joka
-yhdistetään, kun huomiopainot on laskettu.
-
-Skaalattu pistetulohuomio määritellään seuraavasti:
-
-$$
-\operatorname{Attention}(Q,K,V)
-=
-\operatorname{softmax}
-\left(
-  \frac{QK^{\mathsf{T}}}{\sqrt{d_k}}
-\right)V,
-$$
-
-missä \(d_k\) on avainvektorien dimensio. Matriisikertolasku
-\(QK^{\mathsf{T}}\) tuottaa huomiopisteiden matriisin. Sen rivin \(i\) ja
-sarakkeen \(j\) alkio ilmaisee, kuinka voimakkaasti sijainnissa \(i\) oleva
-token kohdistaa huomionsa sijainnissa \(j\) olevaan tokeniin ennen
-normalisointia.
-
-Softmax-funktio muuntaa pisteet epänegatiivisiksi huomiopainoiksi, joiden
-kunkin rivin summa on yksi. Vektorille \(z \in \mathbb{R}^{V}\)
-softmax määritellään komponenteittain muodossa
-
-$$
-\operatorname{softmax}(z)_i
-=
-\frac{\exp(z_i)}
-{\sum_{j=1}^{V} \exp(z_j)}.
-$$
-
-Huomiossa softmax sovelletaan erikseen jokaiseen pistematriisin riviin.
-Kukin tulosesitys on siten arvovektoreiden painotettu summa. Skaalaustekijä
-\(\sqrt{d_k}\) pienentää pistetulojen suuruutta, kun avainvektorien dimensio on
-suuri, mikä auttaa pitämään softmax-arvot numeerisesti vakaina.
+Huomiopisteet muunnetaan riveittäin todennäköisyyspainoiksi softmax-funktion
+avulla:
+\begin{align*}
+  A_{ij}
+  =
+  \frac{\exp(S_{ij})}
+  {\sum_{r=1}^{T}\exp(S_{ir})}.
+\end{align*}
+Tällöin \(A_{ij}\geq 0\) ja jokaiselle \(i\):lle pätee
+\begin{align*}
+  \sum_{j=1}^{T} A_{ij} = 1.
+\end{align*}
+Huomiomekanismin tulos on arvoesitysten painotettu summa:
+\begin{align*}
+  \operatorname{Attention}(Q,K,V)
+  &=
+  \operatorname{softmax}
+  \left(
+    \frac{QK^{\top}}{\sqrt{d_k}}
+  \right)V.
+\end{align*}
+Yksittäisen tokenin \(i\) kohdalla tulos voidaan kirjoittaa muodossa
+\begin{align*}
+  o_i
+  =
+  \sum_{j=1}^{T} A_{ij}v_j,
+\end{align*}
+missä \(v_j\in\mathbb{R}^{d_v}\) on arvomatriisin \(V\) riviä \(j\)
+vastaava arvovektori. Näin tokenin \(i\) uusi esitys muodostuu muiden
+tokenien arvovektoreiden kontekstiriippuvaisena painotettuna summana.
 
 \subsection{Kausaalinen itsehuomio}
-\label{subsec:causal-self-attention}
 
-Pelkkään dekooderiin perustuva kielimalli opetetaan ennustamaan seuraava
-token. Kun malli ennustaa tokenia \(x_{t+1}\), se voi siis käyttää tokeneita
-\(x_1, \ldots, x_t\), mutta se ei saa nähdä tulevia tokeneita. Jos malli voisi
-nähdä tulevat tokenit opetuksen aikana, se voisi saavuttaa keinotekoisen
-alhaisen opetushävikin hyödyntämällä tietoa, jota ei olisi saatavilla tekstin
-tuottamisen aikana.
+Autoregressiivisen kielimallin tavoitteena on ennustaa seuraava tokeni
+ainoastaan aiemmin havaitun kontekstin perusteella. Tämän vuoksi mallin ei saa
+antaa hyödyntää ennustettavaa tokenia eikä sen jälkeisiä tokeneita. Jos
+koulutusvaiheessa tokenin \(x_t\) esitys voisi osallistua tokenin \(x_t\)
+ennustamiseen, malli voisi ratkaista tehtävän käyttämällä tulevaa tietoa.
+Tällaista tiedon vuotamista estetään kausaalisella huomiomaskilla.
 
-Tämä rajoite toteutetaan kausaalisella huomiomaskilla. Olkoon \(M\) matriisi,
-jonka alkiot ovat
-
-$$
-M_{ij}
-=
-\begin{cases}
-  0, & \text{jos } j \leq i, \\
-  -\infty, & \text{jos } j > i.
-\end{cases}
-$$
-
-Maskattu huomio-operaatio on tällöin
-
-$$
-\operatorname{Attention}(Q,K,V)
-=
-\operatorname{softmax}
-\left(
-  \frac{QK^{\mathsf{T}}}{\sqrt{d_k}} + M
-\right)V.
-$$
-
-Koska negatiivistä ääretöntä lähestyvän arvon softmax on nolla, tulevia
-tokeneita vastaavat sijainnit saavat huomiopainon nolla. Sijainnissa \(i\)
-malli voi kohdistaa huomiota vain sijainteihin \(1\)--\(i\).
-
-Kausaalinen maskaus mahdollistaa autoregressiivisen tekstintuoton. Opetuksen
-aikana sekvenssin kaikki sijainnit voidaan käsitellä rinnakkain, koska maski
-pakottaa oikean tiedollisen rajoitteen. Päättelyvaiheessa tokenit on kuitenkin
-tuotettava peräkkäin, sillä jokaisesta uudesta tokenista tulee osa seuraavien
-ennusteiden kontekstia.
-
-\subsection{Monipäinen huomio}
-\label{subsec:multi-head-attention}
-
-Transformer-kerros käyttää tavallisesti yhden huomio-operaation sijaan useita
-huomiopäitä. Jokaisella päällä on omat kysely-, avain- ja arvoprojektiot.
-Huomiopään \(r\) tulos voidaan kirjoittaa muodossa
-
-$$
-\operatorname{head}_r
-=
-\operatorname{Attention}
-\left(
-  HW_Q^{(r)},
-  HW_K^{(r)},
-  HW_V^{(r)}
-\right).
-$$
-
-\(h\) huomiopään tulokset ketjutetaan ja projisoidaan mallin piilodimensioon:
-
-$$
-\operatorname{MHA}(H)
-=
-\operatorname{Concat}
-\left(
-  \operatorname{head}_1,
-  \ldots,
-  \operatorname{head}_h
-\right)W_O,
-$$
-
-missä \(W_O\) on opittu tulosprojektiomatriisi.
-
-Useat huomiopäät mahdollistavat useiden huomioon perustuvien esitysten
-muodostamisen samasta sekvenssistä. Eri päät voivat oppia kohdistamaan
-huomionsa erilaisiin suhteisiin, kuten lähellä oleviin syntaktisiin
-riippuvuuksiin, välimerkkeihin, toistuviin termeihin tai pitkän kantaman
-viittauksiin. Huomiopäitä ei kuitenkaan tulisi aina tulkita siten, että
-jokaisella olisi yksi selkeä kielellinen tehtävä. Esitykset ovat jakautuneet
-useille kerroksille, huomiopäille ja epälineaarisille muunnoksille.
-
-Tavallisen itsehuomion laskennallinen kustannus kasvaa sekvenssin pituuden
-neliössä, koska huomiopistematriisin dimensio on \(T \times T\). Tämä kustannus
-on merkittävä käytännön rajoite pitkille konteksteille. Nykyaikaisissa
-toteutuksissa käytetään algoritmisia ja laitteistotason optimointeja, kuten
-FlashAttention-menetelmää, muistinkäytön vähentämiseksi ja tehokkuuden
-parantamiseksi. Jotkin mallit käyttävät myös huomiovariantteja, kuten
-multi-query attention- tai grouped-query attention -menetelmiä,
-autoregressiivisen päättelyn kustannusten pienentämiseksi.
-
-\subsection{Pelkkään dekooderiin perustuva Transformer-lohko}
-\label{subsec:transformer-block}
-
-Nykyaikainen pelkkään dekooderiin perustuva Transformer koostuu toistuvien
-kerrosten pinosta. Kukin kerros sisältää tavallisesti kausaalisen monipäisen
-itsehuomioalikerroksen, sijaintikohtaisen eteenpäin syöttävän neuroverkon,
-normalisointitoimintoja ja residuaaliyhteyksiä.
-
-Olkoon \(H^{(\ell-1)}\) kerroksen \(\ell\) syöte. Yleinen nykyaikainen rakenne
-käyttää esinormalisointia, jossa syöte normalisoidaan ennen kutakin
-alikerrosta. Huomiopäivitys voidaan kirjoittaa muodossa
-
-$$
-\widetilde{H}^{(\ell)}
-=
-H^{(\ell-1)}
-+
-\operatorname{MHA}
-\left(
-  \operatorname{Norm}
+Määritellään maskimatriisi \(M\in\mathbb{R}^{T\times T}\) siten, että
+\begin{align*}
+  M_{ij}
+  =
+  \begin{cases}
+    0,
+    & \text{jos } j \leq i, \\
+    -\infty,
+    & \text{jos } j > i.
+  \end{cases}
+\end{align*}
+Tällöin kausaalinen itsehuomio määritellään muodossa
+\begin{align*}
+  \operatorname{CausalAttention}(Q,K,V)
+  =
+  \operatorname{softmax}
   \left(
-    H^{(\ell-1)}
-  \right)
-\right).
-$$
+    \frac{QK^{\top}}{\sqrt{d_k}} + M
+  \right)V.
+\end{align*}
+Koska \(\exp(-\infty)=0\), positiota \(i\) vastaavan softmax-jakauman painot
+positioille \(j>i\) ovat nollia. Siten tokenin \(i\) esitys voi riippua vain
+tokeneista \(x_1,\ldots,x_i\).
 
-Eteenpäin syöttävän verkon päivitys on tällöin
+Kausaalinen maski erottaa dekooderipohjaisen kielimallin esimerkiksi
+bidirektionaalisesta Transformer-enkooderista. Enkooderipohjaisissa malleissa,
+kuten BERT-mallissa, tokenin esitys voi hyödyntää sekä vasemmalla että
+oikealla sijaitsevaa kontekstia \cite{devlin2019bert}. Tämä soveltuu hyvin
+esimerkiksi tekstin luokitteluun ja maskattujen tokenien ennustamiseen, mutta
+ei suoraan vasemmalta oikealle etenevään tekstigenerointiin. Generatiivisissa
+suurissa kielimalleissa käytetään tämän vuoksi yleensä kausaalista
+itsehuomiota.
 
-$$
-H^{(\ell)}
-=
-\widetilde{H}^{(\ell)}
-+
-\operatorname{FFN}
-\left(
-  \operatorname{Norm}
+\subsection{Monipäinen itsehuomio}
+
+Yksi huomio-operaatio muodostaa tokenien väliset riippuvuudet yhden
+kysely-, avain- ja arvoprojektion avulla. Vaswani ym.\ \cite{vaswani2017attention}
+esittivät monipäisen huomion (engl.\ \emph{multi-head attention}), jossa
+malli laskee useita rinnakkaisia huomio-operaatioita erillisillä
+parametreilla. Olkoon huomioiden päiden lukumäärä \(h\) ja olkoon kunkin
+pään kysely- ja avainvektorien dimensio \(d_h\). Pään \(r\) projektiot
+voidaan määritellä muodossa
+\begin{align*}
+  Q^{(r)} &= H W_Q^{(r)}, \\
+  K^{(r)} &= H W_K^{(r)}, \\
+  V^{(r)} &= H W_V^{(r)},
+\end{align*}
+missä
+\begin{align*}
+  W_Q^{(r)},W_K^{(r)}
+  &\in \mathbb{R}^{d \times d_h}, \\
+  W_V^{(r)}
+  &\in \mathbb{R}^{d \times d_v}.
+\end{align*}
+
+Kunkin pään tulos saadaan kausaalisen huomion avulla:
+\begin{align*}
+  \operatorname{head}^{(r)}
+  =
+  \operatorname{CausalAttention}
   \left(
-    \widetilde{H}^{(\ell)}
-  \right)
-\right).
-$$
+    Q^{(r)},K^{(r)},V^{(r)}
+  \right).
+\end{align*}
+Päiden tulokset ketjutetaan ja projisoidaan takaisin mallin piiloavaruuteen:
+\begin{align*}
+  \operatorname{MHA}(H)
+  =
+  \operatorname{Concat}
+  \left(
+    \operatorname{head}^{(1)},
+    \ldots,
+    \operatorname{head}^{(h)}
+  \right)W_O,
+\end{align*}
+missä
+\begin{align*}
+  W_O \in \mathbb{R}^{hd_v \times d}.
+\end{align*}
 
-Kummankin yhtälön yhteenlasku on residuaaliyhteys. Residuaaliyhteydet
-mahdollistavat sen, että kerros voi oppia muokkauksen syötteeseensä sen sijaan,
-että sen pitäisi oppia kokonaan uusi esitys. Ne parantavat myös gradientin
-kulkeutumista syvien neuroverkkojen läpi, mikä tekee monikerroksisten mallien
-optimoinnista vakaampaa.
+Monipäinen rakenne kasvattaa mallin kykyä muodostaa erilaisia
+kontekstiriippuvuuksia samanaikaisesti. Eri huomio-operaatiot voivat oppia
+painottamaan esimerkiksi lähellä olevia tokeneita, lauseen eri osien välisiä
+riippuvuuksia tai tekstin rakenteellisia merkkejä. On kuitenkin huomattava,
+ettei yksittäiselle huomiopäälle välttämättä voida antaa yksikäsitteistä
+kielellistä tulkintaa. Huomiopainot ovat mallin sisäisiä laskennallisia
+suureita, eivätkä ne sellaisenaan muodosta täydellistä selitystä mallin
+tuottamalle ennusteelle.
 
-Normalisointitoiminto on tavallisesti LayerNorm tai RMSNorm. Kerrosnormalisointi
-standardoi piiloaktivaatioita käyttäen piilodimension yli laskettavia
-tilastollisia suureita. RMSNorm on siihen liittyvä menetelmä, joka normalisoi
-aktivaatiot niiden neliöllisen keskiarvon neliöjuuren avulla, ja sitä käytetään
-useissa nykyaikaisissa LLM-arkkitehtuureissa. Tarkka normalisointivalinta
-vaihtelee mallista toiseen, mutta sen tarkoituksena on yleisesti tukea vakaata
-optimointia.
+\subsection{Transformer-dekooderikerros}
 
-Eteenpäin syöttävä neuroverkko toimii riippumattomasti jokaisessa sekvenssin
-sijainnissa. Sen tavanomainen muoto on
+Nykyaikainen dekooderipohjainen Transformer muodostuu useista peräkkäisistä
+Transformer-kerroksista. Jokainen kerros sisältää tavallisesti
+monipäisen kausaalisen itsehuomion, tokenikohtaisen eteenpäinsyöttävän
+neuroverkon, residuaaliyhteydet sekä normalisointikerrokset.
 
-$$
-\operatorname{FFN}(h)
-=
-W_2 \sigma(W_1h+b_1)+b_2,
-$$
+Olkoon \(H^{(\ell-1)}\in\mathbb{R}^{T\times d}\) kerroksen
+\(\ell-1\) tuottama tokeniesitysmatriisi. Esimerkiksi esinormalisoidussa
+(engl.\ \emph{pre-normalization}) Transformer-kerroksessa
+itsehuomioalikerroksen tulos voidaan kirjoittaa muodossa
+\begin{align*}
+  \widetilde{H}^{(\ell)}
+  =
+  H^{(\ell-1)}
+  +
+  \operatorname{MHA}^{(\ell)}
+  \left(
+    \operatorname{Norm}^{(\ell)}_1
+    \left(H^{(\ell-1)}\right)
+  \right).
+\end{align*}
+Tämän jälkeen sovelletaan tokenikohtaista eteenpäinsyöttävää verkkoa:
+\begin{align*}
+  H^{(\ell)}
+  =
+  \widetilde{H}^{(\ell)}
+  +
+  \operatorname{FFN}^{(\ell)}
+  \left(
+    \operatorname{Norm}^{(\ell)}_2
+    \left(\widetilde{H}^{(\ell)}\right)
+  \right).
+\end{align*}
+Residuaaliyhteys tarkoittaa, että alikerroksen syöte lisätään sen tulokseen.
+Tällä on käytännössä suuri merkitys syvien verkkojen optimoinnille, koska
+residuaaliyhteydet helpottavat gradientin kulkua useiden kerrosten läpi.
+Tämä liittyy luvussa 4 käsiteltyihin gradienttipohjaisen optimoinnin
+haasteisiin.
 
-missä \(\sigma\) on epälineaarinen aktivointifunktio, kuten Gaussian error
-linear unit. Ensimmäinen projektio kasvattaa usein piilodimensiota, kun taas
-toinen projektio palauttaa sen alkuperäiseen dimensioon.
+Alkuperäisessä Transformerissa käytettiin kerrosnormalisointia
+(engl.\ \emph{Layer Normalization}) \cite{ba2016layer}. Tokenivektorille
+\(h\in\mathbb{R}^{d}\) se voidaan määritellä muodossa
+\begin{align*}
+  \operatorname{LayerNorm}(h)
+  =
+  \gamma \odot
+  \frac{h-\mu(h)\mathbf{1}}
+  {\sqrt{\sigma^2(h)+\varepsilon}}
+  +
+  \beta,
+\end{align*}
+missä
+\begin{align*}
+  \mu(h)
+  &=
+  \frac{1}{d}
+  \sum_{i=1}^{d}h_i, \\
+  \sigma^2(h)
+  &=
+  \frac{1}{d}
+  \sum_{i=1}^{d}
+  \left(h_i-\mu(h)\right)^2.
+\end{align*}
+Vektorit \(\gamma,\beta\in\mathbb{R}^{d}\) ovat opittavia parametreja,
+\(\odot\) tarkoittaa komponenttikohtaista kertolaskua ja
+\(\varepsilon>0\) on numeerista vakautta parantava vakio. Useissa
+nykyaikaisissa kielimalleissa käytetään LayerNormin sijasta esimerkiksi
+RMSNorm-normalisointia \cite{zhang2019root}, mutta normalisoinnin yleinen
+tehtävä on sama: se tukee mallin vakaata optimointia.
 
-Itsehuomio- ja eteenpäin syöttävät kerrokset suorittavat toisiaan täydentäviä
-tehtäviä. Itsehuomio siirtää tietoa tokenisijaintien välillä, kun taas
-eteenpäin syöttävä verkko muuntaa kunkin sijainnin esitystä sen jälkeen, kun se
-on sisällyttänyt siihen kontekstuaalista tietoa. Nykyaikaiset arkkitehtuurit
-voivat käyttää portitettuja eteenpäin syöttäviä variantteja, kuten SwiGLU:ta,
-mutta niiden yleinen tehtävä pysyy samana.
+Transformer-kerroksen toinen keskeinen osa on eteenpäinsyöttävä verkko
+(engl.\ \emph{feed-forward network}, FFN). Toisin kuin itsehuomio, joka
+yhdistää informaatiota eri tokenipositioiden välillä, FFN toimii erikseen
+jokaisessa tokenipositiossa. Perusmuodossaan se voidaan esittää muodossa
+\begin{align*}
+  \operatorname{FFN}(h)
+  =
+  W_2\phi(W_1h+b_1)+b_2,
+\end{align*}
+missä
+\begin{align*}
+  W_1 &\in \mathbb{R}^{d_{\mathrm{ff}}\times d}, \\
+  W_2 &\in \mathbb{R}^{d\times d_{\mathrm{ff}}},
+\end{align*}
+ja \(d_{\mathrm{ff}}\) on yleensä mallin piilodimensiota \(d\) suurempi
+väliavaruuden dimensio. Aktivaatiofunktio \(\phi\) voi olla esimerkiksi
+ReLU-, GELU- tai SiLU-funktio. Useissa nykyaikaisissa LLM-arkkitehtuureissa
+käytetään myös portitettua FFN-rakennetta, kuten SwiGLU-muotoa
+\cite{shazeer2020glu}.
 
-\(L\) Transformer-kerroksen jälkeen malli tuottaa kontekstualisoidut
-tokeniesitykset
+Kun Transformer-kerroksia on \(L\), mallin lopullinen esitysmatriisi on
+\begin{align*}
+  H^{(L)} \in \mathbb{R}^{T\times d}.
+\end{align*}
+Sen rivi \(h_t^{(L)}\) sisältää tokeniposition \(t\) kontekstualisoidun
+esityksen. Kausaalisuuden vuoksi tämä esitys voi riippua ainoastaan
+tokeneista \(x_1,\ldots,x_t\).
 
-$$
-H^{(L)}
-=
-\begin{bmatrix}
-  h_1^{(L)} \\
-  h_2^{(L)} \\
-  \vdots \\
-  h_T^{(L)}
-\end{bmatrix}.
-$$
+\subsection{Seuraavan tokenin ennustaminen ja kielimallin tavoitefunktio}
 
-Jokainen vektori \(h_t^{(L)}\) esittää tokenia \(x_t\) kaikkien sitä edeltävien
-tokenien muodostamassa kontekstissa.
+Kuten luvussa \ref{sec:n-gram} esitetyn \(n\)-gram-mallin ja edellisessä
+luvussa käsitellyn MLP-kielimallin tapauksessa, myös Transformer-pohjaisen
+kielimallin tavoitteena on muodostaa ehdollinen todennäköisyysjakauma
+seuraavalle tokenille. Erona on se, että Transformer muodostaa kontekstin
+esityksen useiden itsehuomio- ja eteenpäinsyöttävien kerrosten avulla.
 
-\subsection{Seuraavan tokenin ennustus ja opetustavoite}
-\label{subsec:next-token-objective}
+Olkoon \(h_t^{(L)}\in\mathbb{R}^{d}\) position \(t\) viimeisen
+Transformer-kerroksen esitys. Sanaston tokenien normalisoimattomat
+pistemäärät eli logitit määritellään muodossa
+\begin{align*}
+  z_t
+  =
+  W_{\mathrm{vocab}}h_t^{(L)}
+  +
+  b_{\mathrm{vocab}},
+\end{align*}
+missä
+\begin{align*}
+  W_{\mathrm{vocab}}
+  &\in \mathbb{R}^{|V|\times d}, \\
+  b_{\mathrm{vocab}}
+  &\in \mathbb{R}^{|V|}.
+\end{align*}
+Logitvektorin \(z_t\) komponentti \(z_{t,j}\) vastaa tokenin \(v_j\)
+pistemäärää. Seuraavan tokenin ehdollinen todennäköisyysjakauma saadaan
+softmax-funktiolla:
+\begin{align*}
+  p_{\theta}(x_{t+1}=v_j\mid x_1,\ldots,x_t)
+  =
+  \frac{\exp(z_{t,j})}
+  {\sum_{k=1}^{|V|}\exp(z_{t,k})}.
+\end{align*}
 
-Viimeisen Transformer-kerroksen tulos muunnetaan sanaston yli määritellyiksi
-logeiksi. Sijainnissa \(t\) sanastologit ovat
+Koko tokenisekvenssin todennäköisyys voidaan kirjoittaa
+autoregressiivisena tulona:
+\begin{align*}
+  p_{\theta}(x_1,\ldots,x_T)
+  =
+  \prod_{t=1}^{T-1}
+  p_{\theta}(x_{t+1}\mid x_1,\ldots,x_t).
+\end{align*}
+Käytännössä ensimmäisen tokenin ennustaminen voidaan määritellä
+aloitustokenin avulla. Jos \(x_0=\langle s\rangle\), voidaan sama esitys
+kirjoittaa muodossa
+\begin{align*}
+  p_{\theta}(x_1,\ldots,x_T\mid x_0)
+  =
+  \prod_{t=0}^{T-1}
+  p_{\theta}(x_{t+1}\mid x_0,\ldots,x_t).
+\end{align*}
 
-$$
-z_t
-=
-W_{\mathrm{vocab}}h_t^{(L)}
-+
-b_{\mathrm{vocab}},
-$$
+Tämä on suora yleistys luvussa \ref{sec:n-gram} esitetystä
+Markov-oletukseen perustuvasta kielimallista. \(n\)-gram-mallissa konteksti
+rajoitetaan eksplisiittisesti viimeiseen \(n-1\) tokeniin, kun taas
+Transformer-mallissa ehdollinen jakauma voi riippua kaikista
+käytettävissä olevista aiemmista tokeneista. Käytännössä riippuvuutta
+rajoittaa mallin suurin sallittu kontekstipituus.
 
-missä \(W_{\mathrm{vocab}} \in \mathbb{R}^{V \times d}\) ja
-\(b_{\mathrm{vocab}} \in \mathbb{R}^{V}\). Tuloksena saatava vektori
-\(z_t \in \mathbb{R}^{V}\) sisältää yhden normalisoimattoman pistemäärän
-jokaiselle mahdolliselle seuraavalle tokenille.
+Mallin parametrit \(\theta\) estimoidaan minimoimalla negatiivinen
+log-uskottavuus eli tokenitason ristientropiahäviö:
+\begin{align*}
+  \mathcal{L}(\theta;X)
+  =
+  -
+  \sum_{t=1}^{T-1}
+  \log
+  p_{\theta}
+  \left(
+    x_{t+1}
+    \mid
+    x_1,\ldots,x_t
+  \right).
+\end{align*}
+Sekvenssin pituudella normalisoitu häviö on
+\begin{align*}
+  \overline{\mathcal{L}}(\theta;X)
+  =
+  -
+  \frac{1}{T-1}
+  \sum_{t=1}^{T-1}
+  \log
+  p_{\theta}
+  \left(
+    x_{t+1}
+    \mid
+    x_1,\ldots,x_t
+  \right).
+\end{align*}
+Tavoitefunktio on siten periaatteellisesti sama kuin aiemmin käsitellyissä
+maksimiuskottavuuteen perustuvissa kielimalleissa. Keskeinen ero on mallin
+parametrisoinnissa: Transformer ei talleta erillistä jakaumaa jokaiselle
+diskreetille kontekstille, vaan muodostaa ehdollisen jakauman syvän,
+jaettuihin parametreihin perustuvan funktion avulla.
 
-Softmax-funktion soveltaminen tuottaa ehdollisen seuraavan tokenin
-todennäköisyysjakauman:
+Koulutusvaiheessa koko syötesekvenssi voidaan käsitellä samanaikaisesti.
+Kausaalinen maski varmistaa, ettei tokenia \(x_{t+1}\) käytetä sitä ennustavan
+position \(t\) laskennassa. Tämän ansiosta kaikkien positioiden
+ristientropiahäviöt voidaan laskea rinnakkain, vaikka mallin määrittelemä
+todennäköisyysjakauma on autoregressiivinen. Parametrien gradientit saadaan
+vastavirta-algoritmilla, ja parametreja päivitetään luvussa 4 esitetyillä
+gradienttipohjaisilla menetelmillä. Käytännössä suurten kielimallien
+esikoulutuksessa käytetään usein AdamW-optimointimenetelmää.
 
-$$
-p(x_{t+1} \mid x_1, \ldots, x_t)
-=
-\operatorname{softmax}(z_t).
-$$
+Tokenitason keskimääräisestä negatiivisesta log-uskottavuudesta voidaan
+määritellä myös perplexiteetti:
+\begin{align*}
+  \operatorname{PPL}
+  =
+  \exp
+  \left(
+    \overline{\mathcal{L}}(\theta;X)
+  \right).
+\end{align*}
+Perplexiteetti mittaa mallin keskimääräistä epävarmuutta havaittuja tokeneita
+kohtaan. Pieni perplexiteetti tarkoittaa, että malli antaa aineiston
+tokeneille keskimäärin suuren todennäköisyyden. Mittari ei kuitenkaan
+sellaisenaan arvioi esimerkiksi vastauksen faktuaalista oikeellisuutta,
+turvallisuutta, hyödyllisyyttä tai kykyä hyödyntää ulkoisia lähteitä.
 
-Tarkemmin ilmaistuna mallin ehdokastokenille \(v\) antama todennäköisyys on
+\subsection{Autoregressiivinen generointi}
 
-$$
-p(x_{t+1}=v \mid x_1, \ldots, x_t)
-=
-\frac{\exp(z_{t,v})}
-{\sum_{j=1}^{V} \exp(z_{t,j})}.
-$$
+Koulutuksen jälkeen mallia käytetään tekstin generointiin iteratiivisesti.
+Olkoon alkuperäinen syötekonteksti
+\begin{align*}
+  (x_1,\ldots,x_t).
+\end{align*}
+Malli muodostaa ensin jakauman
+\begin{align*}
+  p_{\theta}(x_{t+1}\mid x_1,\ldots,x_t).
+\end{align*}
+Tämän jälkeen jakaumasta valitaan uusi token \(\widehat{x}_{t+1}\), joka
+liitetään kontekstiin. Seuraavalla askeleella malli muodostaa jakauman
+\begin{align*}
+  p_{\theta}
+  \left(
+    x_{t+2}
+    \mid
+    x_1,\ldots,x_t,\widehat{x}_{t+1}
+  \right).
+\end{align*}
+Prosessia jatketaan, kunnes generoidaan lopetustokeni tai saavutetaan ennalta
+määritelty enimmäispituus.
 
-Autoregressiivinen kielimalli määrittelee kokonaisen tokenisekvenssin
-todennäköisyyden todennäköisyyslaskennan ketjusäännön avulla:
+Yksinkertaisin valintasääntö on ahne dekoodaus, jossa valitaan aina
+todennäköisin tokeni:
+\begin{align*}
+  \widehat{x}_{t+1}
+  =
+  \arg\max_{v_j\in V}
+  p_{\theta}
+  \left(
+    x_{t+1}=v_j
+    \mid
+    x_1,\ldots,x_t
+  \right).
+\end{align*}
+Vaihtoehtoisesti tokeni voidaan valita satunnaisotannalla mallin
+ennustamasta jakaumasta. Tällöin generoinnin satunnaisuutta voidaan säätää
+lämpötilaparametrilla \(\tau>0\):
+\begin{align*}
+  p_{\theta,\tau}(x_{t+1}=v_j\mid x_1,\ldots,x_t)
+  =
+  \frac{\exp(z_{t,j}/\tau)}
+  {\sum_{k=1}^{|V|}\exp(z_{t,k}/\tau)}.
+\end{align*}
+Kun \(\tau<1\), jakauma keskittyy suuremman todennäköisyyden tokeneihin.
+Kun \(\tau>1\), jakauma tasoittuu ja generointi muuttuu satunnaisemmaksi.
+Käytännössä voidaan käyttää myös esimerkiksi top-\(k\)- ja top-\(p\)-
+näytteenottoa, joissa näytteenotto rajoitetaan todennäköisimmiksi arvioituihin
+tokeneihin.
 
-$$
-p(x_1, \ldots, x_T)
-=
-\prod_{t=1}^{T-1}
-p(x_{t+1} \mid x_1, \ldots, x_t).
-$$
+Autoregressiivinen generointi poikkeaa koulutuksesta laskennallisesti siinä,
+että uusi token lisätään kontekstiin yksi kerrallaan. Tehokkuuden
+parantamiseksi toteutuksissa talletetaan aiemmissa generointivaiheissa
+lasketut avain- ja arvovektorit niin sanottuun avain--arvovälimuistiin
+(engl.\ \emph{key--value cache}). Tällöin aikaisempien tokenien avain- ja
+arvoprojektioita ei tarvitse laskea uudelleen jokaisella generointiaskeleella.
 
-Opetuksessa minimoidaan tavallisesti havaittujen seuraavien tokenien
-negatiivinen logaritminen uskottavuus. Yksittäisen sekvenssin ristientropiahävikki
-on
+\subsection{Skaalaus ja jälkikoulutus}
 
-$$
-\mathcal{L}
-=
--
-\sum_{t=1}^{T-1}
-\log p(x_{t+1} \mid x_1, \ldots, x_t).
-$$
+Suurten kielimallien suorituskykyyn vaikuttavat muun muassa parametrien määrä,
+harjoitusaineiston määrä ja laatu, koulutuksessa käytettyjen tokenien määrä,
+käytettävissä oleva laskentakapasiteetti sekä konteksti-ikkunan pituus.
+Skaalauslakeja koskevissa tutkimuksissa on havaittu, että
+kielimallien ennustehäviö yleensä pienenee säännönmukaisesti mallin,
+aineiston ja laskennan määrän kasvaessa
+\cite{kaplan2020scaling,hoffmann2022training}. Pelkkä parametrimäärä ei
+kuitenkaan yksin määritä mallin laatua, sillä myös koulutusaineiston
+koostumus, optimointi, arkkitehtuurivalinnat ja jälkikoulutus vaikuttavat
+olennaisesti mallin toimintaan.
 
-Keskimääräinen hävikki ennustettua tokenia kohti on
+Esikoulutus tarkoittaa tavallisesti edellä määritellyn
+seuraavan-tokenin-ennustustehtävän optimointia laajalla tekstiaineistolla.
+Esikoulutettu malli oppii tekstin tilastollisia, syntaktisia ja semanttisia
+säännönmukaisuuksia, mutta sen käyttäytyminen ei vielä välttämättä vastaa
+vuorovaikutteisen avustajan käyttöä. Tämän vuoksi esikoulutusta seuraa usein
+jälkikoulutus, jossa mallia sovitetaan ohjeita ja keskustelumuotoista
+vuorovaikutusta sisältävään aineistoon.
 
-$$
-\mathcal{L}_{\mathrm{avg}}
-=
--
-\frac{1}{T-1}
-\sum_{t=1}^{T-1}
-\log p(x_{t+1} \mid x_1, \ldots, x_t).
-$$
+Ohjatulla hienosäädöllä (engl.\ \emph{supervised fine-tuning}) malli
+optimoidaan esimerkiksi käyttäjän ohjeen ja tavoitellun vastauksen muodostamilla
+pareilla. Lisäksi mallin tuottamia vastauksia voidaan optimoida
+ihmisten tai muiden arvioijien ilmaisemien preferenssien perusteella.
+Yksi tunnettu lähestymistapa on ihmispalautteeseen perustuva
+vahvistusoppiminen (engl.\ \emph{reinforcement learning from human feedback},
+RLHF) \cite{ouyang2022training}. Jälkikoulutus ei muuta sitä perustavaa
+tosiasiaa, että malli tuottaa tekstin autoregressiivisesti seuraavaa tokenia
+ennustamalla. Se kuitenkin vaikuttaa merkittävästi siihen, millaisia
+vastauksia malli todennäköisesti tuottaa käyttäjän antamissa tilanteissa.
 
-Tämä tavoite optimoidaan takaisinlevityksellä ja gradienttipohjaisella
-optimointimenetelmällä, usein AdamW:llä tai siihen liittyvällä adaptiivisella
-optimointimenetelmällä. Luvussa~4 käsitellyt optimointikäsitteet soveltuvat
-siten suoraan LLM-mallien opettamiseen.
+\subsection{earlier subsection that should come later}
+Olkoon $V$ sanasto, $X=(x_1,x_2,\ldots,x_T)$ syötesekvenssi one-hot vektoreita, \(T\) sekvenssin pituus, ja $E\in\Re^{d \times |V|}$ upotusmatriisi, jolloin $Ex_t$ on syötesekvenssin \(t\):nnen tokenin upotusvektori.
 
-Yleinen kielimallinnuksen mittari on perplexity, joka määritellään seuraavasti:
+Itsehuomiomekanismi ei sellaisenaan sisällä tietoa tokenien järjestyksestä.
+Jos syötevektorien järjestystä vaihdetaan, pelkkään itsehuomioon perustuva
+laskenta tuottaa vastaavasti vain permutoidun tuloksen. Tämän vuoksi tokenien
+esityksiin on liitettävä sijaintia kuvaava informaatio. Alkuperäisessä
+Transformerissa käytettiin deterministisiä sinimuotoisia
+positiokoodauksia \cite{vaswani2017attention}. Tällöin tokenin ensimmäisen
+kerroksen esitys voidaan kirjoittaa muodossa
+\begin{align*}
+  h_t^{(0)} = e_t + p_t,
+\end{align*}
+missä \(p_t\in\mathbb{R}^d\) on tokenin \(t\) positiovektori.
 
-$$
-\operatorname{PPL}
-=
-\exp\left(
-  \mathcal{L}_{\mathrm{avg}}
-\right).
-$$
+Alkuperäisen Transformer-mallin sinimuotoisessa positiokoodauksessa
+komponentit määritellään esimerkiksi seuraavasti:
+\begin{align*}
+  p_{t,2i}
+  &=
+  \sin\left(
+    \frac{t}{10000^{2i/d}}
+  \right), \\
+  p_{t,2i+1}
+  &=
+  \cos\left(
+    \frac{t}{10000^{2i/d}}
+  \right),
+\end{align*}
+missä \(i\) on vektorin komponentti-indeksi. Nykyaikaisissa suurissa
+kielimalleissa käytetään usein muita sijaintimenetelmiä, kuten opittuja
+positioupotuksia tai rotaatiopohjaisia positioupotuksia
+(engl.\ \emph{rotary positional embeddings}, RoPE)
+\cite{su2024roformer}. Näiden yksityiskohdat vaihtelevat mallikohtaisesti,
+mutta niiden yhteinen tarkoitus on antaa mallille tieto tokenien
+järjestyksestä ja etäisyyksistä.
 
-Pienempi perplexity-arvo tarkoittaa, että malli antaa suuremman
-todennäköisyyden arviointiaineistossa havaituille tokeneille. Perplexity ei
-kuitenkaan yksinään ole kattava käytännön LLM-laadun mittari. Mallilla voi olla
-pieni perplexity, mutta se voi silti tuottaa faktuaalisesti virheellisiä
-väitteitä, epäonnistua ohjeiden noudattamisessa tai toimia heikosti tietyssä
-hakua hyödyntävässä tekstintuottosovelluksessa.
+\subsection{Parametrisen kielimallin rajoitteet ja yhteys RAG-järjestelmiin}
 
-\subsection{Autoregressiivinen päättely ja dekoodaus}
-\label{subsec:autoregressive-inference}
+Transformer-pohjainen suuri kielimalli voi tuottaa sujuvaa ja
+kontekstuaalisesti johdonmukaista tekstiä, mutta sen tietämys ei ole
+tietokantamuodossa eikä sen parametreihin tallentunut informaatio ole
+välttämättä ajantasaista, täydellistä tai helposti todennettavaa. Malli voi
+myös tuottaa uskottavan tuntuisia väitteitä, jotka eivät perustu luotettavaan
+lähteeseen tai ovat virheellisiä. Tätä ilmiötä kutsutaan usein
+hallusinoinniksi, vaikka kyse ei ole mallin sisäisestä havaintokokemuksesta,
+vaan todennäköisyyspohjaisen generointiprosessin tuottamasta virheellisestä tai
+perusteettomasta tekstistä.
 
-Päättelyvaiheessa LLM tuottaa tekstiä yksi token kerrallaan. Ensin käyttäjän
-kehote tokenisoidaan ja käsitellään mallilla. Viimeinen piilotila tuottaa
-todennäköisyysjakauman seuraavalle tokenille. Jakaumasta valitaan token, se
-liitetään syötesekvenssiin, ja sitä käytetään osana seuraavan ennusteen
-kontekstia. Prosessi jatkuu, kunnes malli tuottaa erityisen lopetustokenin tai
-saavuttaa määritellyn enimmäispituuden.
+Lisäksi mallin käytettävissä oleva konteksti on rajallinen, ja mallin kyky
+hyödyntää sille annettua kontekstia riippuu sekä syötteen rakenteesta että
+mallin koulutuksesta. Se, että asiakirja sisällytetään mallin kontekstiin, ei
+takaa, että malli käyttää asiakirjaa oikein tai että sen tuottama vastaus
+perustuu yksinomaan kyseiseen asiakirjaan.
 
-Yksinkertaisin dekoodausmenetelmä on ahne dekoodaus, jossa jokaisessa vaiheessa
-valitaan todennäköisin token:
+Hakua hyödyntävä generointi (engl.\ \emph{retrieval-augmented generation},
+RAG) pyrkii lieventämään näitä rajoitteita liittämällä mallin
+generointikontekstiin ulkoisesta tietolähteestä haettuja dokumentteja
+\cite{lewis2020retrieval}. Tällöin kielimallin parametreihin sisältyvää
+tietoa täydennetään generointihetkellä saatavilla olevalla dokumenttipohjaisella
+tiedolla. Menetelmä voi parantaa erityisesti ajantasaisen, organisaatio- tai
+toimialakohtaisen ja lähteistettävän tiedon hyödyntämistä. Se tuo kuitenkin
+mukanaan uusia mahdollisia virhelähteitä, kuten epäonnistuneen haun,
+epärelevanttien dokumenttien sisällyttämisen kontekstiin sekä dokumenttien
+virheellisen tulkinnan.
 
-$$
-x_{t+1}
-=
-\arg\max_{v \in \{1, \ldots, V\}}
-p(x_{t+1}=v \mid x_1, \ldots, x_t).
-$$
-
-Ahne dekoodaus on deterministinen, mutta se voi tuottaa toisteista tai liian
-varovaista tekstiä. Otospohjaisissa menetelmissä token valitaan sen sijaan
-todennäköisyyksien mukaisesti. Lämpötilaotanta muuttaa logitteja ennen
-softmax-funktiota:
-
-$$
-p_{\tau}(x_{t+1} \mid x_{\leq t})
-=
-\operatorname{softmax}
-\left(
-  \frac{z_t}{\tau}
-\right),
-$$
-
-missä \(\tau > 0\) on lämpötila. Pienemmät lämpötila-arvot keskittävät
-todennäköisyysmassaa todennäköisimmille tokeneille, kun taas suuremmat arvot
-tuottavat monipuolisempia ja vähemmän ennustettavia vastauksia.
-
-Muita yleisiä dekoodausmenetelmiä ovat top-\(k\)-otanta, joka rajoittaa
-otannan \(k\):hon todennäköisimpään tokeniin, sekä nucleus sampling eli
-top-\(p\)-otanta, jossa otetaan näyte pienimmästä tokenijoukosta, jonka
-yhteenlaskettu todennäköisyys ylittää valitun kynnyksen. Nämä
-dekoodausvalinnat voivat vaikuttaa olennaisesti LLM-sovelluksen vastausten
-luotettavuuteen, monimuotoisuuteen ja toistettavuuteen.
-
-Autoregressiivinen tekstintuotto voi olla laskennallisesti kallista, koska
-jokainen uusi token riippuu kaikista aiemmista tokeneista. Toteutuksissa
-käytetään usein avain--arvo-välimuistia (key-value cache). Aiempien tokenien
-avain- ja arvoesitykset tallennetaan ja käytetään uudelleen, jolloin aiempien
-huomioprojektioiden toistuva laskenta voidaan välttää tekstintuoton aikana.
-
-\subsection{Skaala, esiopetus ja jälkiopetus}
-\label{subsec:scale-pretraining-posttraining}
-
-Termi ``suuri kielimalli'' ei viittaa kiinteään parametrien lukumäärän
-raja-arvoon. Sillä kuvataan kielimalleja, joita opetetaan varhaisempiin
-malleihin verrattuna suuressa mittakaavassa. Tähän liittyy tavallisesti
-huomattava määrä parametreja, suuria aineistoja ja merkittäviä
-laskentaresursseja. Mallin kyvykkyyteen vaikuttavat parametrien lukumäärä,
-opetustokenien määrä ja laatu, konteksti-ikkunan pituus, arkkitehtuuri sekä
-käytettävissä oleva laskentakapasiteetti.
-
-Skaalauslakeja koskeva tutkimus on osoittanut, että kielimallin hävikki paranee
-usein ennustettavasti, kun mallin kokoa, aineiston kokoa ja
-opetuslaskentaa kasvatetaan \cite{kaplan2020scaling,hoffmann2022training}.
-Käytännössä onnistunut skaalaus edellyttää näiden resurssien tasapainottamista.
-Suurempi malli ei välttämättä ole parempi, jos sitä opetetaan riittämättömällä
-tai heikkolaatuisella aineistolla.
-
-Opetuksen alkuvaihetta kutsutaan tavallisesti esiopetukseksi. Tässä vaiheessa
-mallia opetetaan seuraavan tokenin ennustamisen tavoitteella laajalla teksti-
-ja koodikorpuksella. Esiopetus antaa mallille yleistä kielellistä ja
-tilastollista tietoa, mutta esiopetettu malli ei välttämättä ole optimoitu
-hyödylliseen keskusteluun tai käyttäjän ohjeiden noudattamiseen.
-
-Monet käyttöön otetut LLM-mallit käyvät tämän vuoksi läpi jälkiopetuksen.
-Ohjattu hienosäätö voi opettaa mallia käyttäen esimerkkejä ohjeista ja
-toivotuista vastauksista. Preferenssioptimointimenetelmät, mukaan lukien
-ihmispalautteeseen perustuva vahvistusoppiminen ja suora
-preferenssioptimointi, voivat edelleen muokata mallin käyttäytymistä
-ihmisarvioijien suosimia vastauksia kohti. Näillä menetelmillä pyritään
-parantamaan ohjeiden noudattamista, hyödyllisyyttä ja turvallisuutta, vaikka ne
-eivät takaa faktuaalista oikeellisuutta kaikissa tilanteissa
-\cite{ouyang2022training}.
-
-\subsection{Rajoitteet ja hakua hyödyntävän tekstintuoton motivaatio}
-\label{subsec:llm-limitations-rag}
-
-LLM-malleilla on kyvykkyyksistään huolimatta rajoitteita, jotka ovat erityisen
-merkityksellisiä käytännön tietojärjestelmissä. Mallin oppima tieto tallentuu
-epäsuorasti sen parametreihin, minkä vuoksi tieto voi olla puutteellista,
-vanhentunutta tai vaikeasti varmennettavaa. Lisäksi LLM voi tuottaa sujuvaa ja
-uskottavaa tekstiä myös silloin, kun sen vastaus ei perustu luotettavaan
-todisteeseen. Tätä ilmiötä kutsutaan usein hallusinoinniksi, vaikka termi
-kattaa useita erilaisia virhetiloja, kuten keksityt faktat, virheellisen
-päättelyn ja perusteettomat viittaukset.
-
-Mallilla on myös rajallinen konteksti-ikkuna. Vaikka nykyaikaiset mallit voivat
-käsitellä pidempiä konteksteja kuin varhaisemmat arkkitehtuurit, ne eivät voi
-tarkastella rajatonta määrää ulkoista tietoa yhdessä pyynnössä. Suuren
-epäolennaisen kontekstimäärän tarjoaminen voi myös heikentää vastausten laatua
-tai ohjata mallin huomion pois merkityksellisestä todistusaineistosta.
-
-Hakua hyödyntävä tekstintuotto (retrieval-augmented generation, RAG) pyrkii
-ratkaisemaan osan näistä rajoitteista hakemalla ulkoisia dokumentteja
-päättelyvaiheessa ja sisällyttämällä valitut katkelmat kielimallin kehotteeseen
-\cite{lewis2020retrieval}. Sen sijaan, että malli tukeutuisi ainoastaan
-esiopetuksessa opittuun parametriseen tietoon, se voi ehdollistaa vastauksensa
-dokumenttikokoelmasta haettuun tietoon. Tämä voi parantaa ajantasaisen,
-toimialakohtaisen ja todennettavan tiedon saatavuutta.
-
-RAG ei kuitenkaan poista kaikkia virhelähteitä. RAG-järjestelmän laatu riippuu
-sekä kielimallista että hakukomponentista. Jos relevanttia dokumenttia ei
-haeta, jos mallille annetaan epäolennaisia katkelmia tai jos malli tulkitsee
-haettua todistusaineistoa virheellisesti, lopullinen vastaus voi edelleen olla
-virheellinen. Seuraavissa luvuissa tarkastellaan näitä kysymyksiä hakua
-hyödyntävää tekstintuottosovellusta koskevan tapaustutkimuksen avulla.
+Seuraavissa luvuissa tarkastellaan retrieval-augmented generation -järjestelmän
+toteutusta ja arvioidaan, miten Transformer-pohjainen suuri kielimalli toimii
+käytännön sovelluksessa, jossa generointia tuetaan ulkoisesta
+tietolähteestä haetulla kontekstilla.
