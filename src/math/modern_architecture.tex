@@ -1,129 +1,157 @@
-\section{Dekooderipohjainen transformer-arkkitehtuuri suurille kielimalleille}
+\section{Dekooderipohjainen Transformer-arkkitehtuuri suurille
+kielimalleille}
 
-Luvussa \ref{sec:discrete} tarkasteltiin kielimallinnusta frekvenssipohjaisena
-\(n\)-gram-ongelmana ja luvussa \ref{sec:mlp} parametrisoituna neuroverkkopohjaisena
-ennustetehtävänä. Molemmissa tapauksissa tavoitteena on estimoida seuraavan
-tokenin ehdollinen todennäköisyys aiemmin havaitun kontekstin perusteella.
-Nykyaikaiset suuret kielimallit (engl.\ \emph{large language models}, LLM)
-perustuvat samaan autoregressiiviseen periaatteeseen, mutta niiden
-parametrisointi ja kontekstin käsittely eroavat olennaisesti kiinteän
-konteksti-ikkunan \(n\)-gram-malleista.
+Luvuissa \ref{sec:discrete} ja \ref{sec:mlp} kielimallinnusta
+tarkasteltiin seuraavan tokenin ehdollisen todennäköisyyden estimointina.
+Olkoon \(V\) tokenisanasto ja \(\Delta(V)\) sanaston yli määriteltyjen
+todennäköisyysjakaumien joukko. Kielimalli voidaan tällöin kuvata
+funktiona, joka muuntaa aiemmin havaitun tokenikontekstin seuraavan tokenin
+todennäköisyysjakaumaksi.
 
-Tässä luvussa tarkastellaan erityisesti dekooderipohjaista Transformer-
-arkkitehtuuria, joka muodostaa useiden nykyaikaisten generatiivisten
-kielimallien, kuten GPT-malliperheen, matemaattisen perustan. Transformer
-esiteltiin alun perin Vaswanin ym.\ työssä
-\emph{Attention Is All You Need} \cite{vaswani2017attention} vuonna 2017.
-Alkuperäinen arkkitehtuuri oli konekäännökseen suunniteltu
-enkooderi--dekooderi-rakenne. Pian tämän jälkeen osoitettiin, että pelkkään
-Transformer-dekooderiin perustuva autoregressiivinen kielimalli voidaan
-esikouluttaa suurilla tekstiaineistoilla ja soveltaa useisiin
-kielenkäsittelytehtäviin \cite{radford2018improving}.
-
-\subsection{Kiinteästä konteksti-ikkunasta itsehuomioon}
-
-Luvussa \ref{sec:n-gram} esitetyn \(n\)-gram-mallin mukaan tokenin \(w_t\)
-todennäköisyys approksimoidaan rajallisen, ennalta määrätyn mittaisen
-kontekstin perusteella:
-\begin{align*}
+\(n\)-gram-mallissa kontekstin pituus on ennalta määrätty. Jos mallin
+käyttämän kontekstin pituus on \(m\), sitä voidaan kuvata funktiona
+\[
+  f_{\mathrm{ngram}} \colon V^m \to \Delta(V).
+\]
+Mallin antama jakauma seuraavalle tokenille riippuu siis täsmälleen
+\(m\):stä edeltävästä tokenista. \(n\)-gram-mallin tapauksessa
+\(m = n - 1\), jolloin
+\[
   P(w_t \mid w_1,\ldots,w_{t-1})
   \approx
   P(w_t \mid w_{t-n+1},\ldots,w_{t-1}).
-\end{align*}
-Luvussa \ref{sec:mlp} tarkasteltu MLP-pohjainen kielimalli käyttää myös
-kiinteän pituista kontekstia. Vaikka upotusvektorit ja jaettu
-parametrisointi parantavat tällaisen mallin yleistyskykyä verrattuna
-frekvenssipohjaiseen \(n\)-gram-malliin, kontekstin pituus on edelleen
-arkkitehtuurin ennalta määräämä.
+\]
+Myös luvussa \ref{sec:mlp} tarkasteltu MLP-pohjainen kielimalli käyttää
+kiinteän pituista kontekstia, vaikka sen parametrisoitu esitystapa
+mahdollistaa frekvenssipohjaista \(n\)-gram-mallia paremman
+yleistämisen.
 
-Transformer-mallin keskeinen ajatus on korvata kiinteä konteksti-ikkuna
-itsehuomiomekanismilla (engl.\ \emph{self-attention}). Itsehuomion avulla tokenien esityksiä voidaan rikastaa ympäröivän kontekstin perusteella. Näin malli voi
-hyödyntää koko käytettävissä olevaa aiempaa kontekstia ilman,
-että jokaiselle mahdolliselle kontekstille tarvitsisi muodostaa erillistä
-parametrivektoria.
+Nykyaikaiset suuret kielimallit
+(engl.\ \emph{large language models}, LLM) perustuvat samaan
+autoregressiiviseen ennustetehtävään, mutta niiden käsittelemän kontekstin
+pituus ei ole yksittäisen ennustefunktion kannalta kiinteä. Olkoon \(L\)
+mallin suurin sallittu kontekstinpituus. Dekooderipohjainen
+Transformer-kielimalli voidaan kuvata funktiona
+\[
+  f_{\mathrm{Tr}} \colon \bigcup_{m=0}^{L} V^m \to \Delta(V).
+\]
+Malli voi siten muodostaa seuraavan tokenin jakauman millä tahansa
+enintään \(L\) tokenin pituisella kontekstilla. Käytännössä suurin
+kontekstinpituus on edelleen arkkitehtuurin ja laskentaresurssien
+rajoittama, mutta mallin parametrien ei tarvitse olla sidottuja yhteen
+tiettyyn kontekstin pituuteen.
 
-\subsection{Skaalattu pistetulohuomio}
+Tässä luvussa tarkastellaan erityisesti dekooderipohjaista
+Transformer-arkkitehtuuria, joka muodostaa useiden generatiivisten
+kielimallien, kuten GPT-malliperheen, matemaattisen perustan.
+Transformer esiteltiin alun perin Vaswanin ym.\ työssä
+\emph{Attention Is All You Need} vuonna 2017
+\cite{vaswani2017attention}. Alkuperäinen arkkitehtuuri oli
+konekäännökseen suunniteltu enkooderi--dekooderi-rakenne. Pian tämän jälkeen esitettiin, että pelkkään Transformer-dekooderiin perustuva autoregressiivinen kielimalli voidaan esikouluttaa suurilla tekstiaineistoilla ja hienosäätää useisiin kielenkäsittelytehtäviin \cite{radford2018improving}.
 
-Olkoon ensimmäisen kerroksen tokeniesityksistä muodostettu matriisi
+\subsection{Itsehuomio}
+
+Transformer-mallin keskeinen mekanismi on itsehuomio
+(engl.\ \emph{self-attention}). Sen avulla tokenin esitys voidaan
+muodostaa koko sitä edeltävän käytettävissä olevan kontekstin perusteella
+sen sijaan, että mallissa valittaisiin vain kiinteä määrä viimeisimpiä
+tokeneita. Toisin sanoen kontekstin tokenien merkitys ei määräydy
+pelkästään niiden etäisyyden perusteella, vaan malli voi painottaa
+ennustettavan tokenin kannalta olennaisia aiempia tokeneita.
+
+Itsehuomiossa jokaisen tokenin esityksestä muodostetaan kysely-,
+avain- ja arvovektorit. Tarkasteltavan tokenin kyselyvektoria verrataan
+kontekstin tokenien avainvektoreihin, ja vertailun perusteella lasketaan
+painot arvovektoreille, joilla päivitetään tokenin esitystä.
+
+Kyselyvektoria voidaan tulkita kuvauksena siitä, millaiseen kontekstissa esiintyvään informaatioon tokenin esitys kohdistuu. Avainvektoria voidaan vastaavasti tulkita kuvauksena informaatiosta, jonka perusteella muut tokenit voivat kohdistaa siihen huomiota. Arvovektori sisältää informaation, jota yhdistetään painotettuna uuden tokeniesityksen muodostamiseksi.
+
+Olkoon tarkasteltavan tokenijonon pituus \(T\), ja olkoon
+\(h_i \in \mathbb{R}^{d}\) position \(i\) tokenia vastaava esitys.
+Näistä tokeniesityksistä muodostetaan matriisi
 \begin{align*}
-  H^{(0)}
+  H
   =
   \begin{bmatrix}
-    (h_1^{(0)})^{\top} \\
-    (h_2^{(0)})^{\top} \\
+    h_1^{\top} \\
+    h_2^{\top} \\
     \vdots \\
-    (h_T^{(0)})^{\top}
+    h_T^{\top}
   \end{bmatrix}
   \in \mathbb{R}^{T \times d}.
 \end{align*}
-Jokaisesta tokeniesityksestä muodostetaan kolme lineaarista projektiota:
-kysely (engl.\ \emph{query}), avain (engl.\ \emph{key}) ja arvo
-(engl.\ \emph{value}). Olkoon
+Matriisin \(H\) kukin rivi sisältää siis yhden tokenin
+\(d\)-ulotteisen esityksen.
+
+Itsehuomiomekanismi muodostaa jokaisesta tokeniesityksestä kolme erilaista
+lineaarista projektiota: kyselyn (engl.\ \emph{query}), avaimen
+(engl.\ \emph{key}) ja arvon (engl.\ \emph{value}). Olkoot
 \begin{align*}
   W_Q &\in \mathbb{R}^{d \times d_k}, \\
   W_K &\in \mathbb{R}^{d \times d_k}, \\
   W_V &\in \mathbb{R}^{d \times d_v}
 \end{align*}
-opittavia painomatriiseja. Tällöin kysely-, avain- ja arvomatriisit ovat
+opittavia painomatriiseja. Kysely-, avain- ja arvomatriisit saadaan
+kertomalla tokeniesitysmatriisi näillä painomatriiseilla:
 \begin{align*}
-  Q &= H W_Q, \\
-  K &= H W_K, \\
-  V &= H W_V,
-\end{align*}
-missä
-\begin{align*}
-  Q,K &\in \mathbb{R}^{T \times d_k}, \\
-  V &\in \mathbb{R}^{T \times d_v}.
+  Q &= H W_Q  \\
+  K &= H W_K  \\
+  V &= H W_V.
 \end{align*}
 
-Kyselyvektori kuvaa sitä, millaista informaatiota tokenin esitys hakee
-kontekstista. Avainvektori puolestaan kuvaa, millaista informaatiota kyseinen
-token tarjoaa muiden tokenien käyttöön. Arvovektori sisältää sen informaation,
-joka yhdistetään painotettuna tokenin uuteen esitykseen.
-
-Huomiopisteet saadaan kyselyiden ja avainten välisinä pistetuloina:
+Mallin on määritettävä, kuinka paljon kukin tokeni huomioi
+muita tokeneita. Tätä varten kyselyiden ja avainten välille lasketaan
+pistetulot, joista muodostuu huomiopistematriisi
 \begin{align*}
-  S = \frac{QK^{\top}}{\sqrt{d_k}}
+  S
+  =
+  \frac{QK^{\top}}{\sqrt{d_k}}
   \in \mathbb{R}^{T \times T}.
 \end{align*}
-Matriisin \(S\) alkio \(S_{ij}\) mittaa, kuinka paljon position \(i\) tokenin
-kysely vastaa position \(j\) tokenin avainta. Nimittäjä
-\(\sqrt{d_k}\) skaalataaan mukaan, jotta pistetulojen suuruus ei kasvaisi
-hallitsemattomasti avain- ja kyselyvektorien dimension kasvaessa
-\cite{vaswani2017attention}.
+Matriisin \(S\) alkio \(S_{ij}\) kuvaa position \(i\) tokenin kyselyn ja
+position \(j\) tokenin avaimen välistä vastaavuutta. Nimittäjä \(\sqrt{d_k}\) skaalaa pistetuloja, koska niiden varianssi kasvaa tyypillisesti kysely- ja avainvektorien dimension mukana. Skaalaus ehkäisee softmax-funktion kyllästymistä ja auttaa ylläpitämään stabiilimpia gradientteja koulutuksen aikana \cite{vaswani2017attention}.
 
-Huomiopisteet muunnetaan riveittäin todennäköisyyspainoiksi softmax-funktion
-avulla:
+Huomiopisteet muunnetaan riveittäin painoiksi softmax-funktion avulla:
 \begin{align*}
   A_{ij}
   =
   \frac{\exp(S_{ij})}
   {\sum_{r=1}^{T}\exp(S_{ir})}.
 \end{align*}
-Tällöin \(A_{ij}\geq 0\) ja jokaiselle \(i\):lle pätee
+Tällöin \(A_{ij}\geq 0\), ja jokaiselle \(i\):lle pätee
 \begin{align*}
   \sum_{j=1}^{T} A_{ij} = 1.
 \end{align*}
-Huomiomekanismin tulos on arvoesitysten painotettu summa:
+Paino \(A_{ij}\) ilmaisee siten, kuinka suuri osuus position \(j\)
+arvovektorista sisällytetään position \(i\) uuteen esitykseen.
+
+Itsehuomiomekanismin tulos muodostetaan arvovektoreiden painotettuna
+summana
 \begin{align*}
   \operatorname{Attention}(Q,K,V)
   &=
-  \operatorname{softmax}
-  \left(
-    \frac{QK^{\top}}{\sqrt{d_k}}
-  \right)V.
+  AV.
 \end{align*}
-Yksittäisen tokenin \(i\) kohdalla tulos voidaan kirjoittaa muodossa
+Yksittäisen tokenin \(i\) kohdalla laskenta voidaan esittää muodossa
 \begin{align*}
   o_i
   =
   \sum_{j=1}^{T} A_{ij}v_j,
 \end{align*}
 missä \(v_j\in\mathbb{R}^{d_v}\) on arvomatriisin \(V\) riviä \(j\)
-vastaava arvovektori. Näin tokenin \(i\) uusi esitys muodostuu muiden
-tokenien arvovektoreiden kontekstiriippuvaisena painotettuna summana.
+vastaava arvovektori. Tokenin \(i\) uusi esitys \(o_i\) muodostuu siis
+kaikkien tokenien arvovektoreista, mutta kunkin arvovektorin vaikutus
+määräytyy tokenien välisten huomiopainojen perusteella.
 
 \subsection{Kausaalinen itsehuomio}
+
+Dekooderipohjaisessa Transformerissa
+huomio rajoitetaan kausaalisella maskilla siten, että kohdassa \(t\)
+malli voi hyödyntää vain tokeneita \(w_1,\ldots,w_{t-1}\). Tällöin
+malli säilyttää autoregressiivisen tulkinnan
+\[
+  P(w_t \mid w_1,\ldots,w_{t-1}).
+\]
 
 Autoregressiivisen kielimallin tavoitteena on ennustaa seuraava tokeni
 ainoastaan aiemmin havaitun kontekstin perusteella. Tämän vuoksi mallin ei saa
