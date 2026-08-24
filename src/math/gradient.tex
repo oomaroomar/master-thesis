@@ -52,17 +52,22 @@ optimaalinen siirtymä on
   v^\ast
   =
   -
-  \varepsilon
-  \frac{\nabla J(\theta_t)}
-  {\|\nabla J(\theta_t)\|_2}.
+  \frac{\varepsilon
+  }
+  {\|\nabla J(\theta_t)\|_2} \nabla J(\theta_t).
 \end{align*}
-Tämä motivoi gradienttimenetelmän iteratiivisen päivityssäännön
+Optimaalinen siirtymä \(v^\ast\) osoittaa, että funktion arvo pienenee
+paikallisesti nopeimmin negatiivisen gradientin suuntaan. Uusi parametriarvo
+saadaan asettamalla \(\theta_{t+1} = \theta_t + v^\ast\). Käytännössä
+normalisointitermi \(\varepsilon / \|\nabla J(\theta_t)\|_2\) korvataan
+usein suoraan oppimisnopeudella \(\eta > 0\) (engl. \emph{learning rate}),
+jolloin askelpituus skaalautuu luonnostaan gradientin suuruuden mukaan.
+Tämä johtaa gradienttimenetelmän iteratiiviseen päivityssääntöön
 \begin{align*}
   \theta_{t+1}
   =
-  \theta_t - \eta \nabla J(\theta_t),
+  \theta_t - \eta \nabla J(\theta_t).
 \end{align*}
-missä \(\eta > 0\) on oppimisnopeus (engl. \emph{learning rate}).
 
 Koneoppimisessa kohdefunktio muodostetaan tyypillisesti empiirisenä
 riskinä:
@@ -123,7 +128,6 @@ kohdefunktion ensimmäisen kertaluvun paikalliseen approksimaatioon.
 Tämä approksimaatio ei kuitenkaan sellaisenaan takaa kohdefunktion
 arvon pienenemistä. Tällaisen takuun johtamiseksi tarvitaan gradientin
 säännöllisyyttä koskevia lisäoletuksia.
-
 \begin{definition}\label{def:l_smooth}
   Jatkuvasti derivoituva funktio \(J : \mathbb{R}^d \to \mathbb{R}\) on
   \(L\)-sileä, jos sen gradientti \(\nabla J\) on \(L\)-Lipschitz, eli
@@ -160,7 +164,7 @@ johtaa neliöllinen yläraja.
     \int_0^1
     \langle \nabla J(\theta+th),h\rangle\,dt.
   \end{align*}
-  Lisäämällä ja vähentämällä termin
+  Lisäämällä ja vähentämällä termi
   \(\langle\nabla J(\theta),h\rangle\) integraalin sisällä saadaan
   \begin{align*}
     J(\theta+h)-J(\theta)
@@ -207,31 +211,11 @@ johtaa neliöllinen yläraja.
   \end{align*}
 \end{proof}
 
-Soveltamalla neliöllistä ylärajaa gradienttimenetelmän päivitykseen
-\(h=-\eta\nabla J(\theta)\) saadaan
-\begin{align*}
-  J(\theta-\eta\nabla J(\theta))
-  &\le
-  J(\theta)
-  -
-  \eta\|\nabla J(\theta)\|_2^2
-  +
-  \frac{L\eta^2}{2}\|\nabla J(\theta)\|_2^2 \\
-  &=
-  J(\theta)
-  -
-  \eta\left(1-\frac{L\eta}{2}\right)
-  \|\nabla J(\theta)\|_2^2.
-\end{align*}
-Erityisesti, jos \(0<\eta\le 1/L\), niin
-\begin{align*}
-  J(\theta-\eta\nabla J(\theta))
-  \le
-  J(\theta)
-  -
-  \frac{\eta}{2}\|\nabla J(\theta)\|_2^2.
-\end{align*}
-Tämä todistaa laskeutumislemman.
+Neliöllinen yläraja tarjoaa keskeisen työkalun optimointimenetelmien
+analysointiin. Soveltamalla sitä gradienttimenetelmän päivitysaskeleeseen,
+jossa parametreja siirretään negatiivisen gradientin suuntaan askelpituudella
+\(\eta > 0\), saadaan taattua kohdefunktion arvon pieneneminen kullakin
+iteraatiolla. Tämä tulos tunnetaan laskeutumislemmanna.
 
 \begin{lemma}[Laskeutumislemma]\label{lem:gradient_descent_lemma}
   Olkoon \(J:\mathbb{R}^d\to\mathbb{R}\) \(L\)-sileä funktio ja
@@ -251,13 +235,43 @@ Tämä todistaa laskeutumislemman.
   \end{align*}
 \end{lemma}
 
+\begin{proof}
+  Sovelletaan neliöllistä ylärajaa (lemma~\ref{lemma:quadratic_upper_bound})
+  sijoittamalla \(\theta = \theta_t\) ja \(h = -\eta\nabla J(\theta_t)\),
+  jolloin \(\theta + h = \theta_{t+1}\). Tällöin saadaan
+  \begin{align*}
+    J(\theta_{t+1})
+    &\le
+    J(\theta_t)
+    +
+    \langle \nabla J(\theta_t), -\eta\nabla J(\theta_t)\rangle
+    +
+    \frac{L}{2}\|-\eta\nabla J(\theta_t)\|_2^2 \\
+    &=
+    J(\theta_t)
+    -
+    \eta\|\nabla J(\theta_t)\|_2^2
+    +
+    \frac{L\eta^2}{2}\|\nabla J(\theta_t)\|_2^2 \\
+    &=
+    J(\theta_t)
+    -
+    \eta\left(1-\frac{L\eta}{2}\right)
+    \|\nabla J(\theta_t)\|_2^2.
+  \end{align*}
+  Koska \(0<\eta\le 1/L\), pätee \(1-\frac{L\eta}{2} \ge \frac{1}{2}\), mistä seuraa
+  \begin{align*}
+    J(\theta_{t+1})
+    \le
+    J(\theta_t)
+    -
+    \frac{\eta}{2}\|\nabla J(\theta_t)\|_2^2.
+  \end{align*}
+\end{proof}
+
 Lemma osoittaa, että kohdefunktion arvo pienenee jokaisessa
 ei-stationaarisessa pisteessä, kun oppimisnopeus valitaan ehdon
-\(0<\eta\le 1/L\) mukaisesti. Käytännössä oppimisnopeuden valinta ei
-kuitenkaan ole suoraviivaista, sillä kohdefunktion kaarevuus voi vaihdella
-merkittävästi eri parametrisuunnissa. Tällöin yksi kiinteä oppimisnopeus
-voi olla joissakin suunnissa liian suuri ja toisissa tarpeettoman pieni.
-Tämä motivoi adaptiiviset menetelmät, joissa askelpituutta voidaan mukauttaa optimoinnin aikana parametrikohtaisesti.
+\(0<\eta\le 1/L\) mukaisesti. Käytännössä oppimisnopeuden valinta ei kuitenkaan ole suoraviivaista, sillä kohdefunktion kaarevuus voi vaihdella merkittävästi eri parametrisuunnissa. Seuraavassa alaluvussa tarkastellaan tämän vaihtelun aiheuttamia haasteita optimoinnille.
 
 \subsection{Häiriöalttius ja optimoinnin haasteet}
 \label{subsec:häiriöalttius}
@@ -418,6 +432,32 @@ transformer-arkkitehtuurien opetuksessa myös AdamW on saavuttanut
 vakiintuneen aseman
 \cite{duchi2011adaptive,tieleman2012lecture,kingma2015adam,
 loshchilov2019decoupled, vaswani2017attention}.
+
+\paragraph{Momentum.}
+
+Ennen puhtaasti adaptiivisia menetelmiä stokastisen gradienttimenetelmän
+keskeisimmäksi laajennukseksi vakiintui momentum- eli liikemäärämenetelmä
+\cite{polyak1964some,sutskever2013importance}. Menetelmän tarkoituksena on
+nopeuttaa optimointia loivilla alueilla sekä vaimentaa oskillaatiota
+suuntiin, joissa kohdefunktion kaarevuus on suurta. Tämä saavutetaan
+lisäämällä päivitykseen liukuma aiemmista siirtymistä:
+\begin{align*}
+  v_t
+  =
+  \gamma v_{t-1} + \eta g_t,
+\end{align*}
+missä \(\gamma\in[0,1)\) on momentum-kerroin. Parametripäivitys tehdään
+kertyneen nopeusvektorin \(v_t\) suunnassa:
+\begin{align*}
+  \theta_{t+1}
+  =
+  \theta_t - v_t.
+\end{align*}
+Vaihtoehtoisesti momentum voidaan formuloida eksponentiaalisesti painotettuna
+gradienttien liukuvana keskiarvona \(m_t = \beta m_{t-1} + (1-\beta)g_t\),
+jolloin päivitys on muotoa \(\theta_{t+1} = \theta_t - \eta m_t\). Tämä
+jälkimmäinen esitysmuoto toimii suoraan perustana Adamin ensimmäisen momentin
+laskennalle.
 
 \paragraph{AdaGrad.}
 

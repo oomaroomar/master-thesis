@@ -61,10 +61,9 @@ ennustettavan tokenin kannalta olennaisia aiempia tokeneita.
 
 Itsehuomiossa jokaisen tokenin esityksestä muodostetaan kysely-,
 avain- ja arvovektorit. Tarkasteltavan tokenin kyselyvektoria verrataan
-kontekstin tokenien avainvektoreihin, ja vertailun perusteella lasketaan
-painot arvovektoreille, joilla päivitetään tokenin esitystä.
+kontekstin tokenien avainvektoreihin pistetulolla, josta muodostuu huomiopisteet. Huomiopisteet muunnetaan softmax-funktion avulla painoiksi, joilla kontekstin tokenien arvovektorit yhdistetään uuden tokeniesityksen muodostamiseksi.
 
-Kyselyvektoria voidaan tulkita kuvauksena siitä, millaiseen kontekstissa esiintyvään informaatioon tokenin esitys kohdistuu. Avainvektoria voidaan vastaavasti tulkita kuvauksena informaatiosta, jonka perusteella muut tokenit voivat kohdistaa siihen huomiota. Arvovektori sisältää informaation, jota yhdistetään painotettuna uuden tokeniesityksen muodostamiseksi.
+Kyselyvektoria voidaan tulkita kuvauksena siitä, millaiseen kontekstissa esiintyvään informaatioon tokenin esitys kohdistuu. Avainvektoria voidaan vastaavasti tulkita kuvauksena informaatiosta, jonka perusteella muut tokenit voivat kohdistaa siihen huomiota.
 
 Olkoon tarkasteltavan tokenijonon pituus \(T\), ja olkoon
 \(h_i \in \mathbb{R}^{d}\) position \(i\) tokenia vastaava esitys.
@@ -80,7 +79,7 @@ Näistä tokeniesityksistä muodostetaan matriisi
   \end{bmatrix}
   \in \mathbb{R}^{T \times d}.
 \end{align*}
-Matriisin \(H\) kukin rivi sisältää siis yhden tokenin
+Matriisin \(H\) kukin rivi sisältää yhden tokenin
 \(d\)-ulotteisen esityksen.
 
 Itsehuomiomekanismi muodostaa jokaisesta tokeniesityksestä kolme erilaista
@@ -132,14 +131,14 @@ summana
   &=
   AV.
 \end{align*}
-Yksittäisen tokenin \(i\) kohdalla laskenta voidaan esittää muodossa
+Indeksissä \(i\) sijaitsevan tokenin kohdalla laskenta voidaan esittää muodossa
 \begin{align*}
   o_i
   =
   \sum_{j=1}^{T} A_{ij}v_j,
 \end{align*}
 missä \(v_j\in\mathbb{R}^{d_v}\) on arvomatriisin \(V\) riviä \(j\)
-vastaava arvovektori. Tokenin \(i\) uusi esitys \(o_i\) muodostuu siis
+vastaava arvovektori. Indeksin \(i\) tokenin uusi esitys \(o_i\) muodostuu siis
 kaikkien tokenien arvovektoreista, mutta kunkin arvovektorin vaikutus
 määräytyy tokenien välisten huomiopainojen perusteella.
 
@@ -155,10 +154,7 @@ malli säilyttää autoregressiivisen tulkinnan
 
 Autoregressiivisen kielimallin tavoitteena on ennustaa seuraava tokeni
 ainoastaan aiemmin havaitun kontekstin perusteella. Tämän vuoksi mallin ei saa
-antaa hyödyntää ennustettavaa tokenia eikä sen jälkeisiä tokeneita. Jos
-koulutusvaiheessa tokenin \(x_t\) esitys voisi osallistua tokenin \(x_t\)
-ennustamiseen, malli voisi ratkaista tehtävän käyttämällä tulevaa tietoa.
-Tällaista tiedon vuotamista estetään kausaalisella huomiomaskilla.
+antaa hyödyntää ennustettavaa tokenia eikä sen jälkeisiä tokeneita.
 
 Määritellään maskimatriisi \(M\in\mathbb{R}^{T\times T}\) siten, että
 \begin{align*}
