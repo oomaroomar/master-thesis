@@ -273,15 +273,15 @@ Lemma osoittaa, että kohdefunktion arvo pienenee jokaisessa
 ei-stationaarisessa pisteessä, kun oppimisnopeus valitaan ehdon
 \(0<\eta\le 1/L\) mukaisesti. Käytännössä oppimisnopeuden valinta ei kuitenkaan ole suoraviivaista, sillä kohdefunktion kaarevuus voi vaihdella merkittävästi eri parametrisuunnissa. Seuraavassa alaluvussa tarkastellaan tämän vaihtelun aiheuttamia haasteita optimoinnille.
 
-\subsection{Häiriöalttius ja optimoinnin haasteet}
+\subsection{Häiriöalttius ja toisen kertaluvun geometria}
 \label{subsec:häiriöalttius}
 
-Stokastisen gradienttimenetelmän keskeinen haaste liittyy siihen, että
+Stokastisen gradienttimenetelmän keskeinen haaste on, että
 kohdefunktion lokaali kaarevuus voi vaihdella huomattavasti eri
-parametrisuunnissa. Tätä ilmiötä kutsutaan numeeriseksi häiriöalttiudeksi
-(engl. \emph{ill-conditioning}). Olkoon kohdefunktio \(J\) \(L\)-sileä ja
-kahdesti jatkuvasti derivoituva. Tällöin pisteen \(\theta_t\) ympäristössä
-pätee toisen kertaluvun Taylorin approksimaatio
+parametrisuunnissa. Tätä ilmiötä kutsutaan numeeriseksi
+häiriöalttiudeksi (engl. \emph{ill-conditioning}). Olkoon kohdefunktio
+\(J\) \(L\)-sileä ja kahdesti jatkuvasti derivoituva. Tällöin pisteen
+\(\theta_t\) ympäristössä pätee toisen kertaluvun Taylorin approksimaatio
 \begin{align*}
   J(\theta_t+\Delta\theta)
   \approx
@@ -297,7 +297,7 @@ Merkitään Hessin matriisia pisteessä \(\theta_t\) symbolilla
   H_t=\nabla^2J(\theta_t).
 \end{align*}
 Koska \(H_t\) on symmetrinen, sen ominaisarvot ovat reaalisia. Oletetaan
-tässä, että lokaali kvadraattinen malli on konveksi, eli
+tässä, että lokaali kvadraattinen malli on konveksi eli
 \(H_t\succeq 0\). Tällöin ominaisarvot voidaan järjestää muodossa
 \begin{align*}
   \lambda_1\ge\lambda_2\ge\dots\ge\lambda_d\ge 0,
@@ -305,58 +305,23 @@ tässä, että lokaali kvadraattinen malli on konveksi, eli
 missä \(\lambda_1\) vastaa suurinta ja \(\lambda_d\) pienintä
 paikallista kaarevuutta.
 
-Koska \(J\) on \(L\)-sileä ja kahdesti jatkuvasti derivoituva, Hessin
-operaattorinormille pätee
-\begin{align*}
-  \|H_t\|_2\le L.
-\end{align*}
-Koska \(H_t\) on symmetrinen, tästä seuraa matriisiepäyhtälö
-\begin{align*}
-  -LI\preceq H_t\preceq LI,
-\end{align*}
-missä \(\preceq\) on Löwner-järjestys. Erityisesti lokaalisti konveksisessa
-tapauksessa \(H_t\succeq0\) saadaan
-\begin{align*}
-  0\preceq H_t\preceq LI,
-\end{align*}
-mistä seuraa
-\begin{align*}
-  \lambda_1\le L.
-\end{align*}
-Tämä rajoittaa oppimisnopeuden kokoa, sillä liian suuri askel voi johtaa
-epävakaaseen käyttäytymiseen jyrkimmissä suunnissa. Keskeisempi ongelma
-on kuitenkin se, että gradienttimenetelmä käyttää samaa oppimisnopeutta
-kaikissa parametrisuunnissa. Jos kohdefunktion lokaali kaarevuus vaihtelee
-suunnasta toiseen voimakkaasti, oppimisnopeus on valittava suurimman
-kaarevuuden ehdoilla. Tällöin menetelmä pysyy vakaana jyrkissä suunnissa,
-mutta etenee samalla hitaasti loivissa suunnissa \cite{bertsekas1999nonlinear, nesterov2004introductory}.
-
-Tätä voidaan havainnollistaa tarkastelemalla funktion käyttäytymistä
-stationaarisen pisteen \(\theta^\ast\) ympärillä, missä
-\(\nabla J(\theta^\ast)=0\). Jos \(J\) on kahdesti jatkuvasti derivoituva,
-gradienttia voidaan pisteen \(\theta^\ast\) läheisyydessä approksimoida
-lineaarisesti:
-\begin{align*}
-  \nabla J(\theta_t)
-  \approx
-  \nabla^2J(\theta^\ast)(\theta_t-\theta^\ast).
-\end{align*}
-Merkitään \(H^\ast=\nabla^2J(\theta^\ast)\) ja
-\(e_t=\theta_t-\theta^\ast\). Tällöin gradienttimenetelmän päivitys saa
-lokaalisti approksimaation
+Funktion \(L\)-sileyden nojalla Hessin operaattorinormille pätee
+\(\|H_t\|_2\le L\), jolloin \(\lambda_1\le L\). Tämä rajoittaa
+oppimisnopeuden suuruutta: liian suuri askel voi johtaa divergenssiin tai
+voimakkaaseen oskillaatioon suurimman kaarevuuden suunnassa.
+Häiriöalttiuden vaikutusta suppenemiseen voidaan havainnollistaa
+tarkastelemalla stationaarisen pisteen \(\theta^\ast\) ympäristöä, jossa
+\(\nabla J(\theta^\ast)=0\). Merkitsemällä
+\(H^\ast=\nabla^2J(\theta^\ast)\) ja virhevektoria
+\(e_t=\theta_t-\theta^\ast\) saadaan lokaaliksi linearisoiduksi
+virhedynamiikaksi
 \begin{align*}
   e_{t+1}
   \approx
   (I-\eta H^\ast)e_t.
 \end{align*}
-
-Koska \(H^\ast\) on symmetrinen, se voidaan diagonalisoida ortonormaalissa
-ominaisvektorikannassa. Oletetaan lisäksi, että \(\theta^\ast\) on lokaali
-minimi, jolloin \(H^\ast\succeq0\). Jos ominaisarvot järjestetään muotoon
-\begin{align*}
-  \lambda_1\ge\lambda_2\ge\dots\ge\lambda_d\ge0,
-\end{align*}
-niin virheen komponentit toteuttavat approksimatiivisesti relaation
+Kun virhevektori esitetään \(H^\ast\):n ortonormaalissa
+ominaisvektorikannassa, kukin virhekomponentti supistuu kertoimella
 \begin{align*}
   e_{t+1}^{(k)}
   \approx
@@ -364,64 +329,82 @@ niin virheen komponentit toteuttavat approksimatiivisesti relaation
   \qquad
   k=1,\dots,d.
 \end{align*}
-Sama oppimisnopeus \(\eta\) vaikuttaa siis eri suuntiin eri tavoin.
-Suurta ominaisarvoa vastaavissa suunnissa tekijä
-\(1-\eta\lambda_k\) muuttuu nopeasti, joten vakaus edellyttää pientä
-oppimisnopeutta. Jos \(\eta\) valitaan lähelle arvoa
-\(1/\lambda_1\), jyrkimmässä suunnassa pätee
-\(1-\eta\lambda_1\approx0\), jolloin eteneminen on nopeaa. Loivimmassa
-suunnassa pätee tällöin puolestaan
-\(1-\eta\lambda_d\approx1\), mikä merkitsee hidasta supistumista.
-Menetelmä voi siten olla jyrkissä suunnissa lähes optimaalinen mutta
-loivissa suunnissa samalla hyvin hidas.
-
-Näin gradienttimenetelmä voi joutua tilanteeseen, jossa oppimisnopeus on
-jyrkkien suuntien kannalta lähes suurin sallittu, mutta loivissa suunnissa
-eteneminen on silti hidasta. Juuri tämä kaarevuuden epätasaisuus tekee
-menetelmästä tehottoman huonosti ehdollistuneissa ongelmissa. Ilmiötä
-voidaan kuvata Hessin matriisin ehtoluvulla
+Yhtä oppimisnopeutta käytettäessä syntyy siten perustavanlaatuinen
+kompromissi. Jos \(\eta\) valitaan suureksi
+(\(\eta \approx 1/\lambda_1\)) nopean etenemisen saavuttamiseksi
+jyrkimmän kaarevuuden suunnassa, loivimmissa suunnissa pätee
+\(1-\eta\lambda_d \approx 1\). Tällöin virhe näissä suunnissa supistuu
+hyvin hitaasti. Ongelman vakavuutta kuvaa Hessin matriisin ehtoluku
 \begin{align*}
   \kappa
   =
   \frac{\lambda_1}{\lambda_d},
 \end{align*}
-kun \(\lambda_d>0\). Positiivisesti definiitillä kvadraattisella
-kohdefunktiolla gradienttimenetelmän suppenemisnopeus riippuu
-oleellisesti ehtoluvusta. Suuri ehtoluku tarkoittaa, että
-kaarevuus vaihtelee huomattavasti eri suunnissa, jolloin yksi globaali
-oppimisnopeus soveltuu väistämättä huonosti ainakin osaan suunnista
-\cite{nocedal2006numerical,saad2003iterative}.
+kun \(\lambda_d>0\). Suuri ehtoluku tarkoittaa, että
+gradienttimenetelmä etenee kapeassa laaksossa oskilloiden voimakkaan
+kaarevuuden suunnassa ja vain hitaasti laakson pohjan suuntaisesti
+\cite{nocedal2006numerical}.
 
-Vaikka analyysi perustuu lokaaliin toisen kertaluvun approksimaatioon, sen johtopäätös on yleisempi. Jos kohdefunktion paikallinen kaarevuus vaihtelee voimakkaasti parametriavaruuden eri suunnissa, yksi kaikissa suunnissa käytettävä oppimisnopeus ei pysty mukautumaan tehokkaasti näihin eroihin. Tällöin oppimisnopeus on valittava jyrkimpien suuntien ehdoilla, mikä hidastaa etenemistä loivemmissa suunnissa \cite{nocedal2006numerical, bertsekas1999nonlinear}. Tämä motivoi menetelmiä, joissa gradienttipäivityksiä skaalataan tai mukautetaan parametrikohtaisesti esimerkiksi gradienttihistorian perusteella.
-
-\subsection{Adaptiiviset optimointimenetelmät}
-
-Edellisessä alaluvussa todettiin, että stokastinen gradienttimenetelmä
-käyttää samaa globaalia oppimisnopeutta kaikissa parametrisuunnissa.
-Tämä voi olla tehotonta erityisesti silloin, kun kohdefunktion lokaali
-kaarevuus tai gradienttien mittakaava vaihtelee voimakkaasti parametrien
-välillä. Tällöin vakaa oppimisnopeus on valittava jyrkkien suuntien
-ehdoilla, mikä hidastaa etenemistä loivemmissa suunnissa. Adaptiivisten
-optimointimenetelmien keskeinen idea on lieventää tätä ongelmaa
-skaalaamalla päivitystä parametrikohtaisesti gradienttihistorian
-perusteella.
-
-Yleinen adaptiivinen menetelmä voidaan kirjoittaa muodossa
+Toisen kertaluvun optimointimenetelmät, kuten Newtonin menetelmä,
+hyödyntävät paikallista kaarevuusinformaatiota skaalaamalla
+päivitysaskelen käänteisellä Hessin matriisilla:
 \begin{align*}
   \theta_{t+1}
   =
-  \theta_t-\eta_tD_tg_t,
+  \theta_t - \eta H_t^{-1} \nabla J(\theta_t).
+\end{align*}
+Tällöin päivityssuunta mukautuu sekä eri suuntien
+kaarevuuseroihin että parametrien välisiin riippuvuuksiin, joita Hessin
+matriisin ei-diagonaaliset alkiot kuvaavat. Nykyaikaisissa
+neuroverkoissa ja kielimalleissa parametrien lukumäärä \(d\) on kuitenkin
+tyypillisesti miljoonia tai miljardeja. Täyden Hessin matriisin
+tallentaminen vaatii \(\mathcal{O}(d^2)\) muistia, ja sen kääntäminen
+vaatii \(\mathcal{O}(d^3)\) laskutoimitusta. Tästä syystä täyteen
+kaarevuusinformaatioon perustuvien menetelmien suora soveltaminen on
+suuressa mittakaavassa yleensä epäkäytännöllistä.
+
+\subsection{Adaptiiviset optimointimenetelmät}
+
+Syväoppimisessa hyödynnetään tämän vuoksi laajasti ensimmäisen kertaluvun
+optimointimenetelmiä, jotka pyrkivät parantamaan gradienttimenetelmien
+käytännön toimintaa pienellä laskennallisella lisäkustannuksella \cite{goodfellow2016deep}.
+Keskeisiä menetelmäperheitä ovat \emph{momentum}-menetelmät, jotka
+vaimentavat häiriöalttiuden aiheuttamaa oskillointia suodattamalla
+päivityssuuntaa ajassa, sekä adaptiiviset optimointimenetelmät \cite{kingma2015adam}.
+
+Adaptiivisten menetelmien keskeinen periaate on muodostaa
+parametrikohtaisia oppimisnopeuksia gradienttihistorian perusteella.
+Menetelmät mukauttavat päivitysten mittakaavaa erityisesti silloin, kun
+gradienttien suuruus vaihtelee huomattavasti parametrikoordinaattien
+välillä. Syvissä neuroverkoissa eri kerrosten parametrit sekä esimerkiksi
+harvoin esiintyviä sanoja vastaavat upotusvektorit voivat saada
+hyvin erisuuruisia gradientteja \cite{duchi2011adaptive}. Yhden globaalin oppimisnopeuden käyttö
+voi tällöin johtaa siihen, että suuria gradientteja saavat parametrit
+päivittyvät liian voimakkaasti, kun taas pieniä gradientteja saavat
+parametrit etenevät hitaasti.
+
+Adaptiiviset menetelmät tasapainottavat tätä vaihtelua skaalaamalla kunkin
+parametrin päivitystä sen aiemmin saamien gradienttien perusteella.
+Käytännössä tämä voidaan tulkita diagonaalisena esiehdollistuksena:
+jokaiselle parametrille määritetään oma päivitysaskelen mittakaava ilman,
+että parametrien välisiä riippuvuuksia tarvitsee käsitellä eksplisiittisesti \cite{bottou2018optimization,duchi2011adaptive}.
+Tämä tekee menetelmistä laskennallisesti tehokkaita ja erityisen
+soveltuvia suuriin, korkeaulotteisiin optimointiongelmiin.
+
+Yleinen adaptiivinen menetelmä voidaan esittää muodossa
+\begin{align*}
+  \theta_{t+1}
+  =
+  \theta_t-\eta_t D_t g_t,
 \end{align*}
 missä \(g_t\) on hetkellä \(t\) laskettu stokastinen gradientti,
 \(\eta_t>0\) on globaali oppimisnopeus ja
-\(D_t\in\mathbb{R}^{d\times d}\) on tavallisesti diagonaalinen,
-positiivinen skaalausmatriisi, joka riippuu aiemmista gradienteista.
-Tällöin kunkin parametrin efektiivinen askelpituus määräytyy sekä
-globaalin oppimisnopeuden että kyseisen parametrin gradienttihistoriaan
-perustuvan skaalauksen perusteella. Intuitiivisesti komponentit, joiden
-gradientit ovat usein suuria, voidaan päivittää varovaisemmin, kun taas
-pienempiä tai harvinaisempia gradientteja saaville komponenteille voidaan
-sallia suhteellisesti suurempia askelia.
+\(D_t \in \mathbb{R}^{d\times d}\)
+on positiivisesti definiitti diagonaalinen skaalausmatriisi, joka muodostetaan aiempien gradienttien perusteella. Diagonaalisuuden
+vuoksi menetelmien muisti- ja aikavaativuus on vain \(\mathcal{O}(d)\).
+Tämä mahdollistaa akselinsuuntaisten mittakaavaerojen tehokkaan
+tasaamisen, vaikka se ei korjaakaan koordinaatiston rotaatioista johtuvaa
+yleistä häiriöalttiutta.
 
 Adaptiivisten menetelmien kehitys syväoppimisessa on rakentunut
 erityisesti AdaGradin, RMSPropin ja Adamin ympärille. AdaGrad tuo esiin

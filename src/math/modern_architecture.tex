@@ -9,18 +9,11 @@ funktiona, joka muuntaa aiemmin havaitun tokenikontekstin seuraavan tokenin
 todennäköisyysjakaumaksi.
 
 \(n\)-gram-mallissa kontekstin pituus on ennalta määrätty. Jos mallin
-käyttämän kontekstin pituus on \(m\), sitä voidaan kuvata funktiona
+käyttämän kontekstin pituus on \(n\), niin se voidaan kuvata funktiona
 \[
-  f_{\mathrm{ngram}} \colon V^m \to \Delta(V).
+  f_{\mathrm{ngram}} \colon V^n \to \Delta(V).
 \]
-Mallin antama jakauma seuraavalle tokenille riippuu siis täsmälleen
-\(m\):stä edeltävästä tokenista. \(n\)-gram-mallin tapauksessa
-\(m = n - 1\), jolloin
-\[
-  P(w_t \mid w_1,\ldots,w_{t-1})
-  \approx
-  P(w_t \mid w_{t-n+1},\ldots,w_{t-1}).
-\]
+
 Myös luvussa \ref{sec:mlp} tarkasteltu MLP-pohjainen kielimalli käyttää
 kiinteän pituista kontekstia, vaikka sen parametrisoitu esitystapa
 mahdollistaa frekvenssipohjaista \(n\)-gram-mallia paremman
@@ -29,7 +22,7 @@ yleistämisen.
 Nykyaikaiset suuret kielimallit
 (engl.\ \emph{large language models}, LLM) perustuvat samaan
 autoregressiiviseen ennustetehtävään, mutta niiden käsittelemän kontekstin
-pituus ei ole yksittäisen ennustefunktion kannalta kiinteä. Olkoon \(L\)
+pituus ei ole kiinteä. Olkoon \(L\)
 mallin suurin sallittu kontekstinpituus. Dekooderipohjainen
 Transformer-kielimalli voidaan kuvata funktiona
 \[
@@ -51,23 +44,9 @@ konekäännökseen suunniteltu enkooderi--dekooderi-rakenne. Pian tämän jälke
 
 \subsection{Itsehuomio}
 
-Transformer-mallin keskeinen mekanismi on itsehuomio
-(engl.\ \emph{self-attention}). Sen avulla tokenin esitys voidaan
-muodostaa koko sitä edeltävän käytettävissä olevan kontekstin perusteella
-sen sijaan, että mallissa valittaisiin vain kiinteä määrä viimeisimpiä
-tokeneita. Toisin sanoen kontekstin tokenien merkitys ei määräydy
-pelkästään niiden etäisyyden perusteella, vaan malli voi painottaa
-ennustettavan tokenin kannalta olennaisia aiempia tokeneita.
+Transformer-mallin keskeinen mekanismi on itsehuomio (engl.\ \emph{self-attention}). Sen avulla tokenin esitys voidaan muodostaa koko syötekontekstin perusteella sen sijaan, että huomioitaisiin vain kiinteä määrä viimeisimpiä tokeneita. Kontekstin tokenien merkitys ei määräydy pelkän etäisyyden mukaan, vaan itsehuomio mahdollistaa kunkin tokenin kannalta olennaisen tiedon dynaamisen painottamisen yli koko sekvenssin.
 
-Itsehuomiossa jokaisen tokenin esityksestä muodostetaan kysely-,
-avain- ja arvovektorit. Tarkasteltavan tokenin kyselyvektoria verrataan
-kontekstin tokenien avainvektoreihin pistetulolla, josta muodostuu huomiopisteet. Huomiopisteet muunnetaan softmax-funktion avulla painoiksi, joilla kontekstin tokenien arvovektorit yhdistetään uuden tokeniesityksen muodostamiseksi.
-
-Kyselyvektoria voidaan tulkita kuvauksena siitä, millaiseen kontekstissa esiintyvään informaatioon tokenin esitys kohdistuu. Avainvektoria voidaan vastaavasti tulkita kuvauksena informaatiosta, jonka perusteella muut tokenit voivat kohdistaa siihen huomiota.
-
-Olkoon tarkasteltavan tokenijonon pituus \(T\), ja olkoon
-\(h_i \in \mathbb{R}^{d}\) position \(i\) tokenia vastaava esitys.
-Näistä tokeniesityksistä muodostetaan matriisi
+Olkoon tarkasteltavan tokenijonon pituus \(T\) ja olkoon \(h_i \in \mathbb{R}^{d}\) position \(i\) tokenia vastaava esitysvektori. Näistä muodostetaan syötematriisi
 \begin{align*}
   H
   =
@@ -79,270 +58,112 @@ Näistä tokeniesityksistä muodostetaan matriisi
   \end{bmatrix}
   \in \mathbb{R}^{T \times d}.
 \end{align*}
-Matriisin \(H\) kukin rivi sisältää yhden tokenin
-\(d\)-ulotteisen esityksen.
 
-Itsehuomiomekanismi muodostaa jokaisesta tokeniesityksestä kolme erilaista
-lineaarista projektiota: kyselyn (engl.\ \emph{query}), avaimen
-(engl.\ \emph{key}) ja arvon (engl.\ \emph{value}). Olkoot
+Itsehuomiomekanismi muodostaa syöte-esityksistä kolme erillistä lineaarista projektiota: kyselyn (engl.\ \emph{query}), avaimen (engl.\ \emph{key}) ja arvon (engl.\ \emph{value}). Olkoot \(W_Q, W_K \in \mathbb{R}^{d \times d_k}\) ja \(W_V \in \mathbb{R}^{d \times d_v}\) opittavia painomatriiseja. Kysely-, avain- ja arvomatriisit lasketaan kertomalla syötematriisi näillä painoilla:
 \begin{align*}
-  W_Q &\in \mathbb{R}^{d \times d_k}, \\
-  W_K &\in \mathbb{R}^{d \times d_k}, \\
-  W_V &\in \mathbb{R}^{d \times d_v}
+  Q &= H W_Q \in \mathbb{R}^{T \times d_k}, \\
+  K &= H W_K \in \mathbb{R}^{T \times d_k}, \\
+  V &= H W_V \in \mathbb{R}^{T \times d_v}.
 \end{align*}
-opittavia painomatriiseja. Kysely-, avain- ja arvomatriisit saadaan
-kertomalla tokeniesitysmatriisi näillä painomatriiseilla:
+Intuitiivisesti kysely kuvaa sitä, millaista tietoa kukin tokeni hakee, avain kuvaa tokenin tarjoamaa informaatiota muille, ja arvo sisältää varsinaisen sisällön, jota yhdistetään uusiin esityksiin.
+
+Kyselyiden ja avainten välinen vastaavuus lasketaan pistetuloina, joista muodostuu skaalattu huomiopistematriisi
 \begin{align*}
-  Q &= H W_Q  \\
-  K &= H W_K  \\
-  V &= H W_V.
+  S = \frac{QK^{\top}}{\sqrt{d_k}} \in \mathbb{R}^{T \times T}.
 \end{align*}
+Matriisin alkio \(S_{ij}\) mittaa position \(i\) kyselyn ja position \(j\) avaimen yhteensopivuutta. Nimittäjä \(\sqrt{d_k}\) skaalaa pistetuloja, jotta niiden varianssi ei kasvaisi liian suureksi vektorien dimension mukana. Skaalaus ehkäisee softmax-funktion saturoitumista ja takaa stabiilimmat gradientit koulutuksen aikana \cite{vaswani2017attention}.
 
-Mallin on määritettävä, kuinka paljon kukin tokeni huomioi
-muita tokeneita. Tätä varten kyselyiden ja avainten välille lasketaan
-pistetulot, joista muodostuu huomiopistematriisi
+Huomiopisteet normalisoidaan todennäköisyysjakaumiksi soveltamalla softmax-funktiota riveittäin, jolloin saadaan huomiopainomatriisi
 \begin{align*}
-  S
-  =
-  \frac{QK^{\top}}{\sqrt{d_k}}
-  \in \mathbb{R}^{T \times T}.
+  A = \operatorname{softmax}(S) = \operatorname{softmax}\left(\frac{QK^{\top}}{\sqrt{d_k}}\right) \in \mathbb{R}^{T \times T},
 \end{align*}
-Matriisin \(S\) alkio \(S_{ij}\) kuvaa position \(i\) tokenin kyselyn ja
-position \(j\) tokenin avaimen välistä vastaavuutta. Nimittäjä \(\sqrt{d_k}\) skaalaa pistetuloja, koska niiden varianssi kasvaa tyypillisesti kysely- ja avainvektorien dimension mukana. Skaalaus ehkäisee softmax-funktion kyllästymistä ja auttaa ylläpitämään stabiilimpia gradientteja koulutuksen aikana \cite{vaswani2017attention}.
+missä kukin alkio \(A_{ij} \in [0, 1]\) ilmaisee, kuinka suuri painoarvo position \(j\) arvolle annetaan position \(i\) uutta esitystä laskettaessa, ja riveille pätee \(\sum_{j=1}^{T} A_{ij} = 1\).
 
-Huomiopisteet muunnetaan riveittäin painoiksi softmax-funktion avulla:
+Lopullinen itsehuomion tulos lasketaan arvomatriisin rivien painotettuna summana matriisitulon avulla:
 \begin{align*}
-  A_{ij}
-  =
-  \frac{\exp(S_{ij})}
-  {\sum_{r=1}^{T}\exp(S_{ir})}.
+  \operatorname{Attention}(Q,K,V) = AV = \operatorname{softmax}\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V \in \mathbb{R}^{T \times d_v}.
 \end{align*}
-Tällöin \(A_{ij}\geq 0\), ja jokaiselle \(i\):lle pätee
+Tuloksena saadun matriisin kukin rivi \(i\) edustaa position \(i\) uutta kontekstualisoitua esitystä, johon on koottu tietoa kaikista sekvenssin tokeneista huomiopainojen \(A_{ij}\) mukaisesti.
+
+Autoregressiivisissä kielimalleissa tavoitteena on mallintaa seuraavan tokenin todennäköisyyttä ja generoida tekstiä sekventiaalisesti, minkä vuoksi tokenin esitys ei saa hyödyntää tietoa tulevista tokeneista. Tätä varten itsehuomiota rajoitetaan \emph{kausaalisella maskauksella}, joka estää informaation vuotamisen tulevaisuudesta asettamalla position \(i\) huomiopainot nollaksi kaikille positioille \(j > i\). Tämä toteutetaan lisäämällä huomiopisteisiin ennen softmax-funktiota maskimatriisi \(M \in \mathbb{R}^{T \times T}\):
 \begin{align*}
-  \sum_{j=1}^{T} A_{ij} = 1.
-\end{align*}
-Paino \(A_{ij}\) ilmaisee siten, kuinka suuri osuus position \(j\)
-arvovektorista sisällytetään position \(i\) uuteen esitykseen.
-
-Itsehuomiomekanismin tulos muodostetaan arvovektoreiden painotettuna
-summana
-\begin{align*}
-  \operatorname{Attention}(Q,K,V)
-  &=
-  AV.
-\end{align*}
-Indeksissä \(i\) sijaitsevan tokenin kohdalla laskenta voidaan esittää muodossa
-\begin{align*}
-  o_i
-  =
-  \sum_{j=1}^{T} A_{ij}v_j,
-\end{align*}
-missä \(v_j\in\mathbb{R}^{d_v}\) on arvomatriisin \(V\) riviä \(j\)
-vastaava arvovektori. Indeksin \(i\) tokenin uusi esitys \(o_i\) muodostuu siis
-kaikkien tokenien arvovektoreista, mutta kunkin arvovektorin vaikutus
-määräytyy tokenien välisten huomiopainojen perusteella.
-
-\subsection{Kausaalinen itsehuomio}
-
-Dekooderipohjaisessa Transformerissa
-huomio rajoitetaan kausaalisella maskilla siten, että kohdassa \(t\)
-malli voi hyödyntää vain tokeneita \(w_1,\ldots,w_{t-1}\). Tällöin
-malli säilyttää autoregressiivisen tulkinnan
-\[
-  P(w_t \mid w_1,\ldots,w_{t-1}).
-\]
-
-Autoregressiivisen kielimallin tavoitteena on ennustaa seuraava tokeni
-ainoastaan aiemmin havaitun kontekstin perusteella. Tämän vuoksi mallin ei saa
-antaa hyödyntää ennustettavaa tokenia eikä sen jälkeisiä tokeneita.
-
-Määritellään maskimatriisi \(M\in\mathbb{R}^{T\times T}\) siten, että
-\begin{align*}
-  M_{ij}
-  =
+  M_{ij} =
   \begin{cases}
-    0,
-    & \text{jos } j \leq i, \\
-    -\infty,
-    & \text{jos } j > i.
+    0, & \text{kun } j \le i, \\
+    -\infty, & \text{kun } j > i.
   \end{cases}
 \end{align*}
-Tällöin kausaalinen itsehuomio määritellään muodossa
+Kausaalinen itsehuomio lasketaan tällöin muodossa
 \begin{align*}
-  \operatorname{CausalAttention}(Q,K,V)
-  =
-  \operatorname{softmax}
-  \left(
-    \frac{QK^{\top}}{\sqrt{d_k}} + M
-  \right)V.
+  \operatorname{CausalAttention}(Q,K,V) = \operatorname{softmax}\left(\frac{QK^{\top}}{\sqrt{d_k}} + M\right)V.
 \end{align*}
-Koska \(\exp(-\infty)=0\), positiota \(i\) vastaavan softmax-jakauman painot
-positioille \(j>i\) ovat nollia. Siten tokenin \(i\) esitys voi riippua vain
-tokeneista \(x_1,\ldots,x_i\).
+Koska \(\exp(-\infty) = 0\), huomiopainomatriisista muodostuu alakolmiomatriisi. Tällöin kunkin tokenin esitys riippuu vain siitä itsestään ja sitä edeltävistä tokeneista, mikä säilyttää generointiprosessin kausaalisen rakenteen.
 
-Kausaalinen maski erottaa dekooderipohjaisen kielimallin esimerkiksi
-bidirektionaalisesta Transformer-enkooderista. Enkooderipohjaisissa malleissa,
-kuten BERT-mallissa, tokenin esitys voi hyödyntää sekä vasemmalla että
-oikealla sijaitsevaa kontekstia \cite{devlin2019bert}. Tämä soveltuu hyvin
-esimerkiksi tekstin luokitteluun ja maskattujen tokenien ennustamiseen, mutta
-ei suoraan vasemmalta oikealle etenevään tekstigenerointiin. Generatiivisissa
-suurissa kielimalleissa käytetään tämän vuoksi yleensä kausaalista
-itsehuomiota.
+Yksittäisen huomiomekanismin ilmaisukykyä rajoittaa kuitenkin softmax-funktion luonne. Koska huomiopainomatriisille pätee \(A_{ij} \ge 0\) ja \(\sum_{j=1}^{T} A_{ij} = 1\), position \(i\) päivitetty esitysvektori \(o_i = \sum_{j=1}^{T} A_{ij} v_j\) on arvovektorien \(\{v_1, \dots, v_T\}\) konveksikombinaatio. Geometrisesti tämä tarkoittaa, että tulosvektori rajautuu arvovektorien virittämän konveksin verhon sisälle
+\begin{align*}
+  o_i \in \operatorname{conv}(\{v_1, \dots, v_T\}) = \left\{ \sum_{j=1}^{T} \alpha_j v_j \;\middle|\; \alpha_j \ge 0, \, \sum_{j=1}^{T} \alpha_j = 1 \right\}.
+\end{align*}
+Tämä asettaa huomiomekanismille geometrisen rajoitteen. Mikäli tokenin tulisi huomioida samanaikaisesti useita erilaisia kontekstuaalisia suhteita (kuten syntaktista rakennetta ja kaukaista semanttista viittausta), yksittäinen huomiopää joko keskittyy vain yhteen piirteeseen tai keskiarvoistaa useita piirteitä, jolloin erottelukyky heikkenee.
 
-\subsection{Monipäinen itsehuomio}
+Tämän rajoitteen kiertämiseksi käytetään monipäistä itsehuomiota (engl.\ \emph{multi-head attention}), jossa huomiomekanismi jaetaan rinnakkaisiin esitysaliavaruuksiin \cite{vaswani2017attention}. Olkoon päiden lukumäärä \(h\). Kukin pää \(k \in \{1, \dots, h\}\) suorittaa itsenäisen itsehuomion omilla opittavilla projektioillaan:
+\begin{align*}
+  \operatorname{head}_k = \operatorname{Attention}(H W_k^Q, H W_k^K, H W_k^V),
+\end{align*}
+missä projektiomatriisit ovat \(W_k^Q, W_k^K \in \mathbb{R}^{d \times d_k}\) ja \(W_k^V \in \mathbb{R}^{d \times d_v}\). Tällöin kukin pää voi muodostaa oman konveksikombinaationsa toisistaan riippumatta omassa aliavaruudessaan.
 
-Yksi huomio-operaatio muodostaa tokenien väliset riippuvuudet yhden
-kysely-, avain- ja arvoprojektion avulla. Vaswani ym.\ \cite{vaswani2017attention}
-esittivät monipäisen huomion (engl.\ \emph{multi-head attention}), jossa
-malli laskee useita rinnakkaisia huomio-operaatioita erillisillä
-parametreilla. Olkoon huomioiden päiden lukumäärä \(h\) ja olkoon kunkin
-pään kysely- ja avainvektorien dimensio \(d_h\). Pään \(r\) projektiot
-voidaan määritellä muodossa
+Lopuksi eri päiden tuottamat esitykset ketjutetaan ja yhdistetään lineaarisella projektiolla takaisin mallin ulottuvuuteen \(d\):
 \begin{align*}
-  Q^{(r)} &= H W_Q^{(r)}, \\
-  K^{(r)} &= H W_K^{(r)}, \\
-  V^{(r)} &= H W_V^{(r)},
+  \operatorname{MultiHead}(H) = \left[ \operatorname{head}_1 \,\|\, \operatorname{head}_2 \,\|\, \dots \,\|\, \operatorname{head}_h \right] W^O,
 \end{align*}
-missä
-\begin{align*}
-  W_Q^{(r)},W_K^{(r)}
-  &\in \mathbb{R}^{d \times d_h}, \\
-  W_V^{(r)}
-  &\in \mathbb{R}^{d \times d_v}.
-\end{align*}
+missä \(\|\) merkitsee sarakkeittaista ketjuttamista ja \(W^O \in \mathbb{R}^{h d_v \times d}\) on opittava parametrimatriisi. Lineaarinen yhdistäminen purkaa yksittäisten konveksien verhojen asettaman geometrisen rajoitteen ja mahdollistaa useiden erilaisten suhteiden samanaikaisen hyödyntämisen. Käytännössä pään dimensioiksi valitaan usein \(d_k = d_v = d / h\), jolloin monipäisen itsehuomion laskennallinen vaativuus vastaa karkeasti täyden dimension yksipäistä huomiota \cite{vaswani2017attention}.
 
-Kunkin pään tulos saadaan kausaalisen huomion avulla:
-\begin{align*}
-  \operatorname{head}^{(r)}
-  =
-  \operatorname{CausalAttention}
-  \left(
-    Q^{(r)},K^{(r)},V^{(r)}
-  \right).
-\end{align*}
-Päiden tulokset ketjutetaan ja projisoidaan takaisin mallin piiloavaruuteen:
-\begin{align*}
-  \operatorname{MHA}(H)
-  =
-  \operatorname{Concat}
-  \left(
-    \operatorname{head}^{(1)},
-    \ldots,
-    \operatorname{head}^{(h)}
-  \right)W_O,
-\end{align*}
-missä
-\begin{align*}
-  W_O \in \mathbb{R}^{hd_v \times d}.
-\end{align*}
+\subsection{Dekooderilohko ja Pre-LN-rakenne}
 
-Monipäinen rakenne kasvattaa mallin kykyä muodostaa erilaisia
-kontekstiriippuvuuksia samanaikaisesti. Eri huomio-operaatiot voivat oppia
-painottamaan esimerkiksi lähellä olevia tokeneita, lauseen eri osien välisiä
-riippuvuuksia tai tekstin rakenteellisia merkkejä. On kuitenkin huomattava,
-ettei yksittäiselle huomiopäälle välttämättä voida antaa yksikäsitteistä
-kielellistä tulkintaa. Huomiopainot ovat mallin sisäisiä laskennallisia
-suureita, eivätkä ne sellaisenaan muodosta täydellistä selitystä mallin
-tuottamalle ennusteelle.
+Pelkkä itsehuomiomekanismi ei vielä riitä muodostamaan syvää arkkitehtuuria, sillä se on pohjimmiltaan pelkkä lineaaristen projektioiden ja konveksikombinaatioiden yhdistelmä. Jotta malli voi oppia monimutkaisia, epälineaarisia funktioita ja jotta se voidaan kouluttaa vakaasti useiden kerrosten läpi, huomiomekanismi yhdistetään muihin komponentteihin yhdeksi toistuvaksi yksiköksi, \emph{dekooderilohkoksi} (engl.\ \emph{decoder block}).
 
-\subsection{Transformer-dekooderikerros}
+Dekooderilohko koostuu kahdesta pääkomponentista: edellä määritellystä kausaalisesta monipäisestä itsehuomiosta sekä positiokohtaisesta myötäkytkentäverkosta. Nämä kytketään toisiinsa normalisoinnin ja jäännöskytkentöjen (engl.\ \emph{residual connections}) avulla.
 
-Nykyaikainen dekooderipohjainen Transformer muodostuu useista peräkkäisistä
-Transformer-kerroksista. Jokainen kerros sisältää tavallisesti
-monipäisen kausaalisen itsehuomion, tokenikohtaisen eteenpäinsyöttävän
-neuroverkon, residuaaliyhteydet sekä normalisointikerrokset.
+\subsubsection*{Normalisointi}
 
-Olkoon \(H^{(\ell-1)}\in\mathbb{R}^{T\times d}\) kerroksen
-\(\ell-1\) tuottama tokeniesitysmatriisi. Esimerkiksi esinormalisoidussa
-(engl.\ \emph{pre-normalization}) Transformer-kerroksessa
-itsehuomioalikerroksen tulos voidaan kirjoittaa muodossa
-\begin{align*}
-  \widetilde{H}^{(\ell)}
-  =
-  H^{(\ell-1)}
-  +
-  \operatorname{MHA}^{(\ell)}
-  \left(
-    \operatorname{Norm}^{(\ell)}_1
-    \left(H^{(\ell-1)}\right)
-  \right).
-\end{align*}
-Tämän jälkeen sovelletaan tokenikohtaista eteenpäinsyöttävää verkkoa:
-\begin{align*}
-  H^{(\ell)}
-  =
-  \widetilde{H}^{(\ell)}
-  +
-  \operatorname{FFN}^{(\ell)}
-  \left(
-    \operatorname{Norm}^{(\ell)}_2
-    \left(\widetilde{H}^{(\ell)}\right)
-  \right).
-\end{align*}
-Residuaaliyhteys tarkoittaa, että alikerroksen syöte lisätään sen tulokseen.
-Tällä on käytännössä suuri merkitys syvien verkkojen optimoinnille, koska
-residuaaliyhteydet helpottavat gradientin kulkua useiden kerrosten läpi.
-Tämä liittyy luvussa 4 käsiteltyihin gradienttipohjaisen optimoinnin
-haasteisiin.
+Syvien verkkojen sisäisten aktivaatioiden jakauman ajautumista ja gradienttien heilahtelua hallitaan normalisoinnilla. Nykyaikaisissa kielimalleissa standardiratkaisu on kerrosnormalisointi (engl.\ \emph{Layer Normalization}, LayerNorm) \cite{ba2016layer} tai sen laskennallisesti kevennetty muunnelma RMSNorm (engl.\ \emph{Root Mean Square Normalization}) \cite{zhang2019root}.
 
-Alkuperäisessä Transformerissa käytettiin kerrosnormalisointia
-(engl.\ \emph{Layer Normalization}) \cite{ba2016layer}. Tokenivektorille
-\(h\in\mathbb{R}^{d}\) se voidaan määritellä muodossa
-\begin{align*}
-  \operatorname{LayerNorm}(h)
-  =
-  \gamma \odot
-  \frac{h-\mu(h)\mathbf{1}}
-  {\sqrt{\sigma^2(h)+\varepsilon}}
-  +
-  \beta,
-\end{align*}
-missä
-\begin{align*}
-  \mu(h)
-  &=
-  \frac{1}{d}
-  \sum_{i=1}^{d}h_i, \\
-  \sigma^2(h)
-  &=
-  \frac{1}{d}
-  \sum_{i=1}^{d}
-  \left(h_i-\mu(h)\right)^2.
-\end{align*}
-Vektorit \(\gamma,\beta\in\mathbb{R}^{d}\) ovat opittavia parametreja,
-\(\odot\) tarkoittaa komponenttikohtaista kertolaskua ja
-\(\varepsilon>0\) on numeerista vakautta parantava vakio. Useissa
-nykyaikaisissa kielimalleissa käytetään LayerNormin sijasta esimerkiksi
-RMSNorm-normalisointia \cite{zhang2019root}, mutta normalisoinnin yleinen
-tehtävä on sama: se tukee mallin vakaata optimointia.
+Normalisointi sovelletaan matriisin \(H \in \mathbb{R}^{T \times d}\) kuhunkin rivivektoriin \(h_i \in \mathbb{R}^{d}\) itsenäisesti. Esimerkiksi RMSNorm skaalaa esitysvektorin sen komponenttien neliöllisen keskiarvon avulla:
+$$
+\operatorname{RMS}(h_i) = \sqrt{\frac{1}{d} \sum_{k=1}^{d} (h_{i})_k^2 + \epsilon},
+$$
+missä \(\epsilon > 0\) on numeerista vakautta parantava pieni vakio. Tämän jälkeen vektori skaalataan komponenteittain opittavalla painovektorilla \(\gamma \in \mathbb{R}^d\):
+$$
+\operatorname{RMSNorm}(h_i) = \frac{h_i}{\operatorname{RMS}(h_i)} \odot \gamma.
+$$
+Matriisille \(H\) operaatio \(\operatorname{Norm}(H)\) tarkoittaa normalisoinnin soveltamista erikseen jokaiseen riviin.
 
-Transformer-kerroksen toinen keskeinen osa on eteenpäinsyöttävä verkko
-(engl.\ \emph{feed-forward network}, FFN). Toisin kuin itsehuomio, joka
-yhdistää informaatiota eri tokenipositioiden välillä, FFN toimii erikseen
-jokaisessa tokenipositiossa. Perusmuodossaan se voidaan esittää muodossa
-\begin{align*}
-  \operatorname{FFN}(h)
-  =
-  W_2\phi(W_1h+b_1)+b_2,
-\end{align*}
-missä
-\begin{align*}
-  W_1 &\in \mathbb{R}^{d_{\mathrm{ff}}\times d}, \\
-  W_2 &\in \mathbb{R}^{d\times d_{\mathrm{ff}}},
-\end{align*}
-ja \(d_{\mathrm{ff}}\) on yleensä mallin piilodimensiota \(d\) suurempi
-väliavaruuden dimensio. Aktivaatiofunktio \(\phi\) voi olla esimerkiksi
-ReLU-, GELU- tai SiLU-funktio. Useissa nykyaikaisissa LLM-arkkitehtuureissa
-käytetään myös portitettua FFN-rakennetta, kuten SwiGLU-muotoa
-\cite{shazeer2020glu}.
+\subsubsection*{Positiokohtainen myötäkytkentäverkko}
 
-Kun Transformer-kerroksia on \(L\), mallin lopullinen esitysmatriisi on
-\begin{align*}
-  H^{(L)} \in \mathbb{R}^{T\times d}.
-\end{align*}
-Sen rivi \(h_t^{(L)}\) sisältää tokeniposition \(t\) kontekstualisoidun
-esityksen. Kausaalisuuden vuoksi tämä esitys voi riippua ainoastaan
-tokeneista \(x_1,\ldots,x_t\).
+Itsehuomiomekanismin tehtävänä on jakaa informaatiota sekvenssin eri positioiden välillä. Tätä seuraa positiokohtainen myötäkytkentäverkko (engl.\ \emph{feed-forward network}, FFN), joka käsittelee kunkin position esitystä toisistaan riippumatta.
+
+FFN vastaa luvussa \ref{sec:mlp} tarkasteltua kaksi- tai kolmekerroksista MLP-rakennetta, mutta sitä sovelletaan sellaisenaan jokaiseen rivivektoriin \(h_i^\top \in \mathbb{R}^{1 \times d}\):
+$$
+\operatorname{FFN}(h_i^\top) = \phi(h_i^\top W_1 + b_1) W_2 + b_2,
+$$
+missä \(W_1 \in \mathbb{R}^{d \times d_{\mathrm{ff}}}\), \(W_2 \in \mathbb{R}^{d_{\mathrm{ff}} \times d}\), \(b_1 \in \mathbb{R}^{1 \times d_{\mathrm{ff}}}\) ja \(b_2 \in \mathbb{R}^{1 \times d}\) ovat opittavia parametreja, ja \(\phi\) on epälineaarinen aktivaatiofunktio (kuten GELU tai Swish). Tyypillisesti sisäisen dimension suuruudeksi asetetaan \(d_{\mathrm{ff}} = 4d\).
+
+Matriisimuodossa koko syötteelle \(H \in \mathbb{R}^{T \times d}\) kuvaus voidaan kirjoittaa tiiviisti
+$$
+\operatorname{FFN}(H) = \phi(H W_1 + \mathbf{1} b_1) W_2 + \mathbf{1} b_2,
+$$
+missä \(\mathbf{1} \in \mathbb{R}^{T \times 1}\) on ykkösvektori, joka toistaa bias-vektorin jokaiselle riville.
+
+\subsubsection*{Lohkon kokonaisrakenne (Pre-LN)}
+
+Nykyaikaisissa arkkitehtuureissa käytetään valtaosin Pre-LN-asettelua, jossa normalisointi suoritetaan ennen ali-lohkojen operaatioita suoraan jäännösväylästä otetulle syötteelle \cite{xiong2020layer}. Tällöin koko lohko voidaan kuvata funktiona \(\operatorname{DecoderBlock} \colon \mathbb{R}^{T \times d} \to \mathbb{R}^{T \times d}\), jonka laskenta etenee kahdessa vaiheessa:
+$$
+H^{(1)} = H + \operatorname{CausalMultiHead}(\operatorname{Norm}(H)),
+$$
+$$
+\operatorname{DecoderBlock}(H) = H^{(1)} + \operatorname{FFN}(\operatorname{Norm}(H^{(1)})).
+$$
+
+Pre-LN-rakenteen keskeinen matemaattinen etu on suora identiteettiväylä syötteestä tulosteeseen. Koska operaatiot lisätään suoraan aiempaan tilaan (\(H + \dots\)), gradientit pääsevät virtaamaan ketjusäännön nojalla häviämättä syvienkin kerrosmäärien läpi, mikä tekee mallin optimoinnista merkittävästi stabiilimpaa verrattuna alkuperäiseen Post-LN-malliin.
 
 \subsection{Seuraavan tokenin ennustaminen ja kielimallin tavoitefunktio}
 
@@ -555,43 +376,6 @@ RLHF) \cite{ouyang2022training}. Jälkikoulutus ei muuta sitä perustavaa
 tosiasiaa, että malli tuottaa tekstin autoregressiivisesti seuraavaa tokenia
 ennustamalla. Se kuitenkin vaikuttaa merkittävästi siihen, millaisia
 vastauksia malli todennäköisesti tuottaa käyttäjän antamissa tilanteissa.
-
-\subsection{earlier subsection that should come later}
-Olkoon $V$ sanasto, $X=(x_1,x_2,\ldots,x_T)$ syötesekvenssi one-hot vektoreita, \(T\) sekvenssin pituus, ja $E\in\Re^{d \times |V|}$ upotusmatriisi, jolloin $Ex_t$ on syötesekvenssin \(t\):nnen tokenin upotusvektori.
-
-Itsehuomiomekanismi ei sellaisenaan sisällä tietoa tokenien järjestyksestä.
-Jos syötevektorien järjestystä vaihdetaan, pelkkään itsehuomioon perustuva
-laskenta tuottaa vastaavasti vain permutoidun tuloksen. Tämän vuoksi tokenien
-esityksiin on liitettävä sijaintia kuvaava informaatio. Alkuperäisessä
-Transformerissa käytettiin deterministisiä sinimuotoisia
-positiokoodauksia \cite{vaswani2017attention}. Tällöin tokenin ensimmäisen
-kerroksen esitys voidaan kirjoittaa muodossa
-\begin{align*}
-  h_t^{(0)} = e_t + p_t,
-\end{align*}
-missä \(p_t\in\mathbb{R}^d\) on tokenin \(t\) positiovektori.
-
-Alkuperäisen Transformer-mallin sinimuotoisessa positiokoodauksessa
-komponentit määritellään esimerkiksi seuraavasti:
-\begin{align*}
-  p_{t,2i}
-  &=
-  \sin\left(
-    \frac{t}{10000^{2i/d}}
-  \right), \\
-  p_{t,2i+1}
-  &=
-  \cos\left(
-    \frac{t}{10000^{2i/d}}
-  \right),
-\end{align*}
-missä \(i\) on vektorin komponentti-indeksi. Nykyaikaisissa suurissa
-kielimalleissa käytetään usein muita sijaintimenetelmiä, kuten opittuja
-positioupotuksia tai rotaatiopohjaisia positioupotuksia
-(engl.\ \emph{rotary positional embeddings}, RoPE)
-\cite{su2024roformer}. Näiden yksityiskohdat vaihtelevat mallikohtaisesti,
-mutta niiden yhteinen tarkoitus on antaa mallille tieto tokenien
-järjestyksestä ja etäisyyksistä.
 
 \subsection{Parametrisen kielimallin rajoitteet ja yhteys RAG-järjestelmiin}
 
