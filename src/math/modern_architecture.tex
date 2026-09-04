@@ -117,53 +117,64 @@ Lopuksi eri päiden tuottamat esitykset ketjutetaan ja yhdistetään lineaarisel
 \end{align*}
 missä \(\|\) merkitsee sarakkeittaista ketjuttamista ja \(W^O \in \mathbb{R}^{h d_v \times d}\) on opittava parametrimatriisi. Lineaarinen yhdistäminen purkaa yksittäisten konveksien verhojen asettaman geometrisen rajoitteen ja mahdollistaa useiden erilaisten suhteiden samanaikaisen hyödyntämisen. Käytännössä pään dimensioiksi valitaan usein \(d_k = d_v = d / h\), jolloin monipäisen itsehuomion laskennallinen vaativuus vastaa karkeasti täyden dimension yksipäistä huomiota \cite{vaswani2017attention}.
 
-\subsection{Dekooderilohko ja Pre-LN-rakenne}
+\subsection{Dekooderikerros}
 
-Pelkkä itsehuomiomekanismi ei vielä riitä muodostamaan syvää arkkitehtuuria, sillä se on pohjimmiltaan pelkkä lineaaristen projektioiden ja konveksikombinaatioiden yhdistelmä. Jotta malli voi oppia monimutkaisia, epälineaarisia funktioita ja jotta se voidaan kouluttaa vakaasti useiden kerrosten läpi, huomiomekanismi yhdistetään muihin komponentteihin yhdeksi toistuvaksi yksiköksi, \emph{dekooderilohkoksi} (engl.\ \emph{decoder block}).
+Yksittäinen dekooderikerros koostuu kausaalisesta monipäisestä itsehuomiosta ja
+positiokohtaisesta myötäkytkentäverkosta. Kumpaankin komponenttiin liitetään
+jäännöskytkentä (engl.\ \emph{residual connection}) sekä normalisointi, jotka
+varmistavat laskennan numeerisen stabiilisuuden ja sujuvan gradienttien kulun
+syvissä arkkitehtuureissa \cite{he2016deep, ba2016layer, vaswani2017attention}.
 
-Dekooderilohko koostuu kahdesta pääkomponentista: edellä määritellystä kausaalisesta monipäisestä itsehuomiosta sekä positiokohtaisesta myötäkytkentäverkosta. Nämä kytketään toisiinsa normalisoinnin ja jäännöskytkentöjen (engl.\ \emph{residual connections}) avulla.
+Laskennan vakauttamiseksi esitykset normalisoidaan ennen kuhunkin
+alilohkoon syöttämistä. Normalisointifunktio \(\operatorname{Norm} \colon
+\mathbb{R}^{d} \to \mathbb{R}^{d}\) sovelletaan itsenäisesti kunkin position
+esitysvektoriin. Yleinen valinta nykyaikaisissa malleissa on neliöllisen
+keskiarvon normalisointi (engl.\ \emph{root mean square normalization},
+RMSNorm) \cite{zhang2019root}. Tämä skaalaa vektorin sen komponenttien neliöllisen keskiarvon avulla
+$$
+\operatorname{RMSNorm}(x) = \frac{x}{\operatorname{RMS}(x)} \odot \gamma,
+$$
+missä \(\odot\) on Hadamard-tulo, \(\gamma \in \mathbb{R}^d\)
+on opittava skaalausparametri ja
+$$
+\operatorname{RMS}(x) = \sqrt{\frac{1}{d} \sum_{j=1}^{d} x_j^2 + \epsilon},
+$$
+missä pieni vakio \(\epsilon > 0\) estää nollalla jakamisen. Matriisille
+\(H \in \mathbb{R}^{T \times d}\) normalisointi \(\operatorname{Norm}(H)\)
+määritellään soveltamalla kuvausta riveittäin jokaiseen esitysvektoriin.
 
-\subsubsection*{Normalisointi}
+Itsehuomiokerrosta seuraa positiokohtainen myötäkytkentäverkko
+(engl.\ \emph{feed-forward network}, FFN). Se vastaa luvussa \ref{sec:mlp}
+tarkasteltua monikerroksista perseptronia, jota sovelletaan itsenäisesti ja
+identtisesti kunkin position esitykseen. Kaksi affiinia muunnosta sisältävä
+FFN voidaan määritellä funktiolle \(x \in \mathbb{R}^d\) muodossa
+$$
+\operatorname{FFN}(x) = \phi(x W_1 + b_1) W_2 + b_2,
+$$
+missä \(W_1 \in \mathbb{R}^{d \times d_{ff}}\), \(W_2 \in \mathbb{R}^{d_{ff} \times d}\),
+\(b_1 \in \mathbb{R}^{d_{ff}}\), \(b_2 \in \mathbb{R}^d\) ja \(\phi\) on epälineaarinen
+aktivaatiofunktio. Sisäisen piiloesityksen dimensio \(d_{ff}\) valitaan tyypillisesti
+suuremmaksi kuin mallin dimensio \(d\) (usein \(d_{ff} = 4d\)). Matriisimuodossa
+koko esitysmatriisille \(H \in \mathbb{R}^{T \times d}\) laskenta kirjoitetaan
+vastaavasti muodossa \(\operatorname{FFN}(H) = \phi(H W_1 + \mathbf{1} b_1^{\top}) W_2 + \mathbf{1} b_2^{\top}\).
 
-Syvien verkkojen sisäisten aktivaatioiden jakauman ajautumista ja gradienttien heilahtelua hallitaan normalisoinnilla. Nykyaikaisissa kielimalleissa standardiratkaisu on kerrosnormalisointi (engl.\ \emph{Layer Normalization}, LayerNorm) \cite{ba2016layer} tai sen laskennallisesti kevennetty muunnelma RMSNorm (engl.\ \emph{Root Mean Square Normalization}) \cite{zhang2019root}.
+Koko dekooderilohko voidaan määritellä funktiona
+\(\operatorname{DecoderBlock} \colon \mathbb{R}^{T \times d} \to \mathbb{R}^{T \times d}\).
+Olkoon syöte esitysmatriisi \(H \in \mathbb{R}^{T \times d}\). Lohkon laskenta
+etenee kahdessa vaiheessa:
+$$
+H^{(1)} = H + \operatorname{CausalMultiHead}(\operatorname{Norm}_1(H)),
+$$
+$$
+\operatorname{DecoderBlock}(H) = H^{(1)} + \operatorname{FFN}(\operatorname{Norm}_2(H^{(1)})),
+$$
+missä \(\operatorname{Norm}_1\) ja \(\operatorname{Norm}_2\) ovat toisistaan
+erillisiä normalisointeja omilla opittavilla parametreillaan. Jäännöskytkennän
+ansioista syöte \(H\) summautuu suoraan alilohkojen muunnosten tulokseen, mikä
+luo suoran gradienttiväylän verkon läpi ja mahdollistaa kymmenien tai satojen
+kerrosten tehokkaan kouluttamisen ilman gradientin häviämistä.
 
-Normalisointi sovelletaan matriisin \(H \in \mathbb{R}^{T \times d}\) kuhunkin rivivektoriin \(h_i \in \mathbb{R}^{d}\) itsenäisesti. Esimerkiksi RMSNorm skaalaa esitysvektorin sen komponenttien neliöllisen keskiarvon avulla:
-$$
-\operatorname{RMS}(h_i) = \sqrt{\frac{1}{d} \sum_{k=1}^{d} (h_{i})_k^2 + \epsilon},
-$$
-missä \(\epsilon > 0\) on numeerista vakautta parantava pieni vakio. Tämän jälkeen vektori skaalataan komponenteittain opittavalla painovektorilla \(\gamma \in \mathbb{R}^d\):
-$$
-\operatorname{RMSNorm}(h_i) = \frac{h_i}{\operatorname{RMS}(h_i)} \odot \gamma.
-$$
-Matriisille \(H\) operaatio \(\operatorname{Norm}(H)\) tarkoittaa normalisoinnin soveltamista erikseen jokaiseen riviin.
-
-\subsubsection*{Positiokohtainen myötäkytkentäverkko}
-
-Itsehuomiomekanismin tehtävänä on jakaa informaatiota sekvenssin eri positioiden välillä. Tätä seuraa positiokohtainen myötäkytkentäverkko (engl.\ \emph{feed-forward network}, FFN), joka käsittelee kunkin position esitystä toisistaan riippumatta.
-
-FFN vastaa luvussa \ref{sec:mlp} tarkasteltua kaksi- tai kolmekerroksista MLP-rakennetta, mutta sitä sovelletaan sellaisenaan jokaiseen rivivektoriin \(h_i^\top \in \mathbb{R}^{1 \times d}\):
-$$
-\operatorname{FFN}(h_i^\top) = \phi(h_i^\top W_1 + b_1) W_2 + b_2,
-$$
-missä \(W_1 \in \mathbb{R}^{d \times d_{\mathrm{ff}}}\), \(W_2 \in \mathbb{R}^{d_{\mathrm{ff}} \times d}\), \(b_1 \in \mathbb{R}^{1 \times d_{\mathrm{ff}}}\) ja \(b_2 \in \mathbb{R}^{1 \times d}\) ovat opittavia parametreja, ja \(\phi\) on epälineaarinen aktivaatiofunktio (kuten GELU tai Swish). Tyypillisesti sisäisen dimension suuruudeksi asetetaan \(d_{\mathrm{ff}} = 4d\).
-
-Matriisimuodossa koko syötteelle \(H \in \mathbb{R}^{T \times d}\) kuvaus voidaan kirjoittaa tiiviisti
-$$
-\operatorname{FFN}(H) = \phi(H W_1 + \mathbf{1} b_1) W_2 + \mathbf{1} b_2,
-$$
-missä \(\mathbf{1} \in \mathbb{R}^{T \times 1}\) on ykkösvektori, joka toistaa bias-vektorin jokaiselle riville.
-
-\subsubsection*{Lohkon kokonaisrakenne (Pre-LN)}
-
-Nykyaikaisissa arkkitehtuureissa käytetään valtaosin Pre-LN-asettelua, jossa normalisointi suoritetaan ennen ali-lohkojen operaatioita suoraan jäännösväylästä otetulle syötteelle \cite{xiong2020layer}. Tällöin koko lohko voidaan kuvata funktiona \(\operatorname{DecoderBlock} \colon \mathbb{R}^{T \times d} \to \mathbb{R}^{T \times d}\), jonka laskenta etenee kahdessa vaiheessa:
-$$
-H^{(1)} = H + \operatorname{CausalMultiHead}(\operatorname{Norm}(H)),
-$$
-$$
-\operatorname{DecoderBlock}(H) = H^{(1)} + \operatorname{FFN}(\operatorname{Norm}(H^{(1)})).
-$$
-
-Pre-LN-rakenteen keskeinen matemaattinen etu on suora identiteettiväylä syötteestä tulosteeseen. Koska operaatiot lisätään suoraan aiempaan tilaan (\(H + \dots\)), gradientit pääsevät virtaamaan ketjusäännön nojalla häviämättä syvienkin kerrosmäärien läpi, mikä tekee mallin optimoinnista merkittävästi stabiilimpaa verrattuna alkuperäiseen Post-LN-malliin.
+Lohkon kahdella pääkomponentilla on toisiaan täydentävät tehtävät informaation käsittelyssä. Kausaalinen itsehuomio mahdollistaa sekvenssin eri positioiden välisen vuorovaikutuksen ja informaation reitittämisen tokenien välillä, kun taas positiokohtainen myötäkytkentäverkko vastaa kunkin position esitysvektorin riippumattomasta epälineaarisesta muunnoksesta ilman positioiden välistä tiedonsiirtoa.
 
 \subsection{Seuraavan tokenin ennustaminen ja kielimallin tavoitefunktio}
 
