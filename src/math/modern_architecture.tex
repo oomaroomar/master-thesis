@@ -117,6 +117,284 @@ Lopuksi eri päiden tuottamat esitykset ketjutetaan ja yhdistetään lineaarisel
 \end{align*}
 missä \(\|\) merkitsee sarakkeittaista ketjuttamista ja \(W^O \in \mathbb{R}^{h d_v \times d}\) on opittava parametrimatriisi. Lineaarinen yhdistäminen purkaa yksittäisten konveksien verhojen asettaman geometrisen rajoitteen ja mahdollistaa useiden erilaisten suhteiden samanaikaisen hyödyntämisen. Käytännössä pään dimensioiksi valitaan usein \(d_k = d_v = d / h\), jolloin monipäisen itsehuomion laskennallinen vaativuus vastaa karkeasti täyden dimension yksipäistä huomiota \cite{vaswani2017attention}.
 
+\subsection{Positiokoodaus}
+\label{sec:positional-encoding}
+
+Itsehuomiomekanismi muodostaa tokenien väliset
+huomiopisteet niiden esitysvektorien perusteella, mutta ei sellaisenaan
+sisällä tietoa tokenien positioista. Ilman kausaalista maskia itsehuomio
+on permutaatioekvivariantti eli syötteen tokenien permutoiminen
+permutoi tulosteet samalla tavalla. Olkoon
+\(P \in \{0,1\}^{T \times T}\) permutaatiomatriisi ja
+\(H' = PH\) permutoitu syötematriisi. Tällöin kysely-, avain- ja
+arvomatriiseille pätee
+
+$$
+\begin{aligned}
+  Q' &= PHW_Q = PQ, \\
+  K' &= PHW_K = PK, \\
+  V' &= PHW_V = PV.
+\end{aligned}
+$$
+
+Näin ollen permutoidut huomiopisteet ovat
+
+$$
+Q'K'^{\top}
+=
+(PQ)(PK)^{\top}
+=
+P QK^{\top}P^{\top}.
+$$
+
+Riveittäin laskettava softmax-funktio säilyttää tämän
+permutaatiorakenteen, joten
+
+$$
+\operatorname{Attention}(PH)
+=
+P\operatorname{Attention}(H).
+$$
+
+Itsehuomio ei siis ilman erillistä positiotietoa kykene esittämään
+tokenien järjestystä sisältöesityksistä riippumattomalla tavalla.
+Luonnollisessa kielessä järjestys on kuitenkin merkityksen kannalta
+olennainen. Samat tokenit eri järjestyksessä voivat muodostaa täysin
+erilaisen ilmauksen.
+
+Kausaalinen maski rikkoo yleisen permutaatioekvivarianssin, sillä se
+määrää, mitkä positiot ovat kunkin position käytettävissä. Se tuo
+laskentaan suunnan erottamalla aiemmat ja myöhemmät positiot, mutta
+huomiopisteen sisältöperusteinen osa
+\(q_i^{\top}k_j\) ei edelleenkään eksplisiittisesti riipu position
+\(i\) absoluuttisesta sijainnista tai positioiden \(i\) ja \(j\)
+välisestä etäisyydestä. Tämän vuoksi Transformer-malliin liitetään
+positiokoodaus (engl. \emph{position embedding}), jonka avulla tokenien järjestys voidaan ottaa
+huomioon niiden esityksiä tai huomiopisteitä muodostettaessa.
+
+\subsubsection{Absoluuttinen positiokoodaus}
+
+Absoluuttisessa positiokoodauksessa jokaiselle positiolle
+\(i \in \{1,\dots,T\}\) muodostetaan vektori
+\(p_i \in \mathbb{R}^{d}\), joka yhdistetään position tokenin
+upotusvektoriin. Jos position \(i\) tokenin upotusvektori on
+\(e_i \in \mathbb{R}^{d}\), Transformer-kerrosten syötteenä käytetään
+esitystä
+
+$$
+h_i^{(0)} = e_i + p_i.
+$$
+
+Matriisimuodossa tämä voidaan kirjoittaa
+
+$$
+H^{(0)} = E + P,
+$$
+
+missä \(E \in \mathbb{R}^{T \times d}\) sisältää tokenupotukset ja
+\(P \in \mathbb{R}^{T \times d}\) niitä vastaavat positiovektorit.
+Koska molemmat vektorit kuuluvat samaan avaruuteen, niiden summa voidaan
+antaa suoraan itsehuomiokerrokselle ilman esityksen dimension
+kasvattamista.
+
+Positiovektorit voidaan käsitellä opittavina parametreina. Tällöin
+jokaiselle positiolle \(i \leq L\) opitaan oma vektori \(p_i\), missä
+\(L\) on mallin suurin sallittu kontekstinpituus. Menetelmä on
+yksinkertainen, mutta sitoo positioparametrit ennalta määrättyihin
+positioihin eikä määrittele esityksiä positioille \(i > L\).
+
+Alkuperäisessä Transformerissa käytettiin parametrien sijaan kiinteää
+sinimuotoista positiokoodausta \cite{vaswani2017attention}. Sen
+koordinaatit määritellään kaavoilla
+
+$$
+\begin{aligned}
+  \operatorname{PE}(i,2k)
+  &=
+  \sin\left(
+    \frac{i}{10000^{2k/d}}
+  \right), \\
+  \operatorname{PE}(i,2k+1)
+  &=
+  \cos\left(
+    \frac{i}{10000^{2k/d}}
+  \right),
+\end{aligned}
+$$
+
+missä \(i\) on positio ja \(k\) indeksoi koordinaattipareja. Eri
+koordinaatit käyttävät eri taajuuksia, joten koodaus esittää position
+samanaikaisesti usealla mittakaavalla. Sinimuotoinen koodaus voidaan
+laskea myös koulutuksessa käytetyn kontekstinpituuden ulkopuolisille
+positioille. Tämä ei kuitenkaan yksin takaa, että malli kykenisi
+hyödyntämään koulutuksessa kohtaamiaan pidempiä sekvenssejä.
+
+\subsubsection{Suhteellinen positiokoodaus}
+
+Kielellisten riippuvuuksien kannalta kahden tokenin suhteellinen etäisyys
+on usein niiden absoluuttisia positioita olennaisempi. Suhteellisissa
+positiokoodauksissa huomiomekanismiin lisätään tämän vuoksi positioiden
+erotuksesta riippuva termi. Yksinkertainen yleinen muoto
+huomiopisteelle on
+
+$$
+S_{ij}
+=
+\frac{q_i^{\top}k_j}{\sqrt{d_k}}
++
+b(i-j)
++
+M_{ij},
+$$
+
+missä \(b(i-j)\) on suhteellisesta etäisyydestä riippuva
+positiovinouma ja \(M_{ij}\) on kausaalinen maski. Vinouma voi olla
+opittava parametri, ennalta määrätty funktio tai positioiden etäisyyksiä
+väleihin ryhmittelevä esitys \cite{shaw2018self}. Tällöin samoilla
+suhteellisilla etäisyyksillä voidaan käyttää samoja parametreja
+riippumatta siitä, missä kohdassa sekvenssiä tokenit esiintyvät.
+
+Esimerkiksi ALiBi-menetelmässä kunkin huomiopään pisteisiin lisätään
+etäisyyden mukana pienenevä lineaarinen vinouma
+\cite{press2022train}. Huomiopään \(r\) pisteet voidaan kirjoittaa
+muodossa
+
+$$
+S_{ij}^{(r)}
+=
+\frac{
+  (q_i^{(r)})^{\top}k_j^{(r)}
+}{\sqrt{d_k}}
+-
+m_r(i-j)
++
+M_{ij},
+\qquad j \leq i,
+$$
+
+missä \(m_r > 0\) on huomiopäälle määrätty kulmakerroin. Tällöin
+kaukaisempien tokenien huomiopisteitä pienennetään enemmän kuin lähellä
+olevien tokenien pisteitä.
+
+\subsubsection{Kiertävä positiokoodaus}
+
+Monissa moderneissa dekooderipohjaisissa kielimalleissa käytetään
+kiertävää positiokoodausta (engl.\ \emph{rotary position embedding},
+RoPE) \cite{su2021roformer}. Toisin kuin absoluuttisessa
+positiokoodauksessa, RoPE ei lisää positiovektoria tokenin
+syöte-esitykseen. Sen sijaan position \(i\) tieto liitetään
+huomiomekanismiin kiertämällä kysely- ja avainvektorien
+koordinaattipareja position mukaan.
+
+Kahdessa ulottuvuudessa kulmaa \(i\theta\) vastaava kiertomatriisi on
+
+$$
+R(i,\theta)
+=
+\begin{pmatrix}
+  \cos(i\theta) & -\sin(i\theta) \\
+  \sin(i\theta) & \cos(i\theta)
+\end{pmatrix}.
+$$
+
+Kysely- ja avainvektorien koordinaatit jaetaan pareihin, joille
+käytetään eri taajuuksia. Kun \(d_k\) on parillinen, voidaan määritellä
+lohkodiagonaalinen matriisi
+
+$$
+R_i
+=
+\operatorname{diag}\left(
+  R(i,\theta_0),
+  R(i,\theta_1),
+  \dots,
+  R(i,\theta_{d_k/2-1})
+\right),
+$$
+
+missä taajuudet voidaan valita esimerkiksi muodossa
+
+$$
+\theta_k = 10000^{-2k/d_k}.
+$$
+
+Position \(i\) kysely ja position \(j\) avain muunnetaan tällöin
+muotoon
+
+$$
+\widetilde{q}_i = R_i q_i,
+\qquad
+\widetilde{k}_j = R_j k_j.
+$$
+
+Kiertojen jälkeen laskettava huomiopiste on
+
+$$
+\begin{aligned}
+  \widetilde{q}_i^{\top}\widetilde{k}_j
+  &=
+  (R_i q_i)^{\top}(R_j k_j) \\
+  &=
+  q_i^{\top}R_i^{\top}R_j k_j.
+\end{aligned}
+$$
+
+Kiertomatriiseille pätee \(R_i^{\top}R_j = R_{j-i}\), joten
+
+$$
+\widetilde{q}_i^{\top}\widetilde{k}_j
+=
+q_i^{\top}R_{j-i}k_j.
+$$
+
+Huomiopisteen positioriippuvuus määräytyy siten positioiden erotuksen
+\(j-i\) perusteella. RoPE käyttää siis kyselyiden ja avainten
+absoluuttisia positioita kiertokulmien määrittämiseen, mutta niiden
+pistetuloon syntyy suhteellisesta positiosta riippuva rakenne. Tämä
+yhdistää absoluuttisen ja suhteellisen positiokoodauksen piirteitä ilman
+erillisiä opittavia positiovektoreita.
+
+Kiertoa sovelletaan tavallisesti kysely- ja avainvektoreihin mutta ei
+arvovektoreihin. Kausaalisen monipäisen itsehuomion pää \(r\) voidaan
+tällöin kirjoittaa muodossa
+
+$$
+\operatorname{head}_r
+=
+\operatorname{softmax}\left(
+  \frac{
+    \widetilde{Q}_r\widetilde{K}_r^{\top}
+  }{\sqrt{d_k}}
+  +
+  M
+\right)V_r,
+$$
+
+missä matriisien \(\widetilde{Q}_r\) ja
+\(\widetilde{K}_r\) jokainen rivi on kierretty sitä vastaavan position
+mukaan.
+
+\subsubsection{Positiokoodaus ja kontekstinpituus}
+
+Positiokoodaus vaikuttaa siihen, kuinka malli toimii koulutuksessa
+käytettyä pidemmillä sekvensseillä. Opittavat absoluuttiset
+positioupotukset eivät sellaisinaan määrittele esityksiä koulutetun
+positioalueen ulkopuolelle. Sinimuotoiset koodaukset ja RoPE voidaan
+puolestaan laskea mielivaltaisille positioille, mutta mallin ei silti
+voida olettaa automaattisesti yleistävän huomattavasti pidempiin
+sekvensseihin. Malli on koulutuksen aikana oppinut hyödyntämään vain
+tietyn pituisilla sekvensseillä esiintyviä positioita ja etäisyyksiä.
+
+Tämän vuoksi mallin arkkitehtuurin sallima kontekstiraja, koulutuksessa
+käytetty kontekstinpituus ja mallin toiminnallinen kontekstinpituus on
+hyödyllistä erottaa toisistaan. Arkkitehtuurin kontekstiraja ilmaisee
+suurimman teknisesti sallitun syötepituuden, kun taas toiminnallinen
+kontekstinpituus kuvaa sitä, kuinka pitkältä etäisyydeltä malli kykenee
+käytännössä hyödyntämään informaatiota luotettavasti. Pitkän kontekstin
+malleissa RoPE-kulmia voidaan lisäksi skaalata tai interpoloida, jotta
+malli voidaan sovittaa alkuperäistä koulutuskontekstia pidemmille
+sekvensseille.
+
 \subsection{Dekooderikerros}
 
 Yksittäinen dekooderikerros koostuu kausaalisesta monipäisestä itsehuomiosta ja
