@@ -10,16 +10,16 @@ rakenteellisesti sama kuin sen suhde sanaan \emph{tietokone}. Tämän rajoitteen
 ylittämiseksi käytetään upotusvektoreita (engl.\ \emph{embedding vectors}),
 joissa kukin token kuvataan tiheällä reaaliarvoisella vektorilla.
 
-Olkoon edelleen \(V = \{v_1, v_2, \dots, v_{|V|}\}\) sanasto. Tällöin tokenille
+Olkoon edelleen \(\mathcal{V} = \{v_1, v_2, \dots, v_{|\mathcal{V}|}\}\) sanasto. Tällöin tokenille
 \(v_j\) määritellään upotus
 \[
   e(v_j) \in \mathbb{R}^d,
 \]
-missä \(d \ll |V|\) on upotustilan dimensio.
+missä \(d \ll |\mathcal{V}|\) on upotustilan dimensio.
 
 Upotusvektorit voidaan esittää myös matriisimuodossa. Olkoon
 \[
-  E \in \mathbb{R}^{d \times |V|}
+  E \in \mathbb{R}^{d \times |\mathcal{V}|}
 \]
 upotusmatriisi, jonka sarakkeet vastaavat sanaston tokeneita. Tällöin tokenin
 \(v_j\) upotus saadaan one-hot-vektorin \(x(v_j)\) avulla muodossa
@@ -41,7 +41,7 @@ one-hot-esitys, jossa kaikki tokenit ovat yhtä kaukana toisistaan.
 
 Käytännön kielimallinnuksessa upotukset opitaan tavallisesti tehtäväkohtaisesti
 osana laajempaa optimointia. Jos korpus on
-\(W = (w_1, w_2, \dots, w_{|W|})\), voidaan jokainen tokeni \(w_t \in V\)
+\(W = (w_1, w_2, \dots, w_{|W|})\), voidaan jokainen tokeni \(w_t \in \mathcal{V}\)
 korvata sitä vastaavalla upotusvektorilla \(e(w_t)\). Tällöin koko korpusta
 voidaan tarkastella tiheiden vektorien jonona
 \[
@@ -89,8 +89,8 @@ symbolien semanttista rakennetta voidaan mallintaa jatkuvassa vektoriavaruudessa
 pelkästään paikallisiin konteksteihin perustuvan ennustetehtävän avulla ilman
 käsin suunniteltuja kielellisiä piirteitä.
 
-Olkoon korpus \(W = (w_1, w_2, \dots, w_{|W|})\), missä \(w_t \in V\) on
-sanaston \(V\) sana ajanhetkellä \(t\). Word2Vec-malleissa tarkastellaan
+Olkoon korpus \(W = (w_1, w_2, \dots, w_{|W|})\), missä \(w_t \in \mathcal{V}\) on
+sanaston \(\mathcal{V}\) sana ajanhetkellä \(t\). Word2Vec-malleissa tarkastellaan
 tyypillisesti kunkin sanan ympärille määriteltyä paikallista kontekstia, jonka
 laajuus määräytyy ikkunaparametrilla \(c \in \mathbb{N}\). Tällöin ajanhetken
 \(t\) kontekstiksi voidaan määritellä
@@ -142,7 +142,7 @@ $$
 p(w_O \mid w_I)
 =
 \frac{\exp(u_{w_O}^{\top} v_{w_I})}
-{\sum_{w \in V} \exp(u_w^{\top} v_{w_I})}.
+{\sum_{w \in \mathcal{V}} \exp(u_w^{\top} v_{w_I})}.
 $$
 
 Tässä nimittäjän summa ulottuu koko sanastoon, mikä tekee täsmällisestä

@@ -2,10 +2,10 @@
 
 Kielimallien yhteydessä tekstiä käsitellään tavallisesti diskreetteinä tokeneina,
 jotka muunnetaan laskennalliseen muotoon mallintamista varten. Olkoon
-\(V = \{v_1, v_2, \dots, v_{|V|}\}\) sanasto eli joukko kaikista mallin
+\(\mathcal{V} = \{v_1, v_2, \dots, v_{|\mathcal{V}|}\}\) sanasto eli joukko kaikista mallin
 käyttämistä tokeneista ja olkoon
 \(W = (w_1, w_2, \dots, w_{|W|})\) korpus eli havaittu tokenijono. Tällöin
-\(w_t \in V\) merkitsee korpuksen ajanhetken \(t\) tokenia. Tokenilla voidaan
+\(w_t \in \mathcal{V}\) merkitsee korpuksen ajanhetken \(t\) tokenia. Tokenilla voidaan
 tarkoittaa esimerkiksi sanaa, osasanaa, merkkiä tai muuta diskreettiä
 tekstiyksikköä riippuen käytetystä tokenisointimenetelmästä \cite{jurafsky2023speech}.
 
@@ -13,8 +13,8 @@ tekstiyksikköä riippuen käytetystä tokenisointimenetelmästä \cite{jurafsky
 
 Diskreetit tokenit esitetään numeerisessa muodossa, jotta niitä voidaan hyödyntää
 tilastollisissa malleissa ja neuroverkoissa. Yksinkertaisin ja yleisesti käytetty
-esitystapa on one-hot-enkoodaus. Siinä kukin token \(v_j \in V\) esitetään
-vektorina \(x(v_j) \in \{0,1\}^{|V|}\), jossa
+esitystapa on one-hot-enkoodaus. Siinä kukin token \(v_j \in \mathcal{V}\) esitetään
+vektorina \(x(v_j) \in \{0,1\}^{|\mathcal{V}|}\), jossa
 \[
   x(v_j)_k =
   \begin{cases}
@@ -49,7 +49,7 @@ useasta tokenista, voidaan niiden one-hot-esitykset yhdistää esimerkiksi
 ketjuttamalla ne yhdeksi syötevektoriksi
 \[
   \tilde{x}_t = [x_{t-n+1}; x_{t-n+2}; \dots; x_{t-1}]
-  \in \{0,1\}^{(n-1)|V|}.
+  \in \{0,1\}^{(n-1)|\mathcal{V}|}.
 \]
 Tämä muodostaa luonnollisen syötteen monille kontekstipohjaisille malleille,
 sillä se säilyttää kontekstin tokenijärjestyksen eksplisiittisesti.
@@ -82,10 +82,10 @@ symbolijonojen tilastollisena prosessina ja eri kertalukujen approksimaatioita
 havainnollistettiin englannin kielellä
 \cite{shannon1948mathematical,shannon1951prediction}.
 
-Olkoon \(V = \{v_1, v_2, \ldots, v_{|V|}\}\) sanasto, jossa \(|V|\) on sanaston
+Olkoon \(\mathcal{V} = \{v_1, v_2, \ldots, v_{|\mathcal{V}|}\}\) sanasto, jossa \(|\mathcal{V}|\) on sanaston
 koko, ja \(W = (w_1, w_2, \ldots, w_{|W|})\) havaintoaineisto. N-gram-malli
 voidaan toteuttaa muodostamalla lukumatriisi
-\(C \in \mathbb{R}^{|V|^{n-1} \times |V|}\), jossa \(C_{c,j}\) edustaa sitä,
+\(C \in \mathbb{R}^{|\mathcal{V}|^{n-1} \times |\mathcal{V}|}\), jossa \(C_{c,j}\) edustaa sitä,
 kuinka monta kertaa kontekstia \(c\) seuraa tokeni \(v_j\)
 havaintoaineistossa. Formaalisti
 \[
@@ -104,11 +104,11 @@ havaintoaineistossa. Formaalisti
 
 Kun lukumatriisin \(C\) rivit normalisoidaan jakamalla jokainen alkio rivinsä
 summalla, saadaan frekvenssimatriisi
-\(F \in \mathbb{R}^{|V|^{n-1} \times |V|}\), jossa
+\(F \in \mathbb{R}^{|\mathcal{V}|^{n-1} \times |\mathcal{V}|}\), jossa
 \[
   F_{c,j}
   =
-  \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}},
+  \frac{C_{c,j}}{\sum_{k=1}^{|\mathcal{V}|} C_{c,k}},
 \]
 ja joka edustaa ehdollista todennäköisyyttä
 \[
@@ -128,7 +128,7 @@ päätemerkki tai saavutetaan haluttu tekstin pituus.
 Vaikka lähestymistapa on käsitteellisesti yksinkertainen ja tulkittava, siihen
 liittyy merkittäviä laskennallisia haasteita erityisesti kontekstikoon \(n\)
 kasvaessa. Tämän seurauksena lukumatriisista
-\(C \in \mathbb{R}^{|V|^{n-1} \times |V|}\) tulee nopeasti erittäin suuri ja
+\(C \in \mathbb{R}^{|\mathcal{V}|^{n-1} \times |\mathcal{V}|}\) tulee nopeasti erittäin suuri ja
 käytännöllisissä sovelluksissa hyvin harva, koska vain pieni osa kaikista
 mahdollisista konteksteista esiintyy tyypillisessä havaintoaineistossa. Tämä
 lisää sekä muistin- että laskentatehon tarvetta

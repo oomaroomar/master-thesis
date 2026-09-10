@@ -8,9 +8,9 @@ myöhempiin parametrisiin kielimalleihin näkyväksi.
 Olkoon mallin parametreina jokaiselle kontekstille
 \(c = (w_{t-n+1}, \ldots, w_{t-1})\) määritelty todennäköisyysjakauma
 \[
-  \theta_c = (\theta_{c,1}, \theta_{c,2}, \ldots, \theta_{c,|V|}),
+  \theta_c = (\theta_{c,1}, \theta_{c,2}, \ldots, \theta_{c,|\mathcal{V}|}),
   \qquad
-  \sum_{j=1}^{|V|} \theta_{c,j} = 1,
+  \sum_{j=1}^{|\mathcal{V}|} \theta_{c,j} = 1,
   \qquad
   \theta_{c,j} \ge 0,
 \]
@@ -28,7 +28,7 @@ mukaan, saadaan
 \[
   P(W;\theta)
   =
-  \prod_c \prod_{j=1}^{|V|}
+  \prod_c \prod_{j=1}^{|\mathcal{V}|}
   \theta_{c,j}^{C_{c,j}},
 \]
 missä \(C_{c,j}\) on niiden havaintojen lukumäärä, joissa kontekstia \(c\)
@@ -41,7 +41,7 @@ määritellään häviöksi negatiivinen log-uskottavuus
   =
   -\log P(W;\theta)
   =
-  -\sum_c \sum_{j=1}^{|V|}
+  -\sum_c \sum_{j=1}^{|\mathcal{V}|}
   C_{c,j} \log \theta_{c,j}.
 \]
 Koska parametrit \(\theta_c\) esiintyvät vain omaa
@@ -49,21 +49,21 @@ kontekstiaan vastaavissa termeissä, optimointiongelma hajoaa erillisiksi
 kontekstikohtaisiksi osatehtäviksi:
 \[
   \min_{\theta_c}
-  -\sum_{j=1}^{|V|} C_{c,j} \log \theta_{c,j}
+  -\sum_{j=1}^{|\mathcal{V}|} C_{c,j} \log \theta_{c,j}
   \qquad
   \text{s.e.}
   \qquad
-  \sum_{j=1}^{|V|}\theta_{c,j} = 1.
+  \sum_{j=1}^{|\mathcal{V}|}\theta_{c,j} = 1.
 \]
 
 Tämä voidaan ratkaista Lagrangen menetelmällä. Määritellään
 \[
   \mathcal{L}_{\mathrm{Lag}}(\theta_c,\lambda)
   =
-  \sum_{j=1}^{|V|}
+  \sum_{j=1}^{|\mathcal{V}|}
   C_{c,j}\log \theta_{c,j}
   +
-  \lambda\left(1-\sum_{j=1}^{|V|}\theta_{c,j}\right).
+  \lambda\left(1-\sum_{j=1}^{|\mathcal{V}|}\theta_{c,j}\right).
 \]
 Derivoimalla \(\theta_{c,j}\):n suhteen saadaan
 \[
@@ -77,17 +77,17 @@ mistä seuraa
 \]
 Kun tämä sijoitetaan normalisaatioehtoon
 \[
-  \sum_{j=1}^{|V|}\theta_{c,j} = 1,
+  \sum_{j=1}^{|\mathcal{V}|}\theta_{c,j} = 1,
 \]
 saadaan
 \[
-  \lambda = \sum_{k=1}^{|V|} C_{c,k},
+  \lambda = \sum_{k=1}^{|\mathcal{V}|} C_{c,k},
 \]
 ja siten
 \[
   \theta_{c,j}
   =
-  \frac{C_{c,j}}{\sum_{k=1}^{|V|} C_{c,k}}.
+  \frac{C_{c,j}}{\sum_{k=1}^{|\mathcal{V}|} C_{c,k}}.
 \]
 
 Tulos osoittaa, että suurimman uskottavuuden estimaatti on täsmälleen sama kuin
@@ -171,16 +171,16 @@ normalisoimattomat pistemäärät eli logitit
 \[
   z = W^{(\mathrm{out})} h^{(L)} + b^{(\mathrm{out})},
 \]
-missä \(W^{(\mathrm{out})}\in\mathbb{R}^{|V|\times d_L}\),
-\(b^{(\mathrm{out})}\in\mathbb{R}^{|V|}\) ja \(z\in\mathbb{R}^{|V|}\).
+missä \(W^{(\mathrm{out})}\in\mathbb{R}^{|\mathcal{V}|\times d_L}\),
+\(b^{(\mathrm{out})}\in\mathbb{R}^{|\mathcal{V}|}\) ja \(z\in\mathbb{R}^{|\mathcal{V}|}\).
 Vektorin \(z\) komponentti \(z_j\) vastaa sanaston tokenin \(v_j\)
 normalisoimatonta pistemäärää. Näistä muodostetaan ehdollinen
 todennäköisyysjakauma softmax-funktiolla:
 \[
   p_\theta(w_t = v_j \mid c)
   =
-  \frac{\exp(z_j)}{\sum_{k=1}^{|V|}\exp(z_k)},
-  \qquad j=1,\dots,|V|.
+  \frac{\exp(z_j)}{\sum_{k=1}^{|\mathcal{V}|}\exp(z_k)},
+  \qquad j=1,\dots,|\mathcal{V}|.
 \]
 
 MLP muuntaa kontekstin ensin yhden tai usean kerroksen kautta
