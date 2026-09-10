@@ -15,18 +15,18 @@ Olkoon mallin parametreina jokaiselle kontekstille
   \theta_{c,j} \ge 0,
 \]
 missä \(\theta_{c,j} = P_\theta(w_t = v_j \mid c)\). Markov-oletuksen nojalla havaintoaineiston
-\(W = (w_1, \ldots, w_{|W|})\) uskottavuus voidaan kirjoittaa muodossa
+\(\mathcal{W} = (w_1, \ldots, w_{|\mathcal{W}|})\) uskottavuus voidaan kirjoittaa muodossa
 \[
-  P(W;\theta)
+  P(\mathcal{W};\theta)
   \approx
-  \prod_{t=1}^{|W|}
+  \prod_{t=1}^{|\mathcal{W}|}
   P_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
 \]
 
 Kun aineisto ryhmitellään kontekstin \(c\) ja sitä seuraavan tokenin \(v_j\)
 mukaan, saadaan
 \[
-  P(W;\theta)
+  P(\mathcal{W};\theta)
   =
   \prod_c \prod_{j=1}^{|\mathcal{V}|}
   \theta_{c,j}^{C_{c,j}},
@@ -37,9 +37,9 @@ seuraa tokeni \(v_j\).
 Koneoppimisessa optimointi esitetään tavallisesti minimointitehtävänä, joten
 määritellään häviöksi negatiivinen log-uskottavuus
 \[
-  J(\theta;W)
+  J(\theta;\mathcal{W})
   =
-  -\log P(W;\theta)
+  -\log P(\mathcal{W};\theta)
   =
   -\sum_c \sum_{j=1}^{|\mathcal{V}|}
   C_{c,j} \log \theta_{c,j}.
@@ -155,33 +155,33 @@ epälineaarisia aktivaatioita. Jos mallissa on \(L\) piilokerrosta,
 voidaan sen laskenta esittää muodossa
 \begin{align*}
   h^{(0)} &= x(c),\\
-  a^{(\ell)} &= h^{(\ell-1)} W^{(\ell)} + b^{(\ell)},
-  & \ell = 1,\dots,L, \\
-  h^{(\ell)} &= \phi^{(\ell)}\!\left(a^{(\ell)}\right),
-  & \ell = 1,\dots,L,
+  a^{(i)} &= h^{(i-1)} W^{(i)} + b^{(i)},
+  & i = 1,\dots,L, \\
+  h^{(i)} &= \phi^{(i)}\!\left(a^{(i)}\right),
+  & i = 1,\dots,L,
 \end{align*}
-missä \(W^{(\ell)}\in\mathbb{R}^{d_{\ell-1}\times d_\ell}\) on kerroksen
-\(\ell\) painomatriisi, \(b^{(\ell)}\in\mathbb{R}^{1\times d_\ell}\) sen bias-rivivektori,
-\(a^{(\ell)}\in\mathbb{R}^{1\times d_\ell}\) affiinisen muunnoksen tulos ja
-\(h^{(\ell)}\in\mathbb{R}^{1\times d_\ell}\) kerroksen \(\ell\) piiloesitys rivivektorina.
-Funktio \(\phi^{(\ell)}\) on kerroksen epälineaarinen aktivaatiofunktio.
+missä \(W^{(i)}\in\mathbb{R}^{d_{i-1}\times d_i}\) on kerroksen
+\(i\) painomatriisi, \(b^{(i)}\in\mathbb{R}^{1\times d_i}\) sen bias-rivivektori,
+\(a^{(i)}\in\mathbb{R}^{1\times d_i}\) affiinisen muunnoksen tulos ja
+\(h^{(i)}\in\mathbb{R}^{1\times d_i}\) kerroksen \(i\) piiloesitys rivivektorina.
+Funktio \(\phi^{(i)}\) on kerroksen epälineaarinen aktivaatiofunktio.
 
 Viimeisestä piilokerroksesta muodostetaan ulostulon
 normalisoimattomat pistemäärät eli logitit rivivektorina
-\[
-  z = h^{(L)} W^{(\mathrm{out})} + b^{(\mathrm{out})},
-\]
+$$
+\ell = h^{(L)} W^{(\mathrm{out})} + b^{(\mathrm{out})},
+$$
 missä \(W^{(\mathrm{out})}\in\mathbb{R}^{d_L\times |\mathcal{V}|}\),
-\(b^{(\mathrm{out})}\in\mathbb{R}^{1\times |\mathcal{V}|}\) ja \(z\in\mathbb{R}^{1\times |\mathcal{V}|}\).
-Vektorin \(z\) komponentti \(z_j\) vastaa sanaston tokenin \(v_j\)
+\(b^{(\mathrm{out})}\in\mathbb{R}^{1\times |\mathcal{V}|}\) ja \(\ell\in\mathbb{R}^{1\times |\mathcal{V}|}\).
+Vektorin \(\ell\) komponentti \(\ell_j\) vastaa sanaston tokenin \(v_j\)
 normalisoimatonta pistemäärää. Näistä muodostetaan ehdollinen
 todennäköisyysjakauma softmax-funktiolla:
-\[
-  p_\theta(w_t = v_j \mid c)
-  =
-  \frac{\exp(z_j)}{\sum_{k=1}^{|\mathcal{V}|}\exp(z_k)},
-  \qquad j=1,\dots,|\mathcal{V}|.
-\]
+$$
+p_\theta(w_t = v_j \mid c)
+=
+\frac{\exp(\ell_j)}{\sum_{k=1}^{|\mathcal{V}|}\exp(\ell_k)},
+\qquad j=1,\dots,|\mathcal{V}|.
+$$
 
 MLP muuntaa kontekstin ensin yhden tai usean kerroksen kautta
 abstraktiksi piirre-esitykseksi, jonka perusteella se laskee jokaiselle
@@ -192,8 +192,8 @@ Mallin oppiminen perustuu samaan negatiiviseen log-uskottavuuden minimointiin ku
 \[
   J(\theta)
   =
-  -\frac{1}{|W|}
-  \sum_{t=1}^{|W|}
+  -\frac{1}{|\mathcal{W}|}
+  \sum_{t=1}^{|\mathcal{W}|}
   \log p_\theta(w_t \mid w_{t-n+1}, \ldots, w_{t-1}).
 \]
 

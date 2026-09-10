@@ -40,12 +40,12 @@ one-hot-esitys, jossa kaikki tokenit ovat yhtä kaukana toisistaan.
 
 Käytännön kielimallinnuksessa upotukset opitaan tavallisesti tehtäväkohtaisesti
 osana laajempaa optimointia. Jos korpus on
-\(W = (w_1, w_2, \dots, w_{|W|})\), voidaan jokainen tokeni \(w_t \in \mathcal{V}\)
+\(\mathcal{W} = (w_1, w_2, \dots, w_{|\mathcal{W}|})\), voidaan jokainen tokeni \(w_t \in \mathcal{V}\)
 korvata sitä vastaavalla upotusvektorilla \(e(w_t)\). Tällöin koko korpusta
 voidaan tarkastella tiheiden vektorien jonona
-\[
-  E_W = (e(w_1), e(w_2), \dots, e(w_{|W|})).
-\]
+$$
+E_{\mathcal{W}} = (e(w_1), e(w_2), \dots, e(w_{|\mathcal{W}|})).
+$$
 Tämä esitystapa on erityisen hyödyllinen neuroverkoissa, joissa upotukset
 muodostavat syötteen myöhemmille kerroksille ja joissa opittavat parametrit
 voivat hyödyntää tokenien välisiä yhteyksiä yhteisen esitystilan kautta.
@@ -88,7 +88,7 @@ symbolien semanttista rakennetta voidaan mallintaa jatkuvassa vektoriavaruudessa
 pelkästään paikallisiin konteksteihin perustuvan ennustetehtävän avulla ilman
 käsin suunniteltuja kielellisiä piirteitä.
 
-Olkoon korpus \(W = (w_1, w_2, \dots, w_{|W|})\), missä \(w_t \in \mathcal{V}\) on
+Olkoon korpus \(\mathcal{W} = (w_1, w_2, \dots, w_{|\mathcal{W}|})\), missä \(w_t \in \mathcal{V}\) on
 sanaston \(\mathcal{V}\) sana ajanhetkellä \(t\). Word2Vec-malleissa tarkastellaan
 tyypillisesti kunkin sanan ympärille määriteltyä paikallista kontekstia, jonka
 laajuus määräytyy ikkunaparametrilla \(c \in \mathbb{N}\). Tällöin ajanhetken
@@ -125,7 +125,7 @@ p(w_{t+j} \mid w_t),
 $$
 Koko korpuksen tasolla vastaava tavoitefunktio voidaan kirjoittaa muodossa
 $$
-\sum_{t=1}^{|W|} \sum_{\substack{-c \le j \le c \\ j \ne 0}}
+\sum_{t=1}^{|\mathcal{W}|} \sum_{\substack{-c \le j \le c \\ j \ne 0}}
 \log p(w_{t+j} \mid w_t).
 $$
 Skip-gram-malli osoittautuu erityisen käyttökelpoiseksi silloin, kun tavoitteena

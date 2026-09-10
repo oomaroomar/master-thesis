@@ -55,15 +55,15 @@ konekäännökseen suunniteltu enkooderi--dekooderi-rakenne. Pian tämän jälke
 
 Transformer-mallin keskeinen mekanismi on itsehuomio (engl.\ \emph{self-attention}). Sen avulla tokenin esitys voidaan muodostaa koko syötekontekstin perusteella sen sijaan, että huomioitaisiin vain kiinteä määrä viimeisimpiä tokeneita. Kontekstin tokenien merkitys ei määräydy pelkän etäisyyden mukaan, vaan itsehuomio mahdollistaa kunkin tokenin kannalta olennaisen tiedon dynaamisen painottamisen yli koko sekvenssin.
 
-Olkoon tarkasteltavan tokenijonon pituus \(T\) ja olkoon \(h_i \in \mathbb{R}^{d}\) position \(i\) tokenia vastaava esitysvektori. Näistä muodostetaan syötematriisi
+Olkoon tarkasteltavan tokenijonon pituus \(T\) ja olkoon \(h_i \in \mathbb{R}^{1 \times d}\) position \(i\) tokenia vastaava esitysvektori. Näistä muodostetaan syötematriisi
 \begin{align*}
   H
   =
   \begin{bmatrix}
-    h_1^{\top} \\
-    h_2^{\top} \\
+    h_1 \\
+    h_2 \\
     \vdots \\
-    h_T^{\top}
+    h_T
   \end{bmatrix}
   \in \mathbb{R}^{T \times d}.
 \end{align*}
@@ -134,20 +134,22 @@ Kausaalinen itsehuomio lasketaan tällöin muodossa
 \end{align*}
 Koska \(\exp(-\infty) = 0\), huomiopainomatriisista muodostuu alakolmiomatriisi. Tällöin kunkin tokenin esitys riippuu vain siitä itsestään ja sitä edeltävistä tokeneista, mikä säilyttää generointiprosessin kausaalisen rakenteen.
 Yksittäisen huomiopään tuloksella on hyödyllinen geometrinen
-tulkinta. Koska huomiopainoille pätee \(A_{ij} \ge 0\) ja
+tulkinta. Merkitään arvomatriisin \(V\) rivin \(j\) transpoosia
+symbolilla \(\mathbf{v}_j=V_{j,:}^{\top}\).
+Koska huomiopainoille pätee \(A_{ij} \ge 0\) ja
 \(\sum_{j=1}^{T} A_{ij} = 1\), position \(i\) tulosvektori
 $$
-o_i = \sum_{j=1}^{T} A_{ij} v_j
+o_i = \sum_{j=1}^{T} A_{ij} \mathbf{v}_j
 $$
 on arvovektorien konveksikombinaatio. Kausaalisessa itsehuomiossa
 tulevien positioiden painot ovat nollia, joten tarkemmin
 $$
 o_i
 \in
-\operatorname{conv}(\{v_1,\dots,v_i\})
+\operatorname{conv}(\{\mathbf{v}_1,\dots,\mathbf{v}_i\})
 =
 \left\{
-  \sum_{j=1}^{i} \alpha_j v_j
+  \sum_{j=1}^{i} \alpha_j \mathbf{v}_j
   \;\middle|\;
   \alpha_j \ge 0,\;
   \sum_{j=1}^{i} \alpha_j = 1
@@ -476,23 +478,28 @@ kuvaukselle, joka muuntaa tokenikontekstin sanaston yli määritellyksi
 todennäköisyysjakaumaksi.
 
 Olkoon syötteenä tokenijono
-\(x_{1:T}=(x_1,\dots,x_T)\), missä \(1 \le T \le L\), ja olkoon
+\(v_{1:T}=(v_1,\dots,v_T)\), missä \(1 \le T \le L\), ja olkoon
 \(E \in \mathbb{R}^{|\mathcal{V}| \times d}\) opittava
-upotusmatriisi. Kun
-\(e(x_i) \in \mathbb{R}^{|\mathcal{V}|}\) on tokenin \(x_i\)
-one-hot-esitys, alkuperäinen esitysmatriisi määritellään riveittäin
-muodossa
-\begin{align*}
-  H^{[0]}_{i,:}
-  =
-  e(x_i)^{\top}E,
-  \qquad
-  i=1,\dots,T.
-\end{align*}
+upotusmatriisi. Tokenin \(v_i\) one-hot-esitys on rivivektori
+\(x(v_i) \in \mathbb{R}^{1 \times |\mathcal{V}|}\), ja sen
+upotus määritellään muodossa
+$$
+e(v_i)=x(v_i)E \in \mathbb{R}^{1 \times d}.
+$$
+Alkuperäinen esitysmatriisi muodostetaan näistä upotuksista
+riveittäin:
+$$
+H^{[0]}_{i,:}
+=
+e(v_i)
+=
+x(v_i)E,
+\qquad
+i=1,\dots,T.
+$$
 Tällöin \(H^{[0]} \in \mathbb{R}^{T \times d}\).
 Laskenta vastaa luvussa \ref{sec:mlp} tarkasteltua tokenin
-muuntamista jatkuvaksi esitysvektoriksi. Käytännössä kertolaskun
-sijaan poimitaan tokenia vastaava upotusmatriisin rivi.
+muuntamista jatkuvaksi esitysvektoriksi.
 
 Tässä tarkasteltavassa arkkitehtuurissa positiotieto sisällytetään
 itsehuomion kysely- ja avainvektoreihin RoPE-rotaatioiden avulla.
@@ -526,7 +533,7 @@ joista yksikään ei sisällä tietoa positiota \(i\) seuraavista
 tokeneista. Koska normalisointi ja myötäkytkentäverkko toimivat
 positiokohtaisesti, ne eivät muuta tätä riippuvuusrakennetta.
 Siten position \(i\) esitys riippuu kaikissa lohkoissa vain
-kontekstista \(x_{1:i}\).
+kontekstista \(v_{1:i}\).
 
 Tarkasteltavassa pre-norm-rakenteessa viimeisen dekooderilohkon
 tulokseen sovelletaan vielä positiokohtaista normalisointia:
@@ -557,7 +564,7 @@ joista muodostetaan todennäköisyysjakauma softmax-funktiolla.
 Merkitään mallin kaikkia opittavia parametreja symbolilla
 \(\theta\). Seuraavan tokenin ehdollinen todennäköisyys on
 $$
-p_{\theta}(x_{i+1}=v \mid x_{1:i})
+p_{\theta}(v_{i+1}=v \mid v_{1:i})
 =
 \frac{\exp(\ell_{i,v})}
 {\displaystyle\sum_{u \in \mathcal{V}}\exp(\ell_{i,u})},
@@ -567,10 +574,10 @@ $$
 Position \(i\) tulos ennustaa siis position \(i+1\) tokenia.
 Koska position \(i\) esitys ei riipu tulevista tokeneista,
 myös siitä muodostettu jakauma riippuu vain kontekstista
-\(x_{1:i}\). Koko syötekontekstia seuraavan tokenin jakauma
+\(v_{1:i}\). Koko syötekontekstia seuraavan tokenin jakauma
 saadaan viimeisen position tuloksesta:
 $$
-f_{\mathrm{Tr}}(x_{1:T})
+f_{\mathrm{Tr}}(v_{1:T})
 =
 \operatorname{softmax}(\ell_T)
 \in
@@ -594,32 +601,32 @@ parametrisoinnissa: Transformer muodostaa ne useiden
 itsehuomio- ja myötäkytkentäkerrosten avulla.
 
 Todennäköisyyksien ketjusäännön perusteella tokenijonon
-\(x_{1:T}\) todennäköisyys voidaan esittää muodossa
+\(v_{1:T}\) todennäköisyys voidaan esittää muodossa
 $$
-p_{\theta}(x_{1:T})
+p_{\theta}(v_{1:T})
 =
 \prod_{t=1}^{T}
-p_{\theta}(x_t \mid x_{<t}),
+p_{\theta}(v_t \mid v_{<t}),
 $$
-missä \(x_{<t}=(x_1,\dots,x_{t-1})\).
+missä \(v_{<t}=(v_1,\dots,v_{t-1})\).
 
 Olkoon koulutusaineisto
-\(\mathcal{D}=\{x^{(1)},\dots,x^{(N)}\}\), missä sekvenssin
-\(x^{(r)}\) ennustettavien tokenien lukumäärä on \(T_r\).
+\(\mathcal{D}=\{v^{(1)},\dots,v^{(N)}\}\), missä sekvenssin
+\(v^{(r)}\) ennustettavien tokenien lukumäärä on \(T_r\).
 Tokenikohtainen keskimääräinen negatiivinen log-uskottavuus on
-\begin{align*}
-  \mathcal{L}(\theta)
-  =
-  -\frac{1}{\displaystyle\sum_{r=1}^{N}T_r}
-  \sum_{r=1}^{N}
-  \sum_{t=1}^{T_r}
-  \log p_{\theta}
-  \left(
-    x_t^{(r)}
-    \mid
-    x_{<t}^{(r)}
-  \right).
-\end{align*}
+$$
+J(\theta)
+=
+-\frac{1}{\displaystyle\sum_{r=1}^{N}T_r}
+\sum_{r=1}^{N}
+\sum_{t=1}^{T_r}
+\log p_{\theta}
+\left(
+  v_t^{(r)}
+  \mid
+  v_{<t}^{(r)}
+\right).
+$$
 
 Kunkin position opetusvastaus on aineistossa havaittu seuraava
 token. Kun vastaus esitetään one-hot-jakaumana, yksittäisen
@@ -638,7 +645,7 @@ esikoulutus on keskeinen lähtökohta dekooderipohjaisille
 kielimalleille \cite{radford2018improving}.
 
 Koulutuksessa kunkin ennusteen kontekstina käytetään aineistossa
-havaittua oikeaa prefiksiä \(x_{<t}\) eikä mallin itsensä aiemmin
+havaittua oikeaa prefiksiä \(v_{<t}\) eikä mallin itsensä aiemmin
 tuottamia tokeneita. Tätä käytäntöä kutsutaan nimellä
 \emph{teacher forcing}. Kunkin position opetusvastaus on aineistossa
 havaittu seuraava token.
@@ -661,16 +668,16 @@ täytetokenit voidaan jättää häviön ulkopuolelle.
 Esikoulutettua mallia voidaan edelleen mukauttaa
 ohjeiden noudattamiseen valvotulla ohjevirityksellä.
 Tällöin koulutusesimerkki koostuu syötekontekstista \(c\)
-ja tavoitevastauksesta \(y=(y_1,\dots,y_K)\).
+ja tavoitevastauksesta \(y=(v_1,\dots,v_K)\).
 Syötekonteksti voi sisältää esimerkiksi tehtävän ohjeen,
 käyttäjän kysymyksen ja muuta tehtävän ratkaisemiseen
 tarvittavaa tietoa. Kun häviö lasketaan vain
 vastaustokeneista, yhden esimerkin tavoite on
 $$
-\mathcal{L}_{\mathrm{instr}}(\theta;c,y)
+J_{\mathrm{instr}}(\theta;c,y)
 =
 -\sum_{t=1}^{K}
-\log p_{\theta}(y_t \mid c,y_{<t}).
+\log p_{\theta}(v_t \mid c,v_{<t}).
 $$
 Syötekonteksti vaikuttaa vastaustokenien ennusteisiin,
 vaikka sen omista positioista ei tässä lasketa
@@ -693,10 +700,10 @@ ennusteiden syötteenä.
 
 Yksinkertainen valintasääntö on ahne valinta:
 $$
-\widehat{x}_{t+1}
+\widehat{v}_{t+1}
 =
 \operatorname*{arg\,max}_{v \in \mathcal{V}}
-p_{\theta}(v \mid x_{1:t}).
+p_{\theta}(v \mid v_{1:t}).
 $$
 Se valitsee jokaisessa vaiheessa kyseisen jakauman
 todennäköisimmän tokenin. Vaihtoehtona on otanta,
@@ -705,7 +712,7 @@ jossa seuraava token arvotaan jakaumasta.
 Otannassa jakauman keskittyneisyyttä voidaan muuttaa
 lämpötilaparametrilla \(\tau>0\):
 $$
-p_{\theta,\tau}(v \mid x_{1:t})
+p_{\theta,\tau}(v \mid v_{1:t})
 =
 \frac{\exp(\ell_{t,v}/\tau)}
 {\displaystyle\sum_{u \in \mathcal{V}}
@@ -766,13 +773,13 @@ Konteksti voi sisältää esimerkiksi tehtäväohjeen,
 skeeman tekstimuotoisen kuvauksen ja esimerkkejä
 kysymysten ja SQL-kyselyiden vastaavuuksista.
 
-Kun SQL-kyselyn tokenijono on \(y=(y_1,\dots,y_K)\),
+Kun SQL-kyselyn tokenijono on \(y=(v_1,\dots,v_K)\),
 sen ehdollinen todennäköisyys voidaan kirjoittaa muodossa
 $$
 p_{\theta}(y \mid c)
 =
 \prod_{t=1}^{K}
-p_{\theta}(y_t \mid c,y_{<t}).
+p_{\theta}(v_t \mid c,v_{<t}).
 $$
 Kontekstin ja generoinnissa tarvittavan historian on
 mahduttava mallin käytettävissä olevaan konteksti-ikkunaan.
