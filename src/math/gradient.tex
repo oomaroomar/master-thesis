@@ -70,7 +70,7 @@ Tämä johtaa gradienttimenetelmän iteratiiviseen päivityssääntöön
 \end{align*}
 
 Koneoppimisessa kohdefunktio muodostetaan tyypillisesti empiirisenä
-riskinä:
+riskinä
 \begin{align*}
   J(\theta)
   =
@@ -181,7 +181,7 @@ johtaa neliöllinen yläraja.
     \langle\nabla J(\theta+th)-\nabla J(\theta),h\rangle\,dt.
   \end{align*}
   Cauchy--Schwarzin epäyhtälön ja \(L\)-Lipschitz-oletuksen perusteella
-  integraalissa oleva termi voidaan arvioida ylhäältä:
+  integraalissa oleva termi voidaan arvioida ylhäältä
   \begin{align*}
     \langle\nabla J(\theta+th)-\nabla J(\theta),h\rangle
     &\le
@@ -307,7 +307,7 @@ paikallista kaarevuutta.
 
 Funktion \(L\)-sileyden nojalla Hessin operaattorinormille pätee
 \(\|H_t\|_2\le L\), jolloin \(\lambda_1\le L\). Tämä rajoittaa
-oppimisnopeuden suuruutta: liian suuri askel voi johtaa divergenssiin tai
+oppimisnopeuden suuruutta, koska liian suuri askel voi johtaa divergenssiin tai
 voimakkaaseen oskillaatioon suurimman kaarevuuden suunnassa.
 Häiriöalttiuden vaikutusta suppenemiseen voidaan havainnollistaa
 tarkastelemalla stationaarisen pisteen \(\theta^\ast\) ympäristöä, jossa
@@ -347,7 +347,7 @@ kaarevuuden suunnassa ja vain hitaasti laakson pohjan suuntaisesti
 
 Toisen kertaluvun optimointimenetelmät, kuten Newtonin menetelmä,
 hyödyntävät paikallista kaarevuusinformaatiota skaalaamalla
-päivitysaskelen käänteisellä Hessin matriisilla:
+päivitysaskelen käänteisellä Hessin matriisilla
 \begin{align*}
   \theta_{t+1}
   =
@@ -385,8 +385,8 @@ parametrit etenevät hitaasti.
 
 Adaptiiviset menetelmät tasapainottavat tätä vaihtelua skaalaamalla kunkin
 parametrin päivitystä sen aiemmin saamien gradienttien perusteella.
-Käytännössä tämä voidaan tulkita diagonaalisena esiehdollistuksena:
-jokaiselle parametrille määritetään oma päivitysaskelen mittakaava ilman,
+Tämä voidaan tulkita diagonaalisena esiehdollistuksena.
+Jokaiselle parametrille määritetään oma päivitysaskelen mittakaava ilman,
 että parametrien välisiä riippuvuuksia tarvitsee käsitellä eksplisiittisesti \cite{bottou2018optimization,duchi2011adaptive}.
 Tämä tekee menetelmistä laskennallisesti tehokkaita ja erityisen
 soveltuvia suuriin, korkeaulotteisiin optimointiongelmiin.
@@ -423,14 +423,14 @@ keskeisimmäksi laajennukseksi vakiintui momentum- eli liikemäärämenetelmä
 \cite{polyak1964some,sutskever2013importance}. Menetelmän tarkoituksena on
 nopeuttaa optimointia loivilla alueilla sekä vaimentaa oskillaatiota
 suuntiin, joissa kohdefunktion kaarevuus on suurta. Tämä saavutetaan
-lisäämällä päivitykseen liukuma aiemmista siirtymistä:
+lisäämällä päivitykseen liukuma aiemmista siirtymistä
 \begin{align*}
   v_t
   =
   \gamma v_{t-1} + \eta g_t,
 \end{align*}
 missä \(\gamma\in[0,1)\) on momentum-kerroin. Parametripäivitys tehdään
-kertyneen nopeusvektorin \(v_t\) suunnassa:
+kertyneen nopeusvektorin \(v_t\) suunnassa
 \begin{align*}
   \theta_{t+1}
   =
@@ -512,10 +512,7 @@ käytännössä käyttökelpoisemman syvien neuroverkkojen opetuksessa \cite{goo
 
 \paragraph{Adam.}
 
-Adam (\emph{adaptive moment estimation}) yhdistää kaksi ideaa: gradientin
-ensimmäisen momentin eli suunnatun liukuvan keskiarvon sekä neliöityjen
-gradienttien toisen momentin eli liukuvan keskiarvon
-\cite{kingma2015adam}. Menetelmässä määritellään rekursiot
+Adam (\emph{adaptive moment estimation}) yhdistää gradientin ensimmäisen momentin eli suunnatun liukuvan keskiarvon sekä neliöityjen gradienttien toisen momentin eli liukuvan keskiarvon \cite{kingma2015adam}. Menetelmässä määritellään rekursiot
 \begin{align*}
   m_t
   &=

@@ -13,22 +13,21 @@ joissa kukin token kuvataan tiheällä reaaliarvoisella vektorilla.
 Olkoon edelleen \(\mathcal{V} = \{v_1, v_2, \dots, v_{|\mathcal{V}|}\}\) sanasto. Tällöin tokenille
 \(v_j\) määritellään upotus
 \[
-  e(v_j) \in \mathbb{R}^d,
+  e(v_j) \in \mathbb{R}^{1 \times d},
 \]
 missä \(d \ll |\mathcal{V}|\) on upotustilan dimensio.
 
 Upotusvektorit voidaan esittää myös matriisimuodossa. Olkoon
-\[
-  E \in \mathbb{R}^{d \times |\mathcal{V}|}
-\]
-upotusmatriisi, jonka sarakkeet vastaavat sanaston tokeneita. Tällöin tokenin
-\(v_j\) upotus saadaan one-hot-vektorin \(x(v_j)\) avulla muodossa
-\[
-  e(v_j) = E x(v_j).
-\]
-Koska one-hot-vektori sisältää täsmälleen yhden epä-nollan komponentin, tämä
-kertolasku palauttaa matriisista \(E\) juuri tokenia \(v_j\) vastaavan
-sarakkeen.
+$$
+E \in \mathbb{R}^{|\mathcal{V}| \times d}
+$$
+upotusmatriisi, jonka rivit vastaavat sanaston tokeneita. Kun
+\(x(v_j) \in \mathbb{R}^{1 \times |\mathcal{V}|}\) on tokenin \(v_j\)
+one-hot-esitys, sen upotus saadaan muodossa
+$$
+e(v_j) = x(v_j)E \in \mathbb{R}^{1 \times d}.
+$$
+Koska one-hot-vektori sisältää täsmälleen yhden nollasta poikkeavan komponentin, tämä kertolasku palauttaa suoraan tokenia \(v_j\) vastaavan upotusmatriisin rivin.
 
 Upotusvektorien keskeinen etu liittyy siihen, että samankaltaisten tokenien
 upotukset voivat sijaita lähellä toisiaan upotustilassa. Tällöin tokenien
@@ -135,14 +134,15 @@ havaittu sana toimii useiden kontekstisanojen ennustamisen lähtökohtana
 \cite{mikolov2013efficient}.
 
 Olkoon \(w_I\) syötesana ja \(w_O\) kohdesana. Jos syötesanaa vastaava
-vektoriesitys on \(v_{w_I}\) ja kohdesanaa vastaava ulostulovektori on
-\(u_{w_O}\), voidaan todennäköisyys \(p(w_O \mid w_I)\) esittää
-softmax-funktion avulla muodossa
+rivivektoriesitys on \(v_{w_I} \in \mathbb{R}^{1 \times d}\) ja kohdesanaa
+vastaava ulostulorivivektori on \(u_{w_O} \in \mathbb{R}^{1 \times d}\),
+voidaan todennäköisyys \(p(w_O \mid w_I)\) esittää softmax-funktion avulla
+muodossa
 $$
 p(w_O \mid w_I)
 =
-\frac{\exp(u_{w_O}^{\top} v_{w_I})}
-{\sum_{w \in \mathcal{V}} \exp(u_w^{\top} v_{w_I})}.
+\frac{\exp(v_{w_I} u_{w_O}^{\top})}
+{\sum_{w \in \mathcal{V}} \exp(v_{w_I} u_w^{\top})}.
 $$
 
 Tässä nimittäjän summa ulottuu koko sanastoon, mikä tekee täsmällisestä
@@ -163,16 +163,16 @@ näytteenottojakauma. Tällöin mallin tavoitteena ei ole enää optimoida
 todennäköisyyttä \(p(w_O \mid w_I)\) koko sanaston yli, vaan maksimoida
 havaittua paria vastaava binäärinen logistinen tavoite
 $$
-\log \sigma\!\left(u_{w_O}^{\top} v_{w_I}\right)
+\log \sigma\!\left(v_{w_I} u_{w_O}^{\top}\right)
 +
 \sum_{k=1}^{K}
-\log \sigma\!\left(-u_{w_k^{-}}^{\top} v_{w_I}\right),
+\log \sigma\!\left(-v_{w_I} u_{w_k^{-}}^{\top}\right),
 $$
 missä \(\sigma(x) = \frac{1}{1 + e^{-x}}\) on logistinen sigmoidifunktio.
 Ensimmäinen termi kasvattaa havaittuun positiiviseen sana--konteksti-pariin
-liittyvän pistetulon \(u_{w_O}^{\top} v_{w_I}\) arvoa, kun taas jälkimmäinen
+liittyvän pistetulon \(v_{w_I} u_{w_O}^{\top}\) arvoa, kun taas jälkimmäinen
 termi pienentää satunnaisesti valittujen negatiivisten sanojen
-\(u_{w_k^{-}}^{\top} v_{w_I}\) arvoja. Näin malli oppii erottamaan aidot
+\(v_{w_I} u_{w_k^{-}}^{\top}\) arvoja. Näin malli oppii erottamaan aidot
 kontekstisanat satunnaisista sanoista ilman, että jokaisella oppimisaskeleella
 tarvitsisi normalisoida jakaumaa koko sanaston yli.
 
@@ -180,11 +180,11 @@ Koko aineiston yli tavoite voidaan esittää odotusarvomuodossa
 $$
 \sum_{(w_I, w_O) \in D}
 \left[
-  \log \sigma\!\left(u_{w_O}^{\top} v_{w_I}\right)
+  \log \sigma\!\left(v_{w_I} u_{w_O}^{\top}\right)
   +
   \sum_{k=1}^{K}
   \mathbb{E}_{w_k^{-} \sim P_n}
-  \log \sigma\!\left(-u_{w_k^{-}}^{\top} v_{w_I}\right)
+  \log \sigma\!\left(-v_{w_I} u_{w_k^{-}}^{\top}\right)
 \right],
 $$
 missä \(D\) on havaittujen syöte--konteksti-parien joukko ja \(K\) on negatiivisten otantojen määrä. Tällä tavoin

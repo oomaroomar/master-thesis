@@ -148,31 +148,31 @@ optimointimenetelmillä, kuten gradienttimenettelyllä
 \cite{goodfellow2016deep}.
 
 Olkoon \(c\) tarkasteltava konteksti ja
-\(x(c)\in\mathbb{R}^{d_0}\) sitä vastaava syötevektori.
+\(x(c)\in\mathbb{R}^{1\times d_0}\) sitä vastaava syöterivivektori.
 Monikerroksinen perceptroni muuntaa tämän syötteen vaiheittain
 piirre-esitykseksi soveltamalla peräkkäisiä affiinisia muunnoksia ja
 epälineaarisia aktivaatioita. Jos mallissa on \(L\) piilokerrosta,
 voidaan sen laskenta esittää muodossa
 \begin{align*}
   h^{(0)} &= x(c),\\
-  a^{(\ell)} &= W^{(\ell)} h^{(\ell-1)} + b^{(\ell)},
+  a^{(\ell)} &= h^{(\ell-1)} W^{(\ell)} + b^{(\ell)},
   & \ell = 1,\dots,L, \\
   h^{(\ell)} &= \phi^{(\ell)}\!\left(a^{(\ell)}\right),
   & \ell = 1,\dots,L,
 \end{align*}
-missä \(W^{(\ell)}\in\mathbb{R}^{d_\ell\times d_{\ell-1}}\) on kerroksen
-\(\ell\) painomatriisi, \(b^{(\ell)}\in\mathbb{R}^{d_\ell}\) sen bias-vektori,
-\(a^{(\ell)}\in\mathbb{R}^{d_\ell}\) affiinisen muunnoksen tulos ja
-\(h^{(\ell)}\in\mathbb{R}^{d_\ell}\) kerroksen \(\ell\) piiloesitys.
+missä \(W^{(\ell)}\in\mathbb{R}^{d_{\ell-1}\times d_\ell}\) on kerroksen
+\(\ell\) painomatriisi, \(b^{(\ell)}\in\mathbb{R}^{1\times d_\ell}\) sen bias-rivivektori,
+\(a^{(\ell)}\in\mathbb{R}^{1\times d_\ell}\) affiinisen muunnoksen tulos ja
+\(h^{(\ell)}\in\mathbb{R}^{1\times d_\ell}\) kerroksen \(\ell\) piiloesitys rivivektorina.
 Funktio \(\phi^{(\ell)}\) on kerroksen epälineaarinen aktivaatiofunktio.
 
 Viimeisestä piilokerroksesta muodostetaan ulostulon
-normalisoimattomat pistemäärät eli logitit
+normalisoimattomat pistemäärät eli logitit rivivektorina
 \[
-  z = W^{(\mathrm{out})} h^{(L)} + b^{(\mathrm{out})},
+  z = h^{(L)} W^{(\mathrm{out})} + b^{(\mathrm{out})},
 \]
-missä \(W^{(\mathrm{out})}\in\mathbb{R}^{|\mathcal{V}|\times d_L}\),
-\(b^{(\mathrm{out})}\in\mathbb{R}^{|\mathcal{V}|}\) ja \(z\in\mathbb{R}^{|\mathcal{V}|}\).
+missä \(W^{(\mathrm{out})}\in\mathbb{R}^{d_L\times |\mathcal{V}|}\),
+\(b^{(\mathrm{out})}\in\mathbb{R}^{1\times |\mathcal{V}|}\) ja \(z\in\mathbb{R}^{1\times |\mathcal{V}|}\).
 Vektorin \(z\) komponentti \(z_j\) vastaa sanaston tokenin \(v_j\)
 normalisoimatonta pistemäärää. Näistä muodostetaan ehdollinen
 todennäköisyysjakauma softmax-funktiolla:
@@ -201,7 +201,7 @@ Erona perinteiseen frekvenssipohjaiseen \(n\)-gram-malliin, joka estimoi
 jokaiselle mahdolliselle diskreetille kontekstille oman erillisen
 parametrivektorinsa, MLP approksimoi todennäköisyyksiä jatkuvassa avaruudessa.
 Koska erilliset tokenit projisoidaan matalaulotteisiksi tiheiksi
-upotusvektoreiksi \(v \in \mathbb{R}^d\), malli oppii esittämään sanojen
+upotusvektoreiksi \(v \in \mathbb{R}^{1\times d}\), malli oppii esittämään sanojen
 semanttisia ja syntaktisia samankaltaisuuksia vektoriesitysten avulla.
 MLP:n approksimoima funktio on jatkuva ja tyypillisesti sileä siinä mielessä,
 että pienet muutokset syöteavaruudessa voivat johtaa samankaltaisiin
