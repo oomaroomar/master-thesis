@@ -134,12 +134,12 @@ Kausaalinen itsehuomio lasketaan tällöin muodossa
 \end{align*}
 Koska \(\exp(-\infty) = 0\), huomiopainomatriisista muodostuu alakolmiomatriisi. Tällöin kunkin tokenin esitys riippuu vain siitä itsestään ja sitä edeltävistä tokeneista, mikä säilyttää generointiprosessin kausaalisen rakenteen.
 Yksittäisen huomiopään tuloksella on hyödyllinen geometrinen
-tulkinta. Merkitään arvomatriisin \(V\) rivin \(j\) transpoosia
-symbolilla \(\mathbf{v}_j=V_{j,:}^{\top}\).
+tulkinta. Merkitään arvomatriisin \(V\) riviä \(j\)
+symbolilla \(\mathbf{v}_j = V_{j,:} \in \mathbb{R}^{1 \times d_v}\).
 Koska huomiopainoille pätee \(A_{ij} \ge 0\) ja
-\(\sum_{j=1}^{T} A_{ij} = 1\), position \(i\) tulosvektori
+\(\sum_{j=1}^{T} A_{ij} = 1\), position \(i\) tulosrivivektori
 $$
-o_i = \sum_{j=1}^{T} A_{ij} \mathbf{v}_j
+o_i = \sum_{j=1}^{T} A_{ij} \mathbf{v}_j \in \mathbb{R}^{1 \times d_v}
 $$
 on arvovektorien konveksikombinaatio. Kausaalisessa itsehuomiossa
 tulevien positioiden painot ovat nollia, joten tarkemmin
@@ -155,6 +155,7 @@ o_i
   \sum_{j=1}^{i} \alpha_j = 1
 \right\}.
 $$
+
 Tämä havainto koskee yhden huomiopään tulosta annetuille
 arvovektoreille. Se ei yksinään kuvaa koko Transformer-lohkon
 ilmaisukykyä, sillä arvovektorit ovat opittujen projektioiden
@@ -169,8 +170,8 @@ Eri päät voivat siten painottaa eri positioita ja käsitellä
 niiden informaatiota eri esitysavaruuksissa
 \cite{vaswani2017attention}.
 
-Olkoon päiden lukumäärä \(h\). Kukin pää
-\(k \in \{1,\dots,h\}\) suorittaa kausaalisen itsehuomion
+Olkoon päiden lukumäärä \(n_\text{heads}\). Kukin pää
+\(k \in \{1,\dots,n_\text{heads}\}\) suorittaa kausaalisen itsehuomion
 omilla opittavilla projektioillaan:
 $$
 \operatorname{head}_k
@@ -198,18 +199,18 @@ $$
   \,\|\,
   \dots
   \,\|\,
-  \operatorname{head}_h
+  \operatorname{head}_{n_\text{heads}}
 \right] W^O,
 $$
 missä \(\|\) merkitsee sarakkeittaista ketjuttamista ja
-\(W^O \in \mathbb{R}^{h d_v \times d}\) on opittava
+\(W^O \in \mathbb{R}^{n_\text{heads} d_v \times d}\) on opittava
 parametrimatriisi.
 
 Monipäisyyden etu on että eri päät
 voivat käyttää toisistaan poikkeavia huomiopainotuksia ja
 arvoprojektioita, joiden tuottama informaatio yhdistetään
 tulosprojektiossa. Käytännössä pään dimensioiksi valitaan
-usein \(d_k = d_v = d/h\), jolloin monipäisen itsehuomion
+usein \(d_k = d_v = d/n_\text{heads}\), jolloin monipäisen itsehuomion
 laskennallinen vaativuus vastaa karkeasti täyden dimension
 yksipäistä huomiota \cite{vaswani2017attention}.
 
@@ -269,7 +270,7 @@ kaksiulotteiseen pariin ja kiertää jokaista paria position mukaisella
 kulmalla. Koordinaattiparille
 \(\ell \in \{0,\dots,d_k/2-1\}\) käytetään tavanomaisesti kulmataajuutta
 \begin{align*}
-  \theta_{\ell}
+  \omega_{\ell}
   =
   10000^{-2\ell/d_k}.
 \end{align*}
@@ -293,55 +294,53 @@ R_i
 =
 \operatorname{diag}
 \left(
-  R(i\theta_0),
-  R(i\theta_1),
+  R(i\omega_0),
+  R(i\omega_1),
   \dots,
-  R\left(i\theta_{d_k/2-1}\right)
+  R\left(i\omega_{d_k/2-1}\right)
 \right)
 \in
 \mathbb{R}^{d_k \times d_k}.
 $$
 
-Olkoon \(q_i \in \mathbb{R}^{d_k}\) position \(i\) kyselyvektori ja
-\(k_j \in \mathbb{R}^{d_k}\) position \(j\) avainvektori. RoPE korvaa
-nämä kierretyillä vektoreilla
-
+Olkoon \(q_i = Q_{i,:} \in \mathbb{R}^{1 \times d_k}\) position \(i\) kyselyvektori ja
+\(k_j = K_{j,:} \in \mathbb{R}^{1 \times d_k}\) position \(j\) avainvektori. RoPE korvaa
+nämä kierretyillä rivivektoreilla
 $$
-\widetilde q_i = R_i q_i,
+\widetilde q_i = q_i R_i,
 \qquad
-\widetilde k_j = R_j k_j.
+\widetilde k_j = k_j R_j.
 $$
 
 Arvovektoreihin rotaatiota ei tavallisesti sovelleta. Kierrettyjen
 kysely- ja avainvektorien pistetuloksi saadaan
-
 $$
-\widetilde q_i^{\top}\widetilde k_j
+\widetilde q_i \widetilde k_j^{\top}
 =
-q_i^{\top}R_i^{\top}R_jk_j.
+q_i R_i (k_j R_j)^{\top}
+=
+q_i R_i R_j^{\top} k_j^{\top}.
 $$
 
 Kaksiulotteisille rotaatiomatriiseille pätee
-\(R(\alpha)^{\top}R(\beta)=R(\beta-\alpha)\). Sama ominaisuus pätee
+\(R(\alpha)R(\beta)^{\top}=R(\alpha-\beta)\). Sama ominaisuus pätee
 lohkoittain myös RoPE-rotaatioille, joten
-
 $$
-R_i^{\top}R_j
+R_i R_j^{\top}
 =
-R_{j-i}.
+R_{i-j}.
 $$
 
 Siten RoPE-huomiopiste voidaan kirjoittaa muodossa
-
 $$
-\widetilde q_i^{\top}\widetilde k_j
+\widetilde q_i \widetilde k_j^{\top}
 =
-q_i^{\top}R_{j-i}k_j.
+q_i R_{i-j} k_j^{\top}.
 $$
 
 Vaikka kysely ja avain kierretään niiden absoluuttisten positioiden
 perusteella, rotaatioiden yhteisvaikutus pistetulossa riippuu ainoastaan
-positioiden suhteellisesta siirtymästä \(j-i\). RoPE liittää näin
+positioiden suhteellisesta siirtymästä \(i-j\). RoPE liittää näin
 suhteellisen positiotiedon suoraan kyselyiden ja avainten välisiin
 huomiopisteisiin ilman, että tokeniesityksiin täytyy lisätä erillisiä
 positiovektoreita.
@@ -401,16 +400,16 @@ perseptronia, jota sovelletaan itsenäisesti ja samoilla
 parametreilla kunkin position esitykseen.
 
 Kaksi affiinia muunnosta sisältävä FFN voidaan määritellä
-sarakevektorille \(x \in \mathbb{R}^{d}\) muodossa
+rivivektorille \(x \in \mathbb{R}^{1 \times d}\) muodossa
 $$
 \operatorname{FFN}(x)
 =
-W_2 \phi(W_1 x + b_1) + b_2,
+\phi(x W_1 + b_1) W_2 + b_2,
 $$
-missä \(W_1 \in \mathbb{R}^{d_{ff} \times d}\),
-\(W_2 \in \mathbb{R}^{d \times d_{ff}}\),
-\(b_1 \in \mathbb{R}^{d_{ff}}\),
-\(b_2 \in \mathbb{R}^{d}\) ja \(\phi\) on
+missä \(W_1 \in \mathbb{R}^{d \times d_{ff}}\),
+\(W_2 \in \mathbb{R}^{d_{ff} \times d}\),
+\(b_1 \in \mathbb{R}^{1 \times d_{ff}}\),
+\(b_2 \in \mathbb{R}^{1 \times d}\) ja \(\phi\) on
 koordinaateittain sovellettava epälineaarinen aktivaatiofunktio.
 Sisäisen piiloesityksen dimensio \(d_{ff}\) valitaan
 tyypillisesti suuremmaksi kuin mallin dimensio \(d\).
@@ -424,12 +423,12 @@ $$
 \operatorname{FFN}(H)
 =
 \phi\left(
-  H W_1^{\top} + \mathbf{1} b_1^{\top}
-\right) W_2^{\top}
+  H W_1 + \mathbf{1} b_1
+\right) W_2
 +
-\mathbf{1} b_2^{\top},
+\mathbf{1} b_2,
 $$
-missä \(\mathbf{1} \in \mathbb{R}^{T}\) on ykkösvektori,
+missä \(\mathbf{1} \in \mathbb{R}^{T \times 1}\) on sarakeykkösvektori,
 jonka avulla siirtovektorit lisätään jokaiselle riville.
 
 Koko dekooderilohko voidaan määritellä funktiona
@@ -545,19 +544,19 @@ Z
 \in
 \mathbb{R}^{T \times d}.
 $$
-Olkoon \(z_i=Z_{i,:}^{\top} \in \mathbb{R}^{d}\) position \(i\)
-lopullinen esitys sarakevektorina. Se muunnetaan sanaston
+Olkoon \(z_i = Z_{i,:} \in \mathbb{R}^{1 \times d}\) position \(i\)
+lopullinen esitys rivivektorina. Se muunnetaan sanaston
 ulottuvuuteen affiinilla kuvauksella
 $$
 \ell_i
 =
-W_{\mathrm{out}}z_i+b_{\mathrm{out}},
+z_i W_{\mathrm{out}} + b_{\mathrm{out}},
 $$
 missä
-\(W_{\mathrm{out}} \in \mathbb{R}^{|\mathcal{V}| \times d}\)
-ja \(b_{\mathrm{out}} \in \mathbb{R}^{|\mathcal{V}|}\)
+\(W_{\mathrm{out}} \in \mathbb{R}^{d \times |\mathcal{V}|}\)
+ja \(b_{\mathrm{out}} \in \mathbb{R}^{1 \times |\mathcal{V}|}\)
 ovat opittavia parametreja. Joissakin toteutuksissa siirtovektori
-jätetään pois. Vektorin \(\ell_i\) komponentteja kutsutaan
+jätetään pois. Rivivektorin \(\ell_i\) komponentteja kutsutaan
 logiteiksi. Ne ovat tokenien normalisoimattomia pistemääriä,
 joista muodostetaan todennäköisyysjakauma softmax-funktiolla.
 
@@ -601,18 +600,18 @@ parametrisoinnissa: Transformer muodostaa ne useiden
 itsehuomio- ja myötäkytkentäkerrosten avulla.
 
 Todennäköisyyksien ketjusäännön perusteella tokenijonon
-\(v_{1:T}\) todennäköisyys voidaan esittää muodossa
+\(w_{1:T}\) todennäköisyys voidaan esittää muodossa
 $$
-p_{\theta}(v_{1:T})
+p_{\theta}(w_{1:T})
 =
 \prod_{t=1}^{T}
-p_{\theta}(v_t \mid v_{<t}),
+p_{\theta}(w_t \mid w_{<t}),
 $$
-missä \(v_{<t}=(v_1,\dots,v_{t-1})\).
+missä \(w_{<t}=(w_1,\dots,w_{t-1})\).
 
 Olkoon koulutusaineisto
-\(\mathcal{D}=\{v^{(1)},\dots,v^{(N)}\}\), missä sekvenssin
-\(v^{(r)}\) ennustettavien tokenien lukumäärä on \(T_r\).
+\(\mathcal{D}=\{w^{(1)},\dots,w^{(N)}\}\), missä sekvenssin
+\(w^{(r)}\) ennustettavien tokenien lukumäärä on \(T_r\).
 Tokenikohtainen keskimääräinen negatiivinen log-uskottavuus on
 $$
 J(\theta)
@@ -622,9 +621,9 @@ J(\theta)
 \sum_{t=1}^{T_r}
 \log p_{\theta}
 \left(
-  v_t^{(r)}
+  w_t^{(r)}
   \mid
-  v_{<t}^{(r)}
+  w_{<t}^{(r)}
 \right).
 $$
 
@@ -645,7 +644,7 @@ esikoulutus on keskeinen lähtökohta dekooderipohjaisille
 kielimalleille \cite{radford2018improving}.
 
 Koulutuksessa kunkin ennusteen kontekstina käytetään aineistossa
-havaittua oikeaa prefiksiä \(v_{<t}\) eikä mallin itsensä aiemmin
+havaittua oikeaa prefiksiä \(w_{<t}\) eikä mallin itsensä aiemmin
 tuottamia tokeneita. Tätä käytäntöä kutsutaan nimellä
 \emph{teacher forcing}. Kunkin position opetusvastaus on aineistossa
 havaittu seuraava token.
@@ -668,7 +667,7 @@ täytetokenit voidaan jättää häviön ulkopuolelle.
 Esikoulutettua mallia voidaan edelleen mukauttaa
 ohjeiden noudattamiseen valvotulla ohjevirityksellä.
 Tällöin koulutusesimerkki koostuu syötekontekstista \(c\)
-ja tavoitevastauksesta \(y=(v_1,\dots,v_K)\).
+ja tavoitevastauksesta \(y=(w_1,\dots,w_K)\).
 Syötekonteksti voi sisältää esimerkiksi tehtävän ohjeen,
 käyttäjän kysymyksen ja muuta tehtävän ratkaisemiseen
 tarvittavaa tietoa. Kun häviö lasketaan vain
@@ -677,7 +676,7 @@ $$
 J_{\mathrm{instr}}(\theta;c,y)
 =
 -\sum_{t=1}^{K}
-\log p_{\theta}(v_t \mid c,v_{<t}).
+\log p_{\theta}(w_t \mid c,w_{<t}).
 $$
 Syötekonteksti vaikuttaa vastaustokenien ennusteisiin,
 vaikka sen omista positioista ei tässä lasketa
@@ -700,10 +699,10 @@ ennusteiden syötteenä.
 
 Yksinkertainen valintasääntö on ahne valinta:
 $$
-\widehat{v}_{t+1}
+\widehat{w}_{t+1}
 =
 \operatorname*{arg\,max}_{v \in \mathcal{V}}
-p_{\theta}(v \mid v_{1:t}).
+p_{\theta}(v \mid w_{1:t}).
 $$
 Se valitsee jokaisessa vaiheessa kyseisen jakauman
 todennäköisimmän tokenin. Vaihtoehtona on otanta,
@@ -712,7 +711,7 @@ jossa seuraava token arvotaan jakaumasta.
 Otannassa jakauman keskittyneisyyttä voidaan muuttaa
 lämpötilaparametrilla \(\tau>0\):
 $$
-p_{\theta,\tau}(v \mid v_{1:t})
+p_{\theta,\tau}(v \mid w_{1:t})
 =
 \frac{\exp(\ell_{t,v}/\tau)}
 {\displaystyle\sum_{u \in \mathcal{V}}
@@ -773,13 +772,13 @@ Konteksti voi sisältää esimerkiksi tehtäväohjeen,
 skeeman tekstimuotoisen kuvauksen ja esimerkkejä
 kysymysten ja SQL-kyselyiden vastaavuuksista.
 
-Kun SQL-kyselyn tokenijono on \(y=(v_1,\dots,v_K)\),
+Kun SQL-kyselyn tokenijono on \(y=(y_1,\dots,y_K)\),
 sen ehdollinen todennäköisyys voidaan kirjoittaa muodossa
 $$
 p_{\theta}(y \mid c)
 =
 \prod_{t=1}^{K}
-p_{\theta}(v_t \mid c,v_{<t}).
+p_{\theta}(y_t \mid c,w_{<t}).
 $$
 Kontekstin ja generoinnissa tarvittavan historian on
 mahduttava mallin käytettävissä olevaan konteksti-ikkunaan.
