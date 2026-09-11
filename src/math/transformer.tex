@@ -28,12 +28,12 @@ Nykyaikaiset suuret kielimallit
 (engl.\ \emph{large language models}, LLM) perustuvat samaan
 autoregressiiviseen ennustetehtävään, mutta niiden käsittelemän
 kontekstin pituus ei ole kiinteä. Olkoon \(L\) mallin suurin sallittu
-kontekstinpituus. Dekooderipohjainen Transformer-kielimalli voidaan
+kontekstinpituus. Oletetaan, että mallin syöte on aina epätyhjä tokenijono (tyhjä syöte korvataan aloitustokenilla $\langle S \rangle$), jolloin dekooderipohjainen Transformer-kielimalli voidaan
 kuvata funktiona
 \begin{align*}
   f_{\mathrm{Tr}}
   \colon
-  \bigcup_{m=0}^{L}\mathcal{V}^{m}
+  \bigcup_{m=1}^{L}\mathcal{V}^{m}
   \to
   \Delta(\mathcal{V}).
 \end{align*}
@@ -468,37 +468,20 @@ tulkita avain--arvomuistina, joka rikastaa tokenien esityksiä
 
 \subsection{Dekooderikerroksista seuraavan tokenin jakaumaan}
 
-Dekooderilohko muuntaa tokenien esitysmatriisin
-uudeksi samankokoiseksi esitysmatriisiksi. Kokonainen kielimalli
-muodostetaan yhdistämällä tokenien upotus, useita peräkkäisiä
-dekooderilohkoja sekä seuraavan tokenin jakauman tuottava tuloskerros.
-Näin saadaan konkreettinen toteutus luvun alussa esitetylle
-kuvaukselle, joka muuntaa tokenikontekstin sanaston yli määritellyksi
-todennäköisyysjakaumaksi.
+Dekooderilohko muuntaa tokenien esitysmatriisin uudeksi
+samankokoiseksi esitysmatriisiksi. Kokonainen kielimalli muodostetaan
+yhdistämällä tokenien upotus, useita peräkkäisiä dekooderilohkoja sekä
+seuraavan tokenin jakauman tuottava tuloskerros.
 
-Olkoon syötteenä tokenijono
-\(v_{1:T}=(v_1,\dots,v_T)\), missä \(1 \le T \le L\), ja olkoon
-\(E \in \mathbb{R}^{|\mathcal{V}| \times d}\) opittava
-upotusmatriisi. Tokenin \(v_i\) one-hot-esitys on rivivektori
-\(x(v_i) \in \mathbb{R}^{1 \times |\mathcal{V}|}\), ja sen
-upotus määritellään muodossa
-$$
-e(v_i)=x(v_i)E \in \mathbb{R}^{1 \times d}.
-$$
-Alkuperäinen esitysmatriisi muodostetaan näistä upotuksista
+Olkoon syötteenä havaittu konteksti \(w_{1:T} = (w_1, \dots, w_T)\),
+missä \(1 \le T \le L\). Kuten luvussa \ref{sec:mlp} määriteltiin, kukin
+token muunnetaan esitysvektoriksi upotusmatriisin
+\(E \in \mathbb{R}^{|\mathcal{V}| \times d}\) avulla. Ensimmäisen lohkon
+syötematriisi \(H^{[0]} \in \mathbb{R}^{T \times d}\) muodostetaan näistä
 riveittäin:
 $$
-H^{[0]}_{i,:}
-=
-e(v_i)
-=
-x(v_i)E,
-\qquad
-i=1,\dots,T.
+H^{[0]}_{i,:} = e(w_i) = x(w_i)E, \qquad i = 1, \dots, T.
 $$
-Tällöin \(H^{[0]} \in \mathbb{R}^{T \times d}\).
-Laskenta vastaa luvussa \ref{sec:mlp} tarkasteltua tokenin
-muuntamista jatkuvaksi esitysvektoriksi.
 
 Tässä tarkasteltavassa arkkitehtuurissa positiotieto sisällytetään
 itsehuomion kysely- ja avainvektoreihin RoPE-rotaatioiden avulla.
@@ -532,7 +515,7 @@ joista yksikään ei sisällä tietoa positiota \(i\) seuraavista
 tokeneista. Koska normalisointi ja myötäkytkentäverkko toimivat
 positiokohtaisesti, ne eivät muuta tätä riippuvuusrakennetta.
 Siten position \(i\) esitys riippuu kaikissa lohkoissa vain
-kontekstista \(v_{1:i}\).
+kontekstista \(w_{1:i}\).
 
 Tarkasteltavassa pre-norm-rakenteessa viimeisen dekooderilohkon
 tulokseen sovelletaan vielä positiokohtaista normalisointia:
@@ -552,31 +535,27 @@ $$
 =
 z_i W_{\mathrm{out}} + b_{\mathrm{out}},
 $$
-missä
-\(W_{\mathrm{out}} \in \mathbb{R}^{d \times |\mathcal{V}|}\)
+missä \(W_{\mathrm{out}} \in \mathbb{R}^{d \times |\mathcal{V}|}\)
 ja \(b_{\mathrm{out}} \in \mathbb{R}^{1 \times |\mathcal{V}|}\)
-ovat opittavia parametreja. Joissakin toteutuksissa siirtovektori
-jätetään pois. Rivivektorin \(\ell_i\) komponentteja kutsutaan
-logiteiksi. Ne ovat tokenien normalisoimattomia pistemääriä,
-joista muodostetaan todennäköisyysjakauma softmax-funktiolla.
+ovat opittavia parametreja. Rivivektorin \(\ell_i\) komponentti
+\(\ell_{i,j}\) vastaa sanaston tokenin \(v_j\) normalisoimatonta
+pistemäärää eli logittia. Näistä muodostetaan todennäköisyysjakauma
+softmax-funktiolla.
 
-Merkitään mallin kaikkia opittavia parametreja symbolilla
-\(\theta\). Seuraavan tokenin ehdollinen todennäköisyys on
+Merkitään mallin kaikkia opittavia parametreja symbolilla \(\theta\).
+Position \(i\) tulos ennustaa seuraavaa tokenia \(w_{i+1}\):
 $$
-p_{\theta}(v_{i+1}=v \mid v_{1:i})
+p_{\theta}(w_{i+1}=v_j \mid w_{1:i})
 =
-\frac{\exp(\ell_{i,v})}
-{\displaystyle\sum_{u \in \mathcal{V}}\exp(\ell_{i,u})},
+\frac{\exp(\ell_{i,j})}
+{\sum_{k=1}^{|\mathcal{V}|}\exp(\ell_{i,k})},
 \qquad
-v \in \mathcal{V}.
+v_j \in \mathcal{V}.
 $$
-Position \(i\) tulos ennustaa siis position \(i+1\) tokenia.
-Koska position \(i\) esitys ei riipu tulevista tokeneista,
-myös siitä muodostettu jakauma riippuu vain kontekstista
-\(v_{1:i}\). Koko syötekontekstia seuraavan tokenin jakauma
-saadaan viimeisen position tuloksesta:
+Koko syötekontekstia \(w_{1:T}\) seuraavan tokenin jakauma saadaan
+viimeisen position tuloksesta:
 $$
-f_{\mathrm{Tr}}(v_{1:T})
+f_{\mathrm{Tr}}(w_{1:T})
 =
 \operatorname{softmax}(\ell_T)
 \in
