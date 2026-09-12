@@ -19,16 +19,10 @@ sitä edeltävän tokenin perusteella. Se voidaan siten kuvata funktiona
   \Delta(\mathcal{V}).
 \end{align*}
 
-Myös luvussa \ref{sec:mlp} tarkasteltu MLP-pohjainen kielimalli käyttää
-kiinteän pituista kontekstia, vaikka sen parametrisoitu esitystapa
-mahdollistaa frekvenssipohjaista \(n\)-gram-mallia paremman
-yleistämisen.
+Luvussa \ref{sec:mlp} tarkastellussa MLP-kielimallissa kontekstin upotukset yhdistetään kiinteän pituiseksi syötevektoriksi, jolloin syötekerroksen dimensio sitoo mallin tiettyyn kontekstin pituuteen. Transformer-mallit perustuvat samaan ennustustehtävään, mutta tokenien esityksiä käsitellään sekvenssinä, jonka eri positioihin sovelletaan samoja opittavia muunnoksia. Sama parametrisaatio soveltuu näin eripituisiin syötteisiin mallin konteksti-ikkunan rajoissa.
 
-Nykyaikaiset suuret kielimallit
-(engl.\ \emph{large language models}, LLM) perustuvat samaan
-autoregressiiviseen ennustetehtävään, mutta niiden käsittelemän
-kontekstin pituus ei ole kiinteä. Olkoon \(L\) mallin suurin sallittu
-kontekstinpituus. Oletetaan, että mallin syöte on aina epätyhjä tokenijono (tyhjä syöte korvataan aloitustokenilla $\langle S \rangle$), jolloin dekooderipohjainen Transformer-kielimalli voidaan
+Olkoon \(L\) mallin suurin sallittu
+kontekstinpituus. Oletetaan, että mallin syöte on aina epätyhjä tokenijono (tyhjä syöte korvataan aloitustokenilla $\langle s \rangle$), jolloin dekooderipohjainen Transformer-kielimalli voidaan
 kuvata funktiona
 \begin{align*}
   f_{\mathrm{Tr}}
@@ -377,14 +371,14 @@ vakautta \cite{he2016deep, ba2016layer, vaswani2017attention}.
 
 Laskennan vakauttamiseksi esitykset normalisoidaan ennen kuhunkin
 alilohkoon syöttämistä. Normalisointifunktio \(\operatorname{Norm} \colon
-\mathbb{R}^{d} \to \mathbb{R}^{d}\) sovelletaan itsenäisesti kunkin position
+\mathbb{R}^{1 \times d} \to \mathbb{R}^{1 \times d}\) sovelletaan itsenäisesti kunkin position
 esitysvektoriin. Yleinen valinta nykyaikaisissa malleissa on neliöllisen
 keskiarvon normalisointi (engl.\ \emph{root mean square normalization},
 RMSNorm) \cite{zhang2019root}. Tämä skaalaa vektorin sen komponenttien neliöllisen keskiarvon avulla
 $$
 \operatorname{RMSNorm}(x) = \frac{x}{\operatorname{RMS}(x)} \odot \gamma,
 $$
-missä \(\odot\) on Hadamard-tulo, \(\gamma \in \mathbb{R}^d\)
+missä \(\odot\) on Hadamard-tulo, \(\gamma \in \mathbb{R}^{1 \times d}\)
 on opittava skaalausparametri ja
 $$
 \operatorname{RMS}(x) = \sqrt{\frac{1}{d} \sum_{j=1}^{d} x_j^2 + \epsilon},
@@ -394,10 +388,13 @@ missä pieni vakio \(\epsilon > 0\) estää nollalla jakamisen. Matriisille
 määritellään soveltamalla kuvausta riveittäin jokaiseen esitysvektoriin.
 
 Itsehuomiokerrosta seuraa positiokohtainen myötäkytkentäverkko
-(engl.\ \emph{feed-forward network}, FFN). Se vastaa
-luvussa \ref{sec:mlp} tarkasteltua monikerroksista
-perseptronia, jota sovelletaan itsenäisesti ja samoilla
-parametreilla kunkin position esitykseen.
+(engl.\ \emph{feed-forward network}, FFN). Toisin kuin luvussa \ref{sec:mlp}
+tarkastellussa MLP-kielimallissa, jossa verkko muuntaa koko kontekstin suoraan
+seuraavan tokenin logiteiksi, Transformer-lohkossa FFN toimii positiokohtaisena
+muunnoksena. Sitä sovelletaan itsenäisesti ja samoilla parametreilla kunkin
+position esitykseen erikseen. Positioiden välisestä informaation siirrosta
+vastaa siten itsehuomio, kun taas FFN vastaa yksittäisen esityksen rikastamisesta
+ja epälineaarisesta muuntamisesta.
 
 Kaksi affiinia muunnosta sisältävä FFN voidaan määritellä
 rivivektorille \(x \in \mathbb{R}^{1 \times d}\) muodossa
@@ -429,7 +426,7 @@ $$
 \mathbf{1} b_2,
 $$
 missä \(\mathbf{1} \in \mathbb{R}^{T \times 1}\) on sarakeykkösvektori,
-jonka avulla siirtovektorit lisätään jokaiselle riville.
+jonka avulla bias-vektorit lisätään jokaiselle riville.
 
 Koko dekooderilohko voidaan määritellä funktiona
 \(\operatorname{DecoderBlock} \colon \mathbb{R}^{T \times d} \to \mathbb{R}^{T \times d}\).
@@ -485,8 +482,7 @@ $$
 
 Tässä tarkasteltavassa arkkitehtuurissa positiotieto sisällytetään
 itsehuomion kysely- ja avainvektoreihin RoPE-rotaatioiden avulla.
-Syötteen upotusvektoreihin ei siten lisätä erillisiä absoluuttisia
-positiovektoreita. Jatkossa dekooderilohkon kausaalisen monipäisen
+Jatkossa dekooderilohkon kausaalisen monipäisen
 itsehuomion oletetaan sisältävän edellä määritellyt rotaatiot
 kunkin huomiopään kyselyille ja avaimille.
 
@@ -543,7 +539,9 @@ pistemäärää eli logittia. Näistä muodostetaan todennäköisyysjakauma
 softmax-funktiolla.
 
 Merkitään mallin kaikkia opittavia parametreja symbolilla \(\theta\).
-Position \(i\) tulos ennustaa seuraavaa tokenia \(w_{i+1}\):
+Position \(i\) piiloesitys tiivistää informaation kontekstista \(w_{1:i}\),
+joten sen tuottama logittivektori \(\ell_i\) määrittää todennäköisyysjakauman
+seuraavalle tokenille \(w_{i+1}\)
 $$
 p_{\theta}(w_{i+1}=v_j \mid w_{1:i})
 =
@@ -552,8 +550,8 @@ p_{\theta}(w_{i+1}=v_j \mid w_{1:i})
 \qquad
 v_j \in \mathcal{V}.
 $$
-Koko syötekontekstia \(w_{1:T}\) seuraavan tokenin jakauma saadaan
-viimeisen position tuloksesta:
+Koko syötekontekstia \(w_{1:T}\) seuraavan uuden tokenin \(w_{T+1}\) jakauma
+saadaan siten suoraan viimeisen position logiteista
 $$
 f_{\mathrm{Tr}}(w_{1:T})
 =
@@ -622,52 +620,44 @@ Laajoilla tekstiaineistoilla toteutettava autoregressiivinen
 esikoulutus on keskeinen lähtökohta dekooderipohjaisille
 kielimalleille \cite{radford2018improving}.
 
-Koulutuksessa kunkin ennusteen kontekstina käytetään aineistossa
-havaittua oikeaa prefiksiä \(w_{<t}\) eikä mallin itsensä aiemmin
-tuottamia tokeneita. Tätä käytäntöä kutsutaan nimellä
-\emph{teacher forcing}. Kunkin position opetusvastaus on aineistossa
-havaittu seuraava token.
+Koulutuksessa kunkin ennusteen syötteenä käytetään aineistossa havaittua
+oikeaa prefiksiä mallin itsensä tuottamien tokenien sijasta.
+Kun tavoitteena on mallintaa sekvenssi \((w_1, \dots, w_T)\), mallille syötetään
+aloitustokenilla \(\langle s \rangle\) aloitettu jono
+$$
+x = (\langle s \rangle, w_1, w_2, \dots, w_{T-1}),
+$$
+ja vastaavaksi tavoitejonoksi asetetaan
+$$
+y = (w_1, w_2, \dots, w_T).
+$$
 
-Kaikkien positioiden ennusteet voidaan laskea yhdellä
-eteenpäinlaskennalla, koska oikeat syötetokenit tunnetaan
-koulutuksessa etukäteen. Kausaalinen maski estää silti kutakin
-positiota hyödyntämästä omaa ennustekohdettaan tai sitä myöhempiä
-tokeneita. Sekvenssin positioiden rinnakkainen käsittely ei siten
-riko autoregressiivistä mallinnusta
-\cite{vaswani2017attention}.
-
-Kausaalinen huomiomaski on erotettava häviön laskennassa
-käytettävästä maskista. Huomiomaski määrää, minkä positioiden
-välillä informaatio voi kulkea. Häviömaski puolestaan
-määrää, mitkä ennustepositiot sisällytetään tavoitefunktioon.
-Esimerkiksi eripituisten sekvenssien tasaamiseen käytettävät
-täytetokenit voidaan jättää häviön ulkopuolelle.
+Kausaalisen maskin ansiosta syötteen positiossa \(t\) laskettu piiloesitys
+riippuu vain alijonosta \((\langle s \rangle, w_1, \dots, w_{t-1})\).
+Siten position \(t\) logitit \(\ell_t\) ennustavat suoraan kohdetokenia
+\(y_t = w_t\). Kaikkien \(T\) position ennusteet ja häviöt voidaan näin
+laskea yhdellä eteenpäinlaskennalla rinnakkain ilman, että tulevaisuuden
+informaatio vuotaa menneisyyteen.
 
 Esikoulutettua mallia voidaan edelleen mukauttaa
 ohjeiden noudattamiseen valvotulla ohjevirityksellä.
-Tällöin koulutusesimerkki koostuu syötekontekstista \(c\)
-ja tavoitevastauksesta \(y=(w_1,\dots,w_K)\).
-Syötekonteksti voi sisältää esimerkiksi tehtävän ohjeen,
-käyttäjän kysymyksen ja muuta tehtävän ratkaisemiseen
-tarvittavaa tietoa. Kun häviö lasketaan vain
-vastaustokeneista, yhden esimerkin tavoite on
+Ohjevirityksessä koulutusesimerkki muodostuu syötekontekstista
+\(c = (c_1, \dots, c_M)\) ja tavoitevastauksesta \(y = (y_1, \dots, y_K)\).
+Koko mallille annettava syötejakso on näiden ketjutus
+\((c_1, \dots, c_M, y_1, \dots, y_{K-1})\).
+
+Ensimmäinen vastaustoken \(y_1\) ennustetaan kontekstin viimeisen tokenin
+\(c_M\) kohdalta, ja kukin seuraava token \(y_t\) ennustetaan sitä edeltävän
+vastaustokenin \(y_{t-1}\) kohdalta. Häviö lasketaan ainoastaan vastauksen
+positioista asettamalla kontekstipositioiden häviömaski nollaksi
 $$
-J_{\mathrm{instr}}(\theta;c,y)
+J_{\mathrm{instr}}(\theta; c, y)
 =
 -\sum_{t=1}^{K}
-\log p_{\theta}(w_t \mid c,w_{<t}).
+\log p_{\theta}(y_t \mid c, y_{<t}).
 $$
-Syötekonteksti vaikuttaa vastaustokenien ennusteisiin,
-vaikka sen omista positioista ei tässä lasketa
-ennustehäviötä.
-% Lisää lähde valvotusta ohjevirityksestä.
-
-Ohjeviritys ja käyttöhetkellä annettu ohje ovat eri asioita.
-Ohjeviritys muuttaa mallin parametreja optimoinnin avulla.
-Pelkkä ohjeen, skeemakuvauksen tai esimerkin lisääminen
-käyttöhetken kontekstiin ei muuta parametreja, vaan muuttaa
-sitä informaatiota, jonka perusteella malli muodostaa
-ehdollisen jakauman.
+Syötekonteksti \(c\) vaikuttaa vastaustokenien piiloesityksiin itsehuomion
+kautta, vaikka sen omille positioille ei lasketa ennustehäviötä.
 
 Generoinnissa oikeita tulevia tokeneita ei tunneta.
 Malli muodostaa ensin seuraavan tokenin jakauman nykyisen
@@ -757,7 +747,7 @@ $$
 p_{\theta}(y \mid c)
 =
 \prod_{t=1}^{K}
-p_{\theta}(y_t \mid c,w_{<t}).
+p_{\theta}(y_t \mid c,y_{<t}).
 $$
 Kontekstin ja generoinnissa tarvittavan historian on
 mahduttava mallin käytettävissä olevaan konteksti-ikkunaan.

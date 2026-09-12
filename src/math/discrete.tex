@@ -14,7 +14,7 @@ tekstiyksikköä riippuen käytetystä tokenisointimenetelmästä \cite{jurafsky
 Diskreetit tokenit esitetään numeerisessa muodossa, jotta niitä voidaan hyödyntää
 tilastollisissa malleissa ja neuroverkoissa. Yksinkertaisin ja yleisesti käytetty
 esitystapa on one-hot-enkoodaus. Siinä kukin token \(v_j \in \mathcal{V}\) esitetään
-vektorina \(x(v_j) \in \{0,1\}^{|\mathcal{V}|}\), jossa
+vektorina \(x(v_j) \in \{0,1\}^{1 \times |\mathcal{V}|}\), jonka komponentit ovat
 \[
   x(v_j)_k =
   \begin{cases}
@@ -23,12 +23,12 @@ vektorina \(x(v_j) \in \{0,1\}^{|\mathcal{V}|}\), jossa
   \end{cases}
 \]
 
-Tällainen esitys ilmaisee ainoastaan tokenin identiteetin: eri tokeneilla on
+Tällainen esitys ilmaisee ainoastaan tokenin identiteetin. Eri tokeneilla on
 toisistaan poikkeavat vektoriesitykset, mutta niihin ei sisälly eksplisiittistä
 semanttista tai syntaktista rakennetta \cite{mikolov2013efficient}. Menetelmän etuna on yksikäsitteisyys ja
 sen yksinkertainen yhteys sanaston indeksöintiin.
 
-Käytännön kielimallinnuksessa sanastoa täydennetään usein erikoistokeneilla,
+Kielimallinnuksessa sanastoa täydennetään usein erikoistokeneilla,
 joilla kuvataan sekvenssin rakennetta ja käsitellään harvinaisia havaintoja.
 Tällaisia ovat esimerkiksi aloitus- ja lopetusmerkit \(\langle s \rangle\) ja
 \(\langle /s \rangle\) sekä tuntemattoman tokenin merkki \(\langle unk \rangle\) \cite{jurafsky2023speech}.
@@ -44,15 +44,16 @@ Koko korpus voidaan esittää one-hot-vektoreiden jonona
 $$
 X = (x_1, x_2, \dots, x_{|\mathcal{W}|}),
 $$
-missä \(x_t = x(w_t)\) on tokenin \(w_t\) one-hot-esitys. Jos syöte koostuu
+missä \(x_t = x(w_t) \in \{0,1\}^{1 \times |\mathcal{V}|}\) on tokenin \(w_t\) one-hot-esitys. Jos syöte koostuu
 useasta tokenista, voidaan niiden one-hot-esitykset yhdistää esimerkiksi
-ketjuttamalla ne yhdeksi syötevektoriksi
+ketjuttamalla ne yhdeksi vektoriksi
 \[
-  \tilde{x}_t = [x_{t-n+1}; x_{t-n+2}; \dots; x_{t-1}]
-  \in \{0,1\}^{(n-1)|\mathcal{V}|}.
+  \tilde{x}_t = [x_{t-n+1} \,\|\, x_{t-n+2} \,\|\, \dots \,\|\, x_{t-1}]
+  \in \{0,1\}^{1 \times (n-1)|\mathcal{V}|},
 \]
-Tämä muodostaa luonnollisen syötteen monille kontekstipohjaisille malleille,
-sillä se säilyttää kontekstin tokenijärjestyksen eksplisiittisesti.
+missä \(\|\) merkitsee vektorien vaakasuuntaista ketjuttamista. Tämä muodostaa
+luonnollisen syötteen monille kontekstipohjaisille malleille, sillä se säilyttää
+kontekstin tokenijärjestyksen eksplisiittisesti.
 
 One-hot-enkoodaus muodostaa perustavanlaatuisen sillan tekstin
 ja numeeristen kielimallien välille. Se tarjoaa täsmällisen ja muodollisesti
