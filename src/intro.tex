@@ -1,56 +1,88 @@
 \section{Johdanto}
 
-Kielimalli on autoregressiivinen malli, joka ennustaa seuraavan sanan (tai tokenin) aiemman kontekstin perusteella \cite{jurafsky2023speech, bengio2003neural}. Kun mallin tuottama sana liitetään aiempaan kontekstiin, kutsutaan mallia päivitetyllä kontekstilla, jolloin se voi tuottaa pitkiäkin tekstijaksoja. Suuret kielimallit ovat viime vuosina kehittyneet pelkistä tekstin tuottajista järjestelmiksi, jotka kykenevät myös hyödyntämään ulkoisia työkaluja \cite{schick2023toolformer, yao2023react}. Jos kielimallia suorittava ympäristö tulkitsee tiettyjä mallin tuottamia merkintöjä työkalukutsuina, kielimalli voi käyttää esimerkiksi laskentaa, verkkohakua tai tietokantakyselyitä.
+Kielimallit ovat luonnollisen kielen käsittelyn malleja, joiden avulla
+voidaan kuvata tekstin tilastollista rakennetta tai tuottaa uutta tekstiä.
+Autoregressiivisessa kielimallinnuksessa malli ennustaa seuraavaa sanaa
+(tai tokenia eli tekstin käsittely-yksikköä) aiemman kontekstin perusteella
+\cite{jurafsky2023speech, bengio2003neural}. Tekstiä voidaan generoida
+valitsemalla mallin ennustamasta jakaumasta seuraava token, liittämällä se
+kontekstiin ja toistamalla menettelyä päivitetyllä kontekstilla. Tämä periaate yhdistää klassisia
+n-gram-malleja \cite{shannon1948mathematical} ja nykyaikaisia transformer pohjaisia kielimalleja \cite{vaswani2017attention}, vaikka niiden
+tavat esittää kontekstia ja muodostaa ennustejakauma eroavat huomattavasti.
 
-Luonnollisen kielen käyttö tietokantojen rajapintana (Text-to-SQL) on kiinnostava sovelluskohde, koska se voi madaltaa datan hyödyntämisen kynnystä \cite{liu2024survey, deng2022recent}. Tällöin käyttäjän ei tarvitse osata SQL-kieltä eikä tuntea tietokannan rakennetta yksityiskohtaisesti, vaan hän voi esittää tiedontarpeensa tavallisella kielellä. Käytännön hyöty riippuu kuitenkin siitä, kuinka luotettavasti järjestelmä kykenee tulkitsemaan käyttäjän tarkoituksen ja muuntamaan sen oikeaksi SQL-kyselyksi \cite{yu2018spider, li2024bird}.
+Kielimallien kehityksessä keskeinen muutos on ollut siirtyminen
+diskreeteistä tekstiesityksistä opittuihin jatkuviin esityksiin \cite{mikolov2013efficient} sekä
+esiintymismääriin perustuvista malleista neuroverkkopohjaiseen
+mallinnukseen \cite{werbos1974beyond, rumelhart1986learning}. Upotusvektoreiden avulla tokenit esitetään vektoriavaruudessa, jossa niiden väliset suhteet voidaan oppia aineistosta. Samalla neuroverkon parametreja optimoidaan tuottamaan opetusaineistoa vastaavia jakaumia. Nykyaikaisissa
+dekooderipohjaisissa Transformer-malleissa kontekstin käsittely perustuu
+itsehuomioon \cite{vaswani2017attention}, jonka avulla tokenien esityksiä muodostetaan suhteessa
+muihin kontekstin tokeneihin. Kielimallien toiminnan ymmärtäminen edellyttää
+siten tekstiesitysten, todennäköisyysmallinnuksen, optimoinnin ja
+neuroverkkoarkkitehtuurin tarkastelua yhtenä kokonaisuutena.
 
-Tässä tutkielmassa tarkastellaan Snowflaken Cortex Analyst -järjestelmää tapaustutkimuksena \cite{CortexAnalyst}. Cortex Analyst on kielimallipohjainen työkalu, joka muodostaa käyttäjän luonnollisen kielen kysymyksistä SQL-kyselyitä ja voi suorittaa niitä tietokantaa vasten. Tutkimuskohteena on puhelinkeskusdataa sisältävä tietokanta, jossa analyysin keskiössä on yksi keskusteludataa sisältävä päätason taulu sekä kolme sitä täydentävää taulua (ks. kuva \ref{fig:table_spec}). Järjestelmän toiminta perustuu semanttiseen näkymään, jossa taulut, kentät ja niiden merkitykset kuvataan YAML-muodossa (ks. kuva \ref{fig:example_semantic_view}) \cite{snowflake_cortex_semantic_model}. Tämä näkymä toimii linkkinä käyttäjän luonnollisen kielen kysymyksen ja tietokannan rakenteen välillä.
+Suurten kielimallien sovellukset eivät rajoitu vapaamuotoisen tekstin
+tuottamiseen. Kielimalleja voidaan liittää järjestelmiin, joissa osa niiden
+tuottamista tokeneista tulkitaan työkalukutsuina
+\cite{schick2023toolformer, yao2023react}. Tällöin kielimallia ympäröivä
+ohjelmisto voi suorittaa laskentaa, tehdä verkkohakuja tai käsitellä
+tietokantakyselyitä. Yksi käytännössä merkittävä sovelluskohde on
+luonnollisen kielen muuntaminen SQL-kyselyiksi eli Text-to-SQL
+\cite{liu2024survey, deng2022recent}. Sen tavoitteena on mahdollistaa
+tietokantojen hyödyntäminen ilman, että käyttäjän tarvitsee itse kirjoittaa
+SQL-kyselyitä tai tuntea tietokannan rakennetta yksityiskohtaisesti.
 
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=1\textwidth]{media/table_spec.png}
-  \caption{Tutkimuksessa käytettävän tietokannan rakenne. Taulujen nimet on lyhennetty luettavuuden vuoksi.}
-  \label{fig:table_spec}
-\end{figure}
+Text-to-SQL-järjestelmän hyödyllisyys riippuu kuitenkin siitä, kuinka
+luotettavasti se kykenee yhdistämään käyttäjän tiedontarpeen tietokannan
+rakenteeseen ja muodostamaan tarkoitusta vastaavan kyselyn
+\cite{yu2018spider, li2024bird}. Syntaktisesti kelvollinen SQL-kysely ei
+välttämättä vastaa käyttäjän tarkoittamaa kysymystä. Luotettavuuden kannalta
+on myös olennaista, säilyykö järjestelmän tulkinta johdonmukaisena saman
+kysymyksen toistoissa ja silloin, kun kysymyksen esitystapaa muutetaan
+sen merkitystä muuttamatta. Nämä kysymykset motivoivat kielimallipohjaisten
+järjestelmien empiiristä arviointia.
 
-\begin{table}[ht]
-  \centering
-  \small
-  \begin{tabularx}{0.8\textwidth}{l X}
-    \toprule
-    \textbf{Attribute} & \textbf{Value} \\
-    \midrule
-    PARTICIPANTS\_ID & ea0a918f \\
-    IDENTIFIER & 63c44469 \\
-    QUEUEID & 3b10a230 \\
-    CALLERS & +123456789012 \\
-    AGENTID & b7e632de \\
-    SUBJECT & Null \\
-    ADDRESS\_TO & Null \\
-    ADDRESS\_FROM & Null \\
-    CONTACT\_DURATION & 363 \\
-    DIRECTION & inbound \\
-    DIRECTION\_ORIGINAL & inbound \\
-    ANSWERED & 1 \\
-    QUEUE\_DURATION & 2 \\
-    CALL\_DURATION & 316 \\
-    WRAPUPID & dd91b10d \\
-    WRAPUP\_DURATION & 47 \\
-    CONTACT\_CLOSED\_REASON & client \\
-    CONTACT\_CONNECTED\_DATETIME & 2025-08-23 13:41:13.000 \\
-    CONTACT\_CLOSED\_DATETIME & 2025-08-23 13:47:28.000 \\
-    CALL\_ANSWERED\_DATETIME & 2025-08-23 13:41:25.000 \\
-    CALL\_DISCONNECTED\_DATETIME & 2025-08-23 13:46:41.000 \\
-    MEDIA\_TYPE & call \\
-    CONTACT\_CONNECTED\_DATE & 2025-08-23 00:00:00.000 \\
-    \bottomrule
-  \end{tabularx}
-  \caption{Esimerkki yhdestä tietokannan rivistä. Osa kentistä on anonymisoitu tietosuoja- ja luottamuksellisuussyistä.}
-  \label{tb:example_record}
-\end{table}
+Tämän tutkielman tavoitteena on jäsentää autoregressiivisen
+kielimallinnuksen matemaattisia perusteita ja tarkastella
+kielimallipohjaisen Text-to-SQL-järjestelmän toimintaa käytännön
+tapaustutkimuksessa. Teoreettisessa osassa rakennetaan yhteys
+diskreettien tekstiesitysten ja klassisten n-gram-mallien, jatkuvien
+upotusvektorien, neuroverkkopohjaisen ennustamisen sekä
+dekooderipohjaisen Transformer-arkkitehtuurin välille. Lisäksi
+tarkastellaan gradienttimenetelmää ja adaptiivisia optimointimenetelmiä
+kielimallien parametrien oppimisen perustana. Tavoitteena ei ole
+kattava katsaus kaikkiin kielimalliarkkitehtuureihin, vaan asteittain
+etenevä esitys niistä käsitteistä ja menetelmistä, joihin tarkasteltava
+autoregressiivinen kielimallinnus perustuu.
 
-Tutkielman tavoitteena on arvioida, kuinka hyvin Cortex Analyst soveltuu luonnollisen kielen tietokantakyselyihin ja millaisia rajoituksia sen käyttöön liittyy. Koska nykyaikaisten kaupallisten kielimallien tarkat toteutustiedot eivät yleensä ole julkisia, järjestelmän arviointi perustuu empiiriseen tarkasteluun \cite{chen2024chatgpt}. Tässä työssä vertaillaan nimenomaan Cortex Analystin tuottamia SQL-kyselyitä eikä niiden palauttamia vastauksia \cite{pourreza2024etm}. Rajaus on perusteltu sekä aineiston luottamuksellisuuden vuoksi että siksi, että virheellisen kyselyn vaikutus lopulliseen vastaukseen riippuu myös tietokannan sisällöstä.
+Tutkielman empiirisessä osassa tarkastellaan Snowflaken Cortex
+Analyst -järjes-\\telmää \cite{CortexAnalyst}. Se muodostaa käyttäjän
+luonnollisen kielen kysymyksistä SQL-kyselyitä hyödyntäen tietokannan
+rakennetta ja käsitteitä kuvaavaa semanttista näkymää
+\cite{snowflake_cortex_semantic_model}. Tapaustutkimuksen aineistona on
+puhelinkeskusdataa sisältävä tietokanta, joka koostuu yhdestä
+keskusteludataa sisältävästä päätaulusta ja kolmesta sitä täydentävästä
+taulusta. Semanttinen näkymä kuvaa aineiston tauluja, kenttiä ja niiden
+merkityksiä ja toimii siten välittävänä kuvauksena luonnollisen kielen
+kysymysten ja tietokannan välillä \cite{CortexAnalyst}.
 
-Tutkimusta ohjaavat seuraavat tutkimuskysymykset: Kuinka konsistentisti Cortex Analyst tuottaa SQL-kyselyitä, kun sama kysymys esitetään useita kertoja? Kuinka herkkä Cortex Analyst on sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä? Millaisia virhe- ja vaihtelutyyppejä järjestelmän tuottamissa SQL-kyselyissä esiintyy?
+Teoreettinen tarkastelu tarjoaa käsitteellisen perustan
+kielimallipohjaisen kyselymuodostuksen ymmärtämiselle, mutta sitä ei
+tule tulkita Cortex Analystin sisäisen toteutuksen kuvaukseksi.
+Kaupallisten kielimallijärjestelmien tarkat toteutustiedot eivät
+yleensä ole kokonaisuudessaan julkisia, joten tapaustutkimuksessa
+järjestelmää arvioidaan sen tuottamien SQL-kyselyiden perusteella.
+Tarkastelun kohteena on näin ollen järjestelmän havaittava toiminta,
+ei yksittäisten mallikomponenttien vaikutusten eristäminen.
 
-Tutkielma etenee siten, että ensin kuvataan tutkimusasetelma, aineisto ja arviointitapa. Tämän jälkeen esitellään kokeet, joissa tarkastellaan järjestelmän konsistenssia ja herkkyyttä merkitykseltään vähäisille muutoksille. Lopuksi esitetään tulokset, johtopäätökset ja tutkimuksen keskeiset rajoitukset.
+Arviointi rajataan tuotettuihin SQL-kyselyihin eikä niiden suorittamisen
+palauttamiin tulosjoukkoihin. Rajaus on perusteltu aineiston
+luottamuksellisuudella sekä sillä, että virheellisen kyselyn vaikutus
+tulosjoukkoon riippuu myös tietokannan sisällöstä. Toisaalta erilaiset
+SQL-kyselyt voivat olla merkitykseltään yhtäpitäviä, joten kyselyiden
+välinen vaihtelu ei sellaisenaan osoita virhettä. Tarkastelussa
+erotetaan siksi kyselyiden vaihtelu ja niiden vastaavuus käyttäjän
+tiedontarpeeseen. Tulokset kuvaavat järjestelmän toimintaa valitussa
+tutkimusasetelmassa, eivät sen yleistä suorituskykyä kaikissa
+Text-to-SQL-tehtävissä.
+
+Tutkielma jakautuu teoriaosaan ja empiiriseen osaan. Luvuissa \ref{sec:discrete}-\ref{sec:transformer} rakennetaan kielimallien matemaattinen ja arkkitehtuurinen perusta diskreeteistä esityksistä moderniin Transformer-malliin ja optimointiin. Luvussa \ref{sec:methodology} esitellään Cortex Analystiin pohjautuva tutkimusasetelma, ja luvuissa \ref{sec:experiments}-\ref{sec:results} kuvataan kokeet, analysoidaan tulokset sekä pohditaan työn rajoituksia ja johtopäätöksiä.

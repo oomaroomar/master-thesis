@@ -1,4 +1,4 @@
-\section{Metodologia}
+\section{Metodologia}\label{sec:methodology}
 
 \subsection{Tutkimusasetelma}
 Tutkimus toteutetaan empiirisenä tapaustutkimuksena, jossa arvioidaan yhden kielimallipohjaisen järjestelmän toimintaa rajatussa sovelluskontekstissa. Tavoitteena ei ole rakentaa uutta mallia tai vertailla useita eri järjestelmiä keskenään, vaan tarkastella, miten Cortex Analyst suoriutuu käytännöllisestä tehtävästä, jossa luonnollisen kielen kysymykset muunnetaan SQL-kyselyiksi. Tapaustutkimus soveltuu tähän tarkoitukseen hyvin, koska se mahdollistaa järjestelmän toiminnan yksityiskohtaisen tarkastelun todellisessa kaupallisessa ympäristössä.
@@ -8,12 +8,55 @@ Tutkimuksen analyysiyksikkönä on yksittäinen käyttäjän luonnollisen kielen
 \subsection{Tutkimusaineisto}
 Tutkimuksen aineistona toimii puhelinkeskusdataa sisältävä tietokanta, joka noudattaa kuvassa \ref{fig:table_spec} esitettyä rakennetta. Tarkastelun keskiössä on yksi keskusteludataa sisältävä päätason taulu, jota täydentävät kolme liitännäistaulua. Liitännäistaulujen avulla voidaan tarkentaa päätason taulun yksittäisten kenttien sisältöä ja merkitystä. Tietokannan rakenne on siten riittävän monipuolinen, jotta voidaan tarkastella sekä yksinkertaisia että vaativampia kyselytilanteita, kuten taululiitoksia, suodatuksia ja aggregaatioita.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\textwidth]{media/table_spec.png}
+  \caption{Tutkimuksessa käytettävän tietokannan rakenne. Taulujen nimet on lyhennetty luettavuuden vuoksi.}
+  \label{fig:table_spec}
+\end{figure}
+
 Aineisto sisältää kaupallisesti arkaluonteista tietoa, minkä vuoksi varsinaisia kyselytuloksia ei julkaista. Tästä syystä tutkimuksessa vertaillaan järjestelmän tuottamia SQL-kyselyitä eikä niiden palauttamia tietosisältöjä. Ratkaisu tukee myös analyysin johdonmukaisuutta, koska virheellisen kyselyn vaikutus lopputulokseen ei ole aina pääteltävissä pelkästään syntaksista, vaan riippuu osittain tietokannan sisällöstä.
 
 \subsection{Cortex Analyst ja semanttinen näkymä}
 Tutkimuksessa käytettävä järjestelmä on Snowflaken Cortex Analyst \cite{CortexAnalyst}. Järjestelmän tarkoituksena on mahdollistaa tietokantatiedon hyödyntäminen luonnollisen kielen kautta siten, että käyttäjän ei tarvitse tuntea SQL-kieltä tai tietokannan skeemaa yksityiskohtaisesti. Cortex Analyst muodostaa käyttäjän kysymyksestä SQL-kyselyn ja voi suorittaa sen tietokantaa vasten.
 
 Cortex Analystin toiminta perustuu semanttiseen näkymään, jossa tietokannan taulut, kentät ja niiden merkitykset kuvataan YAML-muotoisena määrittelynä (ks. kuva \ref{fig:example_semantic_view}). Semanttinen näkymä tarjoaa kielimallille rakenteellisen kuvauksen siitä, mitä tietoa tietokannassa on saatavilla ja miten eri taulut liittyvät toisiinsa. Näin järjestelmä pystyy muodostamaan syntaktisesti valideja SQL-kyselyitä ja kohdistamaan kyselyn oikeisiin tietokannan osiin. Semanttisen näkymän laatu on keskeinen osa järjestelmän toimivuutta, koska kielimallin tulkinta perustuu olennaisesti siihen, miten skeema on kuvattu.
+
+\begin{table}[ht]
+  \centering
+  \small
+  \begin{tabularx}{0.8\textwidth}{l X}
+    \toprule
+    \textbf{Attribute} & \textbf{Value} \\
+    \midrule
+    PARTICIPANTS\_ID & ea0a918f \\
+    IDENTIFIER & 63c44469 \\
+    QUEUEID & 3b10a230 \\
+    CALLERS & +123456789012 \\
+    AGENTID & b7e632de \\
+    SUBJECT & Null \\
+    ADDRESS\_TO & Null \\
+    ADDRESS\_FROM & Null \\
+    CONTACT\_DURATION & 363 \\
+    DIRECTION & inbound \\
+    DIRECTION\_ORIGINAL & inbound \\
+    ANSWERED & 1 \\
+    QUEUE\_DURATION & 2 \\
+    CALL\_DURATION & 316 \\
+    WRAPUPID & dd91b10d \\
+    WRAPUP\_DURATION & 47 \\
+    CONTACT\_CLOSED\_REASON & client \\
+    CONTACT\_CONNECTED\_DATETIME & 2025-08-23 13:41:13.000 \\
+    CONTACT\_CLOSED\_DATETIME & 2025-08-23 13:47:28.000 \\
+    CALL\_ANSWERED\_DATETIME & 2025-08-23 13:41:25.000 \\
+    CALL\_DISCONNECTED\_DATETIME & 2025-08-23 13:46:41.000 \\
+    MEDIA\_TYPE & call \\
+    CONTACT\_CONNECTED\_DATE & 2025-08-23 00:00:00.000 \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Esimerkki yhdestä tietokannan rivistä. Osa kentistä on anonymisoitu tietosuoja- ja luottamuksellisuussyistä.}
+  \label{tb:example_record}
+\end{table}
 
 Tutkimuksessa käytetty semanttinen näkymä on tutkijan rakentama yhteistyössä yksityisen IT-konsulttiyrityksen Knowitin ja yhden heidän asiakkaan kanssa osana hanketta, jossa pyritään hyödyntämään kielimalleja helpottamaan tietokannan käyttöä.
 

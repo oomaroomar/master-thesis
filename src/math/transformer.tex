@@ -1,5 +1,5 @@
 \section{Dekooderipohjainen Transformer-arkkitehtuuri suurille
-kielimalleille}
+kielimalleille}\label{sec:transformer}
 
 Luvuissa \ref{sec:discrete} ja \ref{sec:mlp} kielimallinnusta
 tarkasteltiin seuraavan tokenin ehdollisen todennäköisyyden estimointina.
@@ -690,7 +690,6 @@ kyseessä on ehdollinen generointitehtävä. Tuotettavan
 tokenijonon tulee muodostaa SQL-kysely, jonka merkitys
 vastaa käyttäjän kysymystä käytettävissä olevan tietokannan
 ja sitä koskevien määritelmien puitteissa.
-% Lisää yleislähde Text-to-SQL-tehtävästä.
 
 Olkoon \(q\) luonnollisen kielen kysymys,
 \(s\) tietokannan skeeman kuvaus ja \(m\) semanttinen
@@ -730,7 +729,6 @@ hakea esimerkkejä, tarkistaa tuotettua SQL-kyselyä tai
 muodostaa korjatun ehdotuksen uuden mallikutsun avulla \cite{gao2023texttosqlsurvey}.
 Sovelluksen toiminta on tällöin useiden käsittelyvaiheiden
 yhteistulos.
-% Lisää lähde kielimallipohjaisista Text-to-SQL-järjestelmistä.
 
 Keskeinen osatehtävä on skeemaan kohdistaminen
 (engl.\ \emph{schema linking}), jossa kysymyksen ilmaukset
@@ -739,7 +737,6 @@ rakenteisiin \cite{wang2020rat}. Kysymyksessä käytetty sanasto ei välttämät
 vastaa suoraan tietokannan nimiä. Lisäksi oikea vastaus
 voi edellyttää useiden taulujen yhdistämistä, vaikka
 käyttäjä ei mainitsisi niitä erikseen.
-% Lisää lähde skeemaan kohdistamisesta.
 
 Tarkastellaan esimerkiksi kysymystä \emph{"Mikä oli viime vuoden myynti asiakasryhmittäin?"}
 Sen muuntaminen SQL-kyselyksi edellyttää vähintään
@@ -769,7 +766,6 @@ voidaan kutsua tietokannan rakenteita täydentävää
 kuvausta, jossa määritellään esimerkiksi
 liiketoimintakäsitteitä, mittareita ja hyväksyttyjä
 taulujen välisiä suhteita \cite{CortexAnalyst}.
-% Lisää lähde semanttisesta kerroksesta.
 
 Kielimallille annettu semanttinen kuvaus muuttaa
 generoinnin ehdollistavaa kontekstia. Se voi vähentää
@@ -826,8 +822,6 @@ ei yleisesti todista kyselyiden semanttista
 ekvivalenssia \cite{zhong2020semantic}. Virheellinen suodatusehto voi
 esimerkiksi jäädä havaitsematta, jos aineistossa
 ei ole rivejä, joihin se vaikuttaisi.
-% Lisää lähde Text-to-SQL-arvioinnista ja testiaineistoihin
-% perustuvan tulosvertailun rajoituksista.
 
 Luonnollisen kielen kysymys ei myöskään aina määritä
 yksikäsitteistä tavoitekyselyä. Jos keskeinen mittari

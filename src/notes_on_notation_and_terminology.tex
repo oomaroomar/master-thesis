@@ -3,14 +3,27 @@
 
 \thispagestyle{plain}
 \begin{center}
-  \large{ON NOTATION AND TERMINOLOGY}
+  \large{MERKINTÄTAVOISTA}
 \end{center}
-Unless otherwise specified, we use the following notations and terminologies throughout the thesis.
+Tässä opinnäytetyössä käytetään seuraavia merkintöjä ja termejä.
+
 \begin{align*}
-  &\Re &\text{ the set of real numbers}, \\
-  &J &\text{ a loss function}, \\
-  &\T &\text{ the transpose of a matrix}, \\
-  &w &\text{ a member of a vocabulary (usually a word)}, \\
-  &\mathcal{V}=\{w_{1}, w_{2}, \dots, w_{|\mathcal{V}|}\} &\text{ a (finite) vocabulary}, \\
-  &\mathbf{w} &\text{ the vector representation of $w$}, \\
+  &\mathbb{R} &&\text{reaalilukujen joukko} \\
+  &\mathbb{N} &&\text{luonnollisten lukujen joukko } \{1, 2, 3, \dots\} \\
+  &A^{\top} &&\text{matriisin tai vektorin } A \text{ transpoosi} \\
+  &\odot &&\text{Hadamard-tulo (alkioittainen kertolasku)} \\
+  &[A \,\|\, B] &&\text{vektorien tai matriisien vaakasuuntainen ketjuttaminen} \\
+  &|S| &&\text{joukon tai sekvenssin } S \text{ alkioiden lukumäärä} \\
+  &\mathbf{1}\{\cdot\} &&\text{indikaattorifunktio} \\
+  &\mathcal{V} = \{v_1, \dots, v_{|\mathcal{V}|}\} &&\text{sanasto (kaikkien käytettävien tokenien joukko)} \\
+  &w_t \in \mathcal{V} &&\text{korpuksen ajanhetken } t \text{ tokeni} \\
+  &\mathcal{W} = (w_1, \dots, w_{|\mathcal{W}|}) &&\text{korpus (havaittu tokenijono)} \\
+  &x(v_j) \in \{0, 1\}^{1 \times |\mathcal{V}|} &&\text{tokenin } v_j \text{ one-hot-esitys (rivivektori)} \\
+  &e(v_j) \in \mathbb{R}^{1 \times d} &&\text{tokenin } v_j \text{ tiheä upotusvektori (rivivektori)} \\
+  &E \in \mathbb{R}^{|\mathcal{V}| \times d} &&\text{tokenien upotusmatriisi} \\
+  &H \in \mathbb{R}^{T \times d} &&\text{esitysmatriisi (jonon pituus } T\text{, upotusdimensio } d\text{)} \\
+  &\ell \in \mathbb{R}^{1 \times |\mathcal{V}|} &&\text{normalisoimaton pistemäärävektori (logittivektori)} \\
+  &J(\theta) &&\text{häviöfunktio} \\
+  &\theta &&\text{mallin opittavien parametrien joukko} \\
+  &\Delta(\mathcal{V}) &&\text{sanaston } \mathcal{V} \text{ yli määriteltyjen todennäköisyysjakaumien joukko}
 \end{align*}
