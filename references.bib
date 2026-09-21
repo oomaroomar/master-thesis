@@ -2,7 +2,7 @@
   author       = {{Snowflake Inc.}},
   title        = {Cortex Analyst},
   howpublished = {\url{https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst}},
-  note         = {Retrieved April 22, 2026},
+  note         = {Viitattu: 22.4.2026},
   year         = {2026}
 }
 
@@ -33,7 +33,7 @@
   author    = {Jurafsky, Dan and Martin, James H.},
   title     = {Speech and Language Processing},
   edition   = {3rd ed. draft},
-  year      = {2023},
+  year      = {2026},
   publisher = {Prentice Hall}
 }
 
@@ -213,11 +213,13 @@
   year    = {2018}
 }
 
-@article{wilson2017marginal,
-  title   = {Marginal Likelihood and the Evidence Lower Bound (ELBO)},
-  author  = {Wilson, Andrew G. and P. others},
-  journal = {arXiv preprint},
-  year    = {2017}
+@inproceedings{wilson2017marginal,
+  title     = {The Marginal Value of Adaptive Gradient Methods in Machine Learning},
+  author    = {Wilson, Ashia C. and Roelofs, Rebecca and Stern, Mitchell and Srebro, Nati and Recht, Benjamin},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {30},
+  pages     = {4148--4158},
+  year      = {2017}
 }
 
 @inproceedings{keskar2017improving,
@@ -246,13 +248,16 @@
   publisher = {PMLR}
 }
 
-@article{bottou1998online,
-  author    = {Bottou, L{\'e}on},
+@incollection{bottou1998online,
+  author    = {L{\'e}on Bottou},
   title     = {Online Learning and Stochastic Approximations},
-  journal   = {Online Learning and Neural Networks},
-  year      = {1998},
+  booktitle = {Online Learning and Neural Networks},
+  editor    = {David Saad},
   publisher = {Cambridge University Press},
-  note      = {Revised, October 2010}
+  address   = {Cambridge, UK},
+  pages     = {9--42},
+  year      = {1998},
+  note      = {Revised version, May 2018. Available at \url{https://leon.bottou.org/publications/pdf/online-1998.pdf}}
 }
 
 @book{nesterov2004introductory,
@@ -330,17 +335,6 @@
   url       = {https://aclanthology.org/N19-1423},
   doi       = {10.18653/v1/N19-1423},
   pages     = {4171--4186}
-}
-
-@article{polyak1964some,
-  title     = {Some methods of speeding up the convergence of iteration methods},
-  author    = {Polyak, Boris T},
-  journal   = {USSR Computational Mathematics and Mathematical Physics},
-  volume    = {4},
-  number    = {5},
-  pages     = {1--17},
-  year      = {1964},
-  publisher = {Elsevier}
 }
 
 @inproceedings{sutskever2013importance,
@@ -435,21 +429,6 @@
   booktitle = {The Eleventh International Conference on Learning Representations (ICLR)},
   year      = {2023},
   url       = {https://openreview.net/forum?id=28dd8eb27d48}
-}
-
-@article{gao2023texttosqlsurvey,
-  author  = {Dawei Gao and Haibin Wang and Yaliang Li and Xiuyu Sun and Yuchen Zhu and Shi Chen and Zhi-Hong Deng and Xing Zhang},
-  title   = {Text-to-{SQL} Empowered by Large Language Models: A Benchmark Evaluation},
-  journal = {arXiv preprint arXiv:2308.15363},
-  year    = {2023}
-}
-
-@online{snowflake_cortex_semantic_model,
-  author = {{Snowflake Inc.}},
-  title  = {Semantic Model Specification for {Cortex Analyst}},
-  year   = {2024},
-  url    = {https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst/semantic-model-spec},
-  note   = {Viitattu: 24.8.2026}
 }
 
 @article{schick2023toolformer,
@@ -611,14 +590,6 @@
   pages     = {396--411}
 }
 
-@inproceedings{bender2021dangers,
-  author    = {Bender, Emily M. and Gebru, Timnit and McMillan-Major, Angelina and Shmitchell, Shmargaret},
-  title     = {On the Dangers of Stochastic Parrots: Can Language Models Be Too Big?},
-  booktitle = {Proceedings of the 2021 ACM FAccT Conference},
-  pages     = {610--623},
-  year      = {2021},
-  doi       = {10.1145/3442188.3445922}
-}
 
 @inproceedings{min2020ambigqa,
   title     = {{AmbigQA}: Answering Ambiguous Open-domain Questions},
@@ -626,4 +597,11 @@
   booktitle = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
   pages     = {5783--5797},
   year      = {2020}
+}
+
+@article{hong2024survey,
+  title   = {Next-Generation Database Interfaces: A Survey of {LLM}-based Text-to-{SQL}},
+  author  = {Hong, Zijin and Yuan, Zheng and Zhang, Qinggang and others},
+  journal = {arXiv preprint arXiv:2406.08426},
+  year    = {2024}
 }

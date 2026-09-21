@@ -39,7 +39,7 @@ tiettyyn kontekstipituuteen.
 
 Tässä luvussa tarkastellaan erityisesti dekooderipohjaista
 Transformer-arkkiteh-\\tuuria, joka muodostaa useiden generatiivisten
-kielimallien, kuten GPT-malliper-\\heen, matemaattisen perustan.
+kielimallien, kuten GPT-malliper-\\heen, matemaattisen perustan \cite{radford2018improving}.
 Transformeriin perustuvan arkkitehtuurin esitteli alun perin Vaswanin ym. vuonna 2017
 \cite{vaswani2017attention}. Alkuperäinen arkkitehtuuri oli
 konekäännökseen suunniteltu enkooderi--dekooderi-rakenne. Pian tämän jälkeen esitettiin, että pelkkään Transformer-dekooderiin perustuva autoregressiivinen kielimalli voidaan esikouluttaa suurilla tekstiaineistoilla ja hienosäätää useisiin kielenkäsittelytehtäviin \cite{radford2018improving}.
@@ -726,7 +726,7 @@ Tämä esitys kuvaa kielimallin generointivaihetta,
 ei välttämättä koko Text-to-SQL-järjestelmän toimintaa.
 Järjestelmä voi lisäksi valita relevantteja skeeman osia,
 hakea esimerkkejä, tarkistaa tuotettua SQL-kyselyä tai
-muodostaa korjatun ehdotuksen uuden mallikutsun avulla \cite{gao2023texttosqlsurvey}.
+muodostaa korjatun ehdotuksen uuden mallikutsun avulla \cite{hong2024survey}.
 Sovelluksen toiminta on tällöin useiden käsittelyvaiheiden
 yhteistulos.
 
@@ -837,7 +837,7 @@ vastata käytettävissä olevilla tiedoilla.
 Autoregressiivinen kielimalli tarjoaa
 mekanismin SQL-kyselyiden muodostamiseen,
 mutta sen tokeniennusteisiin perustuva koulutustavoite
-ei yksin takaa kyselyiden oikeellisuutta \cite{bender2021dangers}.
+ei yksin takaa kyselyiden oikeellisuutta \cite{ouyang2022training}.
 Käytännön onnistuminen riippuu myös skeeman
 esitystavasta, semanttisista määritelmistä,
 kysymyksen yksikäsitteisyydestä ja järjestelmän
