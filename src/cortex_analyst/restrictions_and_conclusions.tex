@@ -1,4 +1,4 @@
-\section{Rajoitukset}
+\section{Rajoitukset}\label{sec:limitations}
 Tutkimukseen liittyy useita rajoituksia, jotka on huomioitava tuloksia tulkittaessa.
 
 Ensinnäkin tutkimus kohdistuu yhteen järjestelmään, Snowflaken Cortex Analystiin, jonka taustalla toimii Anthropicin Claude Sonnet 4 -malli. Tulokset kuvaavat siten yhtä tiettyä toteutusta eivätkä ole suoraan yleistettävissä muihin kielimalleihin, SQL-avustajiin tai luonnollisen kielen analytiikkatyökaluihin.
@@ -13,7 +13,7 @@ Viidenneksi kielimallien toimintaa luonnehtii tietty epädeterministisyys, mink�
 
 Kuudenneksi tuotettujen SQL-kyselyiden oikeellisuuden arvioi yksi arvioija. Tämä heikentää luokittelun reliabiliteettia ja lisää mahdollisuutta siihen, että osa luokitteluista sisältää arvioijan tulkintaan liittyvää subjektiivisuutta.
 
-\section{Johtopäätökset}
+\section{Johtopäätökset}\label{sec:conclusions}
 
 Tämän tutkielman tavoitteena oli arvioida, kuinka hyvin Snowflaken Cortex Analyst soveltuu luonnollisen kielen tietokantakyselyihin puhelinkeskusdataa sisältävässä tietokantaympäristössä. Tarkastelun kohteena olivat erityisesti järjestelmän kyky tuottaa oikeellisia SQL-kyselyitä, sen konsistenssi tilanteissa, joissa sama kysymys esitetään useita kertoja, sekä sen herkkyys sellaisille syötteen muotoilun muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä.
 
