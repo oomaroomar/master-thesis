@@ -1,11 +1,12 @@
 \begin{abstract}
-  This study investigates the effects of \dots\ on \dots. Using a mixed-methods
-  approach, we analyzed data collected from \dots\ over a period of \dots.
-  Our primary findings indicate that \dots, suggesting a significant relationship
-  between \dots\ and \dots. These results contribute to the ongoing discussion on
-  \dots\ and provide practical implications for researchers and practitioners in
-  the field.
+  Suurten kielimallien yleistyminen on mahdollistanut luonnollisen kielen muuntamisen suoritettaviksi tietokantakyselyiksi (Text-to-SQL). Vaikka kielimallit kykenevät tuottamaan syntaktisesti virheetöntä SQL-koodia, käytännön sovelluksissa haasteeksi muodostuu semanttinen luotettavuus: vastaako muodostettu kysely käyttäjän todellista tiedontarvetta ja säilyykö tulkinta johdonmukaisena kysymysten toistoissa sekä kielellisissä variaatioissa.
+
+  Tämän tutkielman tavoitteena on selvittää, miten luotettavasti ja johdonmukaisesti semanttista näkymää hyödyntävä autoregressiivinen kielimalli kykenee tulkitsemaan luonnollisen kielen tiedontarpeita suhteessa kysymysten toistoihin sekä niiden merkityksen säilyttäviin kielellisiin variaatioihin. Työn kontribuutio muodostuu teoreettisesta ja empiirisestä osasta. Teoreettisessa osassa jäsennetään se matemaattinen ja arkkitehtuurinen jatkumo, jolla diskreeteistä tekstiesityksistä, optimointimenetelmistä ja itsehuomiomekanismista rakentuu symbolista koodia tuottava autoregressiivinen todennäköisyysmalli. Teoria tarjoaa käsitteellisen perustan kielimallin toiminnalle ja havaitun vaihtelun ymmärtämiselle.
+
+  Empiirisessä osassa toteutetaan tapaustutkimus, jossa arvioidaan Snowflaken Cortex Analyst -järjestelmää aidossa puhelinkeskusympäristössä. Aineisto koostuu neljästä relaatiotaulusta, joiden rakennetta ja käsitteistöä kuvataan semanttisen näkymän avulla. Arviointi rajataan tuotettujen SQL-kyselyiden analyysiin ilman tietokanta-ajojen tulosjoukkoja aineiston luottamuksellisuuden sekä tietokannan tilasta riippuvien vääristymien välttämiseksi. Analyysissa erotetaan kyselyiden syntaktinen ja rakenteellinen vaihtelu niiden merkitystä muuttavista eroista.
+
+  Tutkimuksen tulokset osoittavat, että [täydennä tähän keskeinen tulos: esim. järjestelmä saavutti hyvän semanttisen vastaavuuden peruskyselyissä, mutta toistoissa ja erityisesti parafraaseissa havaittiin vaihtelua liittyen liitoksiin / ryhmittelyihin / rajauksiin]. Tyypillisimmät virheet liittyivät [esim. aggregaattien valintaan / monimutkaisten ehtojen tulkintaan]. Tutkielma tuottaa tapauskohtaista tietoa teollisen mittakaavan Text-to-SQL-järjestelmien luotettavuudesta ja osoittaa, että semanttisen mallin tarkkuuden lisäksi järjestelmän arvioinnissa on huomioitava kielellisen robustisuuden ja toistettavuuden haasteet.
 
   \vspace{1em}
-  \noindent\textbf{Keywords:} keyword 1, keyword 2, keyword 3, keyword 4
+  \noindent\textbf{Avainsanat:} kielimallit, Text-to-SQL, Cortex Analyst, Transformer, semanttinen näkymä, luotettavuus, autoregressiivinen mallinnus
 \end{abstract}

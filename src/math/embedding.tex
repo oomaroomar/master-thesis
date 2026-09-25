@@ -1,5 +1,9 @@
 \section{Jatkuvat esitykset ja neuroverkkopohjainen kielimallinnus}\label{sec:mlp}
 
+Siirtyminen diskreeteistä sanajonoista jatkuviin vektoriavaruuksiin ja neuroverkkopohjaiseen mallinnukseen on edistänyt merkittävästi kielimallien yleistyskykyä, sillä se mahdollistaa semanttisten suhteiden mallintamisen pelkän pintatason sanavastaavuuden sijaan \cite{bengio2003neural, mikolov2013efficient}.
+
+Tämä luo teoreettisen pohjan tutkielman keskeiselle tutkimuskysymykselle, jossa tarkastellaan mallin kykyä tulkita luonnollisen kielen tiedontarpeita luotettavasti ja johdonmukaisesti merkityksen säilyttävistä kielellisistä variaatioista huolimatta.
+
 \subsection{Upotusvektorit}
 
 One-hot-esitys tarjoaa yksikäsitteisen tavan kuvata tokeneita, mutta sen
@@ -194,7 +198,7 @@ kunkin havaintoparin kohdalla päivitetään vain positiivista kohdesanaa ja
 päivityksen sijasta.
 
 Word2Vec-mallissa opitaan kaksi parametrimatriisia: syötevektorit ja
-ulostulovektorit. Jokaiselle sanaston sanalle \(v_j \in V\) assosioituu siten
+ulostulovektorit. Jokaiselle sanaston sanalle \(v_j \in \mathcal{V}\) assosioituu siten
 ainakin yksi tiheä vektoriesitys. Oppimisen jälkeen sanan lopullisena
 esityksenä käytetään tavallisesti syötevektoria tai vaihtoehtoisesti syöte- ja
 ulostulovektoreiden yhdistelmää. Näin saadut upotukset heijastavat korpuksessa
@@ -217,7 +221,7 @@ samankaltaisuusmittaa, vaan voi synnyttää myös abstraktimpia relaatioita
 mallintavia geometrisia rakenteita.
 
 Vaikka Word2Veciä ei nykyisissä suurissa kielimalleissa tyypillisesti käytetä
-sellaisenaan erillisenä menetelmänä, sen vaikutus näkyy edelleen usealla
+sellaisenaan, sen vaikutus näkyy edelleen usealla
 tasolla. Ensinnäkin se vakiinnutti distributionaalisen hypoteesin
 neuroverkkopohjaisen kielimallinnuksen keskeiseksi oppimisperiaatteeksi.
 Toiseksi se toi esiin suuren sanaston ulostuloprojektion laskennallisen

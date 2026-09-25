@@ -1,6 +1,6 @@
 Starting point: 11 to fix
-Currently done: 3
-Fixes left to do: 8
+Currently done: 4
+Fixes left to do: 7
 
 1. It is high time you pick a title for the thesis.
 
@@ -18,7 +18,7 @@ Fixes left to do: 8
 
 8. ~~ You suggest in the conclusions that clearer semantic descriptions may reduce some confusions, but this is not demonstrated by your experiments. Formulate it as a hypothesis suggested by your results. ~~
 
-9. Try to give a sharper formulation for what the thesis contribution is to the Text-to-SQL field.
+9. ~~ Try to give a sharper formulation for what the thesis contribution is to the Text-to-SQL field.~~
 
 10. There seems to be a little unclarity about the uniqueness of SQL queries. Two syntactically different queries are counted as the same if they are semantically equivalent. But two semantically equivalent queries can be counted as different if they use different implementation routes. One such example seems to be question B. Maybe discuss implementation-variation separately from semantic consistency.
 

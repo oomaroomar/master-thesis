@@ -1,15 +1,16 @@
 \section{Diskreetit tekstiesitykset ja klassinen kielimallinnus}\label{sec:discrete}
 
-Kielimallien yhteydessä tekstiä käsitellään tavallisesti diskreetteinä tokeneina,
-jotka muunnetaan laskennalliseen muotoon mallintamista varten. Olkoon
+Kielimallipohjaisessa Text-to-SQL-tehtävässä järjestelmän tavoitteena on muuntaa
+luonnollisen kielen tiedontarve symboliseksi SQL-kyselyksi. Tämän prosessin
+matemaattinen perusta nojaa kielen esittämiseen laskennallisessa muodossa.
+
+Klassisessa kielimallinnuksessa tekstiä käsitellään diskreetteinä tokeneina. Olkoon
 \(\mathcal{V} = \{v_1, v_2, \dots, v_{|\mathcal{V}|}\}\) sanasto eli joukko kaikista mallin
 käyttämistä tokeneista ja olkoon
 \(\mathcal{W} = (w_1, w_2, \dots, w_{|\mathcal{W}|})\) korpus eli havaittu tokenijono. Tällöin
 \(w_t \in \mathcal{V}\) merkitsee korpuksen ajanhetken \(t\) tokenia. Tokenilla voidaan
 tarkoittaa esimerkiksi sanaa, osasanaa, merkkiä tai muuta diskreettiä
 tekstiyksikköä riippuen käytetystä tokenisointimenetelmästä \cite{jurafsky2023speech}.
-
-\subsection{Tokenien one-hot-enkoodaus}
 
 Diskreetit tokenit esitetään numeerisessa muodossa, jotta niitä voidaan hyödyntää
 tilastollisissa malleissa ja neuroverkoissa. Yksinkertaisin ja yleisesti käytetty
@@ -23,11 +24,6 @@ vektorina \(x(v_j) \in \{0,1\}^{1 \times |\mathcal{V}|}\), jonka komponentit ova
   \end{cases}
 \]
 
-Tällainen esitys ilmaisee ainoastaan tokenin identiteetin. Eri tokeneilla on
-toisistaan poikkeavat vektoriesitykset, mutta niihin ei sisälly eksplisiittistä
-semanttista tai syntaktista rakennetta \cite{mikolov2013efficient}. Menetelmän etuna on yksikäsitteisyys ja
-sen yksinkertainen yhteys sanaston indeksöintiin.
-
 Kielimallinnuksessa sanastoa täydennetään usein erikoistokeneilla,
 joilla kuvataan sekvenssin rakennetta ja käsitellään harvinaisia havaintoja.
 Tällaisia ovat esimerkiksi aloitus- ja lopetusmerkit \(\langle s \rangle\) ja
@@ -35,7 +31,7 @@ Tällaisia ovat esimerkiksi aloitus- ja lopetusmerkit \(\langle s \rangle\) ja
 
 Aloitus- ja lopetusmerkit ovat erityisen hyödyllisiä silloin, kun mallin
 ennustettavaa kontekstia halutaan määritellä myös sekvenssin reuna-alueilla.
-Esimerkiksi \(n\)-gram-malleissa (ks. osio \ref{sec:n-gram}) kontekstin pituus on
+Esimerkiksi \(n\)-gram-malleissa kontekstin pituus on
 vakio, minkä vuoksi sekvenssin alku- ja loppupäähän lisätään tyypillisesti
 riittävä määrä erikoistokeneita, jotta kontekstit voidaan muodostaa yhtenäisesti
 kaikille ajanhetkille.
@@ -59,8 +55,6 @@ One-hot-enkoodaus muodostaa perustavanlaatuisen sillan tekstin
 ja numeeristen kielimallien välille. Se tarjoaa täsmällisen ja muodollisesti
 yksinkertaisen esitystavan, jonka varaan voidaan rakentaa sekä tilastollisia
 \(n\)-gram-malleja että myöhempiä neuroverkkopohjaisia kielimalleja.
-
-\subsection{N-gram-mallit}\label{sec:n-gram}
 
 N-gram-malli on klassinen tilastollinen kielimalli, jossa sekvenssin seuraavan
 tokenin todennäköisyyttä estimoidaan rajallisen kontekstin perusteella \cite{jurafsky2023speech}.
@@ -126,18 +120,23 @@ askeleen eteenpäin siten, että uusi konteksti muodostuu edeltävistä
 \((n-1)\) generoidusta tokenista. Prosessia jatketaan, kunnes generoidaan
 päätemerkki tai saavutetaan haluttu tekstin pituus.
 
-Vaikka lähestymistapa on käsitteellisesti yksinkertainen ja tulkittava, siihen
-liittyy merkittäviä laskennallisia haasteita erityisesti kontekstikoon \(n\)
-kasvaessa. Tämän seurauksena lukumatriisista
+Diskreetit esitykset ja frekvenssipohjaiset \(n\)-gram-mallit tarjoavat
+käsitteellisesti selkeän lähtökohdan kielimallinnukselle, mutta niihin liittyy
+kaksi perustavanlaatuista rajoitetta.
+
+Ensinäkin one-hot-enkoodaus ilmaisee vain tokenin identiteetin. Koska erisuurten tokeneiden vektorit ovat keskenään ortogonaalisia
+\[
+  v_i \neq v_j \implies x(v_i) x(v_j)^T = 0,
+\]
+niiden kosinisimilariteetti on poikkeuksetta nolla ja euklidinen etäisyys vakio \(\sqrt{2}\). Tästä johtuen esitys ei voi mallintaa tokeneiden välisiä semanttisia tai syntaktisia suhteita \cite{mikolov2013efficient}.
+
+Toiseksi kontekstikoon \(n\) kasvaessa lukumatriisista
 \(C \in \mathbb{R}^{|\mathcal{V}|^{n-1} \times |\mathcal{V}|}\) tulee nopeasti erittäin suuri ja
 käytännöllisissä sovelluksissa hyvin harva, koska vain pieni osa kaikista
 mahdollisista konteksteista esiintyy tyypillisessä havaintoaineistossa. Tämä
 lisää sekä muistin- että laskentatehon tarvetta
 \cite{jurafsky2023speech}.
 
-Diskreetit esitykset ja frekvenssipohjaiset \(n\)-gram-mallit tarjoavat
-käsitteellisesti selkeän lähtökohdan kielimallinnukselle. Niiden keskeinen
-rajoite on kuitenkin heikko yleistyskyky harvinaisiin ja havaitsemattomiin
-konteksteihin astuen esiin niin sanottuna "ulottuvuuksien kirouksena" (engl. \textit{curse of dimensionality}) \cite{bengio2003neural}. Tämän vuoksi on hyödyllistä tarkastella samaa ongelmaa
+Tämän vuoksi on hyödyllistä tarkastella samaa ongelmaa
 optimointitehtävänä, mikä muodostaa luontevan siirtymän kohti jatkuvia
 vektoriesityksiä ja parametrisoituja neuroverkkopohjaisia malleja.

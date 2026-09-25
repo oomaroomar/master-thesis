@@ -1,6 +1,6 @@
 \subsection{N-gram-malli optimointiongelmana}
 
-Luvussa \ref{sec:n-gram} \(n\)-gram-malli esitettiin lukumääriin ja niiden
+Luvussa \ref{sec:discrete} \(n\)-gram-malli esitettiin lukumääriin ja niiden
 normalisointiin perustuvana frekvenssimallina. Sama malli voidaan kuitenkin
 tulkita myös suurimman uskottavuuden estimointina, mikä tekee yhteyden
 myöhempiin parametrisiin kielimalleihin näkyväksi.
@@ -91,18 +91,20 @@ ja siten
 \]
 
 Tulos osoittaa, että suurimman uskottavuuden estimaatti on täsmälleen sama kuin
-luvussa \ref{sec:n-gram} määritelty rivikohtaisesti normalisoitu
+luvussa \ref{sec:discrete} määritelty rivikohtaisesti normalisoitu
 frekvenssimatriisi \(F\). Toisin sanoen klassinen frekvenssipohjainen
 \(n\)-gram-malli voidaan tulkita parametrisen mallin
 maksimiuskottavuusratkaisuna.
 
-Tämä näkökulma tekee samalla näkyväksi mallin keskeisen rajoitteen: jokaiselle
+Tämä näkökulma tekee samalla näkyväksi mallin keskeisen rajoitteen, sillä jokaiselle
 mahdolliselle kontekstille tarvitaan oma erillinen todennäköisyysjakaumansa.
-Kuten luvussa \ref{sec:n-gram} nähtiin, kontekstin pituuden kasvaessa parametrien määrä kasvaa nopeasti, jolloin malli
-muuttuu harvaksi ja yleistää heikosti harvinaisiin tai havaitsemattomiin
-konteksteihin. Tästä syystä on luontevaa siirtyä malleihin, joissa ehdolliset
-todennäköisyydet opitaan jaetun parametrisaation avulla jatkuvassa avaruudessa
-sen sijaan, että ne talletettaisiin erillisinä taulukoituina jakaumina.
+Kontekstin pituuden kasvaessa parametrien määrä kasvaa nopeasti, jolloin malli
+muuttuu harvaksi ja yleistää heikosti havaitsemattomiin konteksteihin.
+Kielellisen variaation ja lauserakenteiden monimuotoisuuden käsittely on tällaiselle
+taulukoidulle mallille haastavaa, sillä toisiaan merkitykseltään lähellä olevat
+ilmaisut eivät jaa keskenään informaatiota. Tästä syystä on perusteltua siirtyä
+malleihin, joissa ehdolliset todennäköisyydet opitaan jaetun parametrisaation avulla
+jatkuvassa avaruudessa.
 
 \subsection{Monikerroksinen perseptroni seuraavan tokenin ennustajana}
 
@@ -199,23 +201,22 @@ parametrivektorinsa, MLP approksimoi todennäköisyyksiä jatkuvassa avaruudessa
 Koska erilliset tokenit projisoidaan matalaulotteisiksi tiheiksi
 upotusvektoreiksi \(v \in \mathbb{R}^{1\times d}\), malli oppii esittämään sanojen
 semanttisia ja syntaktisia samankaltaisuuksia vektoriesitysten avulla.
+
 MLP:n approksimoima funktio on jatkuva ja tyypillisesti sileä siinä mielessä,
 että pienet muutokset syöteavaruudessa voivat johtaa samankaltaisiin
 ulostulojakaumiin. Tästä syystä malli kykenee yleistämään myös harvinaisiin tai
 aiemmin havaitsemattomiin konteksteihin hyödyntämällä sellaisten
 koulutusdatassa esiintyneiden kontekstien rakennetta, joiden esitykset
-sijaitsevat lähellä niitä yhteisessä avaruudessa \cite{bengio2003neural}. Tämä
-lieventää klassisia \(n\)-gram-malleja vaivaavaa nollatodennäköisyyksien
-ongelmaa ilman erillisiä tasoitusmenetelmiä.
+sijaitsevat lähellä niitä yhteisessä avaruudessa \cite{bengio2003neural}.Tämä ominaisuus on keskeinen käyttäjän
+tiedontarpeiden tulkinnassa, sillä se antaa mallille valmiuden yleistää
+kielellisiin variaatioihin ja synonyymisiin ilmaisuihin ilman erillisiä
+tasoitusmenetelmiä \cite{huang2013learning}.
 
-Frekvenssipohjaista mallia koskevat tekniset rajoitteet, kuten
-eksponentiaalinen muistitarpeen kasvu ja lukumatriisin harvuus, voidaan siten
-osittain ratkaista MLP-mallin avulla.
-MLP-rakenteessa opittavat painomatriisit ja bias-vektorit jakautuvat kaikkien
-kontekstien kesken. Siten jokainen harjoitusnäyte päivittää koko neuroverkon
-parametreja, mikä parantaa myös sellaisten lauseiden ennustamista, joita ei ole
-esiintynyt opetusdatassa, mutta jotka jakavat samankaltaisia piirteitä
-opittujen esitysten kautta. Tämä tekee MLP-pohjaisesta \(n\)-gram-mallista
-huomattavasti joustavamman, muistikapasiteetiltaan tehokkaamman ja
-yleistyskykyisemmän kuin perinteinen frekvenssiperusteinen
-taulukkolukuesitys \cite{bengio2003neural,goodfellow2016deep,jurafsky2023speech}.
+Opittavat painomatriisit ja bias-vektorit jakautuvat kaikkien kontekstien kesken,
+joten jokainen harjoitusnäyte päivittää mallin kokonaisesitystä. Parametrien
+jakaminen tekee neuroverkkopohjaisesta lähestymistavasta joustavamman ja
+muistikapasiteetiltaan tehokkaamman kuin diskreetti taulukkoesitys
+\cite{bengio2003neural,goodfellow2016deep,jurafsky2023speech}. Samalla se
+luo arkkitehtuurisen perustan laajemmille malleille, joissa syötteen
+vaihtelevuudesta huolimatta pyritään säilyttämään tuotetun tulosteen semanttinen
+eheys.
