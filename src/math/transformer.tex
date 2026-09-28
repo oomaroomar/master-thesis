@@ -38,15 +38,28 @@ rajoittama, mutta mallin parametrien ei tarvitse olla sidottuja yhteen
 tiettyyn kontekstipituuteen.
 
 Tässä luvussa tarkastellaan erityisesti dekooderipohjaista
-Transformer-arkkiteh-\\tuuria, joka muodostaa useiden generatiivisten
-kielimallien, kuten GPT-malliper-\\heen, matemaattisen perustan \cite{radford2018improving}.
-Transformeriin perustuvan arkkitehtuurin esitteli alun perin Vaswanin ym. vuonna 2017
+Transformer-arkkiteh\-tuuria, joka muodostaa useiden generatiivisten
+kielimallien, kuten GPT-malliper\-heen, matemaattisen perustan \cite{radford2018improving}.
+Transformer-arkkitehtuurin esittelivät alun perin Vaswani ym. vuonna 2017
 \cite{vaswani2017attention}. Alkuperäinen arkkitehtuuri oli
 konekäännökseen suunniteltu enkooderi--dekooderi-rakenne. Pian tämän jälkeen esitettiin, että pelkkään Transformer-dekooderiin perustuva autoregressiivinen kielimalli voidaan esikouluttaa suurilla tekstiaineistoilla ja hienosäätää useisiin kielenkäsittelytehtäviin \cite{radford2018improving}.
+
+Arkkitehtuurin tarkastelu palvelee tutkielman empiiristä kysymyksenasettelua.
+Kun kielimalli ymmärretään kontekstista seuraavan tokenin jakaumaan
+johtavana kuvauksena, voidaan täsmentää, mistä samaa tiedontarvetta
+koskevien SQL-kyselyiden vaihtelu voi aiheutua. Vaihtelu voi syntyä
+generoinnin valintasäännöstä tai siitä, että merkitykseltään sama
+kysymys tuottaa eri tokenikontekstin ja siten eri ehdollisen jakauman.
 
 \subsection{Itsehuomio}
 
 Transformer-mallin keskeinen mekanismi on itsehuomio (engl.\ \emph{self-attention}). Sen avulla tokenien merkitys ei määräydy pelkän etäisyyden perusteella, vaan malli painottaa dynaamisesti kunkin tokenin kannalta olennaista tietoa koko sekvenssin laajuudelta, kun se päivittää upotusvektoreita.
+
+Text-to-SQL-tehtävässä sama mekanismi mahdollistaa sen, että
+kysymyksen ilmausten esitykset voivat painottaa kontekstiin
+sisällytettyjä taulujen, sarakkeiden ja käsitteiden kuvauksia.
+Skeeman ja kysymyksen välinen vastaavuus muodostuu näin osana
+mallin kontekstualisoituja esityksiä eikä erillisenä sääntönä.
 
 Olkoon tarkasteltavan tokenijonon pituus \(T\) ja olkoon \(h_i \in \mathbb{R}^{1 \times d}\) position \(i\) tokenia vastaava esitysvektori. Näistä muodostetaan syötematriisi
 \begin{align*}
@@ -61,7 +74,7 @@ Olkoon tarkasteltavan tokenijonon pituus \(T\) ja olkoon \(h_i \in \mathbb{R}^{1
   \in \mathbb{R}^{T \times d}.
 \end{align*}
 
-Itsehuomiomekanismi muodostaa syöte-esityksistä kolme erillistä lineaarista projektiota: kyselyn (engl.\ \emph{query}), avaimen (engl.\ \emph{key}) ja arvon (engl.\ \emph{value}). Olkoot \(W_Q, W_K \in \mathbb{R}^{d \times d_k}\) ja \(W_V \in \mathbb{R}^{d \times d_v}\) opittavia painomatriiseja. Kysely-, avain- ja arvomatriisit lasketaan kertomalla syötematriisi näillä painoilla:
+Itsehuomiomekanismi muodostaa syöte-esityksistä kolme erillistä lineaarista projektiota: kyselyn (engl.\ \emph{query}), avaimen (engl.\ \emph{key}) ja arvon (engl.\ \emph{value}). Olkoot \(W_Q, W_K \in \mathbb{R}^{d \times d_k}\) ja \(W_V \in \mathbb{R}^{d \times d_v}\) opittavia painomatriiseja. Kysely-, avain- ja arvomatriisit lasketaan kertomalla syötematriisi näillä painoilla
 \begin{align*}
   Q &= H W_Q \in \mathbb{R}^{T \times d_k}, \\
   K &= H W_K \in \mathbb{R}^{T \times d_k}, \\
@@ -151,7 +164,7 @@ missä \(W_k^Q, W_k^K \in \mathbb{R}^{d \times d_k}\) ja
 
 Lopuksi eri päiden tuottamat esitykset ketjutetaan ja
 yhdistetään lineaarisella projektiolla takaisin mallin
-ulottuvuuteen \(d\):
+ulottuvuuteen \(d\)
 $$
 \operatorname{CausalMultiHead}(H)
 =
@@ -169,7 +182,7 @@ missä \(\|\) merkitsee sarakkeittaista ketjuttamista ja
 \(W^O \in \mathbb{R}^{n_\text{heads} d_v \times d}\) on opittava
 parametrimatriisi.
 
-Monipäisyyden etu on että eri päät
+Monipäisyyden etu on, että eri päät
 voivat käyttää toisistaan poikkeavia huomiopainotuksia ja
 arvoprojektioita, joiden tuottama informaatio yhdistetään
 tulosprojektiossa. Käytännössä pään dimensioiksi valitaan
@@ -396,7 +409,7 @@ jonka avulla bias-vektorit lisätään jokaiselle riville.
 Koko dekooderilohko voidaan määritellä funktiona
 \(\operatorname{DecoderBlock} \colon \mathbb{R}^{T \times d} \to \mathbb{R}^{T \times d}\).
 Olkoon syöte \(H \in \mathbb{R}^{T \times d}\). Lohkon laskenta
-etenee kahdessa vaiheessa:
+etenee kahdessa vaiheessa
 $$
 H^{(1)} = H + \operatorname{CausalMultiHead}(\operatorname{Norm}_1(H)),
 $$
@@ -411,8 +424,9 @@ noudattaa niin kutsuttua \emph{pre-norm}-järjestystä
 \cite{xiong2020layer}.
 
 Jäännöskytkentä muodostaa gradientille suoran kulkureitin
-alilohkon ohi, ja normalisointi estää gradienttien räjähtämisen tai vaimenemisen kerrosten kasvaessa, mikä helpottaa syvien verkkojen optimointia
-\cite{he2016deep} \cite{xiong2020layer}.
+alilohkon ohi, ja normalisointi hillitsee esitysten mittakaavan
+kasvua kerrosten määrän kasvaessa, mikä helpottaa syvien verkkojen
+optimointia \cite{he2016deep, xiong2020layer}.
 
 \subsection{Dekooderikerroksista seuraavan tokenin jakaumaan}
 
@@ -677,6 +691,16 @@ missä \(\tau>0\) on lämpötilaparametri. Kun \(\tau=1\), saadaan alkuperäinen
 Pienempi lämpötila keskittää massaa suurimpien logittien
 kohdalle, kun taas suurempi lämpötila tasoittaa jakaumaa.
 
+Valintasäännöllä on suora yhteys tuotosten toistettavuuteen.
+Ahne valinta on kiinteällä kontekstilla ja parametreilla
+periaatteessa deterministinen, kun taas otannassa saman kontekstin
+toistot voivat tuottaa eri tokenijonoja. Koska generointi etenee
+autoregressiivisesti, jo yksittäisen varhaisen tokenin ero muuttaa
+kaikkien myöhempien jakaumien ehdollistavaa kontekstia. Käytännön
+järjestelmissä myös laskennan numeeriset erot ja palvelun
+mahdolliset päivitykset voivat aiheuttaa vaihtelua, vaikka
+syöte pysyisi samana.
+
 Kielimallien sovelluksissa seuraavan tokenin ennustaminen toimii mekanismina laajempien tehtävien ratkaisemiseen. Syötekontekstissa esitetään esimerkiksi kysymys tai ohje, johon mallin odotetaan tuottavan sisällöllisesti oikea vastaus. Tällöin on erotettava toisistaan tokenijonon todennäköisyys mallin määrittämässä jakaumassa ja sen oikeellisuus annetun tehtävän ratkaisuna. Todennäköisin tokenijono ei välttämättä ratkaise tehtävää oikein, sillä autoregressiivinen koulutustavoite ei sellaisenaan takaa tuotoksen loogista tai toiminnallista oikeellisuutta.
 
 Tämä ero korostuu luonnollisella kielellä esitettyjen kysymysten muuntamisessa SQL-kyselyiksi. Generoitu SQL-kysely voi olla syntaktisesti kelvollinen ja suoritettava, vaikka se vastaisi eri kysymykseen kuin käyttäjä tarkoitti.
@@ -716,19 +740,27 @@ p_{\theta}(y \mid c)
 \prod_{t=1}^{K}
 p_{\theta}(y_t \mid c,y_{<t}).
 $$
+Tämä esitys täsmentää kaksi tutkielman kannalta keskeistä
+vaihtelun lähdettä. Saman kysymyksen toistoissa konteksti \(c\)
+pysyy samana, joten tuotosten erot johtuvat generoinnin
+valintasäännöstä tai järjestelmän muista epädeterministisistä
+tekijöistä. Jos kysymys \(q\) korvataan merkitykseltään
+samalla muotoilulla \(q'\), muodostuu uusi konteksti
+\(c'=\operatorname{Serialize}(q',s,m)\). Mallin kannalta
+\(c\) ja \(c'\) ovat eri tokenijonoja, eikä jakaumien
+\(p_{\theta}(\cdot \mid c)\) ja \(p_{\theta}(\cdot \mid c')\)
+yhtäpitävyys seuraa arkkitehtuurista tai koulutustavoitteesta.
+Kielellisten variaatioiden suhteen robusti järjestelmä tuottaisi
+molemmista konteksteista merkitykseltään yhtäpitäviä kyselyitä,
+vaikka niiden tokenijonot eroaisivat toisistaan.
+
+Todennäköisyysmalli \(p_{\theta}(y \mid c)\) kuvaa kuitenkin vain kielimallin generointivaihetta, ei välttämättä koko Text-to-SQL-järjestelmän toimintaa. Järjestelmä voi myös valita skeemasta relevantit osat, hakea esimerkkejä, tarkistaa tuotetun SQL-kyselyn tai muodostaa korjatun ehdotuksen uudella mallikutsulla \cite{hong2024survey}. Tällöin sovelluksen toiminta on useiden käsittelyvaiheiden yhteistulos.
+
 Kontekstin ja generoinnissa tarvittavan historian on
 mahduttava mallin käytettävissä olevaan konteksti-ikkunaan.
 Laajan tietokannan tapauksessa koko skeeman ja kaiken
 lisätiedon sisällyttäminen yhteen syötteeseen ei siten
 välttämättä ole tarkoituksenmukaista.
-
-Tämä esitys kuvaa kielimallin generointivaihetta,
-ei välttämättä koko Text-to-SQL-järjestelmän toimintaa.
-Järjestelmä voi lisäksi valita relevantteja skeeman osia,
-hakea esimerkkejä, tarkistaa tuotettua SQL-kyselyä tai
-muodostaa korjatun ehdotuksen uuden mallikutsun avulla \cite{hong2024survey}.
-Sovelluksen toiminta on tällöin useiden käsittelyvaiheiden
-yhteistulos.
 
 Keskeinen osatehtävä on skeemaan kohdistaminen
 (engl.\ \emph{schema linking}), jossa kysymyksen ilmaukset
@@ -777,13 +809,11 @@ kuitenkaan takaa oikeaa tulosta. Malli voi soveltaa
 sitä väärin, ja virheellinen tai ristiriitainen
 kuvaus voi itsessään johtaa virheelliseen kyselyyn.
 
-SQL-kyselyn oikeellisuudessa on hyödyllistä erottaa
-kolme tasoa. Ensimmäinen on syntaktinen kelvollisuus:
-noudattaako tuotettu kysely käytetyn SQL-murteen
-kielioppia? Toinen on suoritettavuus: voidaanko kysely
-suorittaa kyseisessä tietokantaympäristössä? Kolmas
-on semanttinen oikeellisuus: toteuttaako kysely
-käyttäjän tarkoittaman tiedonhaun?
+SQL-kyselyn oikeellisuudessa on hyödyllistä erottaa kolme tasoa.
+Syntaktisesti kelvollinen kysely noudattaa käytetyn SQL-murteen
+kielioppia. Suoritettava kysely voidaan lisäksi suorittaa
+kyseisessä tietokantaympäristössä. Semanttisesti oikea kysely
+toteuttaa käyttäjän tarkoittaman tiedonhaun.
 
 Syntaktisesti kelvollinen kysely voi viitata
 olemattomaan sarakkeeseen ja olla siksi
@@ -843,9 +873,12 @@ esitystavasta, semanttisista määritelmistä,
 kysymyksen yksikäsitteisyydestä ja järjestelmän
 muista käsittelyvaiheista.
 
-Seuraavassa luvussa määritellään tutkimusasetelma,
-jossa tätä kokonaisuutta tarkastellaan Cortex Analystiin
-perustuvassa Text-to-SQL-tapaustutkimuksessa.
-Edellä esitetty teoria toimii tehtävän käsitteellisenä
-perustana, mutta sitä ei tulkita kuvaukseksi palvelun
-kaikista sisäisistä toteutusratkaisuista.
+Edellä esitetty kehys muodostaa luvussa \ref{sec:methodology}
+määriteltävän tutkimusasetelman käsitteellisen perustan.
+Autoregressiivinen generointi selittää, miksi samaa
+tiedontarvetta koskevat kyselyt voivat vaihdella, ja
+oikeellisuuden tasojen erottelu perustelee, miksi vaihtelua
+ja semanttista vastaavuutta on arvioitava erikseen. Teoriaa
+ei tulkita kuvaukseksi Cortex Analystin sisäisistä
+toteutusratkaisuista, vaan sen avulla jäsennetään järjestelmän
+havaittavaa toimintaa.

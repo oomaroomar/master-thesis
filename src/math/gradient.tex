@@ -1,5 +1,18 @@
 \section{Gradienttimenetelmä}\label{sec:grad}
 
+Edellisessä luvussa kielimallinnus muotoiltiin optimointiongelmaksi, jossa
+mallin parametrit valitaan siten, että ennustettu seuraavan tokenin jakauma
+vastaa mahdollisimman hyvin opetusaineistoa. Tässä luvussa tarkastellaan,
+millä menetelmillä tällainen ongelma ratkaistaan käytännössä. Tarkastelu on
+tutkielman kannalta olennainen, sillä kielimallin tuottama SQL-kysely on
+viime kädessä näyte jakaumasta, jonka muodon optimointi on määrännyt.
+
+Optimointi ei tuota eksplisiittistä sääntöjärjestelmää kyselyiden
+muodostamiseen, vaan parametrit, jotka minimoivat keskimääräistä
+ennustevirhettä suuressa aineistossa. Tämä selittää osaltaan, miksi
+järjestelmän tulkinta voi vaihdella merkitykseltään samanlaisten
+kysymysten välillä.
+
 Gradienttimenetelmä ja sen stokastinen muunnelma ovat ensimmäisen
 kertaluvun optimointimenetelmiä, joissa kohdefunktion gradienttia
 hyödynnetään parametrivektorin päivittämisessä. Tarkastellaan
@@ -276,7 +289,7 @@ ei-stationaarisessa pisteessä, kun oppimisnopeus valitaan ehdon
 \subsection{Häiriöalttius ja toisen kertaluvun geometria}
 \label{subsec:häiriöalttius}
 
-Stokastisen gradienttimenetelmän keskeinen haaste on, että
+Gradienttipohjaisten menetelmien keskeinen haaste on, että
 kohdefunktion lokaali kaarevuus voi vaihdella huomattavasti eri
 parametrisuunnissa. Tätä ilmiötä kutsutaan numeeriseksi
 häiriöalttiudeksi (engl. \emph{ill-conditioning}). Olkoon kohdefunktio
@@ -595,7 +608,13 @@ menetelmiä, kuten Adafactor, joissa pyritään säilyttämään adaptiivisen
 skaalaamisen keskeiset edut pienemmällä muistinkulutuksella
 \cite{shazeer2018adafactor}.
 
-Tässä tutkielmassa tarkastelun painopiste rajataan kuitenkin
-AdaGrad-, RMS-Prop- ja Adam-tyyppisiin menetelmiin, sillä ne muodostavat
-historiallisesti ja käsitteellisesti keskeisen perustan myöhemmille
-adaptiivisille optimointialgoritmeille.
+Tässä tutkielmassa tarkastelun painopiste rajataan AdaGrad-, RMSProp- ja
+Adam-tyyppisiin menetelmiin, sillä ne muodostavat historiallisesti ja
+käsitteellisesti keskeisen perustan myöhemmille adaptiivisille
+optimointialgoritmeille. Tutkielman empiirisessä osassa arvioitavan
+järjestelmän parametrit ovat kiinteät, eikä sen koulutuksessa käytettyjä
+menetelmiä tunneta. Optimoinnin tarkastelu ei siten selitä yksittäisiä
+havaintoja, vaan perustelee, miksi kielimallin käyttäytymistä on
+tarkoituksenmukaista arvioida tilastollisena ilmiönä. Seuraavassa luvussa
+siirrytään arkkitehtuuriin, jonka parametreja edellä kuvatuilla
+menetelmillä optimoidaan.
