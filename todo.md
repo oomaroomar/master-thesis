@@ -1,16 +1,16 @@
 Starting point: 11 to fix
-Currently done: 6
-Fixes left to do: 5
+Currently done: 7
+Fixes left to do: 4
 
 1. It is high time you pick a title for the thesis.
 
 2. The main methodological weakness is that you only 5 questions that you explore. No need to extend to more questions for the thesis, but do address this thing explicitly, present it as proof-of-concept or pilot study. Maybe also explain the case-selection logic.
 
-3. The ground truth for “correctness” is a little subjective, as it depends on the evaluator’s interpretation of the user’s information need. Think if there is anything you can do about it, but nothing that implies a major revision. State it as such if nothing else.
+3. There seems to be a little unclarity about the uniqueness of SQL queries. Two syntactically different queries are counted as the same if they are semantically equivalent. But two semantically equivalent queries can be counted as different if they use different implementation routes. One such example seems to be question B. Maybe discuss implementation-variation separately from semantic consistency.
 
-4. There seems to be a little unclarity about the uniqueness of SQL queries. Two syntactically different queries are counted as the same if they are semantically equivalent. But two semantically equivalent queries can be counted as different if they use different implementation routes. One such example seems to be question B. Maybe discuss implementation-variation separately from semantic consistency.
+4. Question E. Cortex Analyst refuses the question and you classify this as being erroneous. More evidence could help accept this classification, maybe explain why one row contains enough information or show the reference computation.
 
-5. Question E. Cortex Analyst refuses the question and you classify this as being erroneous. More evidence could help accept this classification, maybe explain why one row contains enough information or show the reference computation.
+5. ~~ The ground truth for “correctness” is a little subjective, as it depends on the evaluator’s interpretation of the user’s information need. Think if there is anything you can do about it, but nothing that implies a major revision. State it as such if nothing else. ~~
 
 6. ~~ The length is fine, no worries there. ~~
 
