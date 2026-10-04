@@ -1,11 +1,33 @@
 \begin{abstract}
-  Suurten kielimallien yleistyminen on mahdollistanut luonnollisen kielen muuntamisen suoritettaviksi tietokantakyselyiksi (Text-to-SQL). Vaikka kielimallit kykenevät tuottamaan syntaktisesti virheetöntä SQL-koodia, käytännön sovelluksissa haasteeksi muodostuu semanttinen luotettavuus: vastaako muodostettu kysely käyttäjän todellista tiedontarvetta ja säilyykö tulkinta johdonmukaisena kysymysten toistoissa sekä kielellisissä variaatioissa.
+  \noindent Tässä tutkielmassa arvioidaan kielimallipohjaisen Text-to-SQL-järjestelmän
+  kykyä muodostaa käyttäjän tiedontarvetta vastaavia SQL-kyselyitä sekä
+  tulkinnan johdonmukaisuutta kysymysten toistoissa ja sanamuodon
+  muutoksissa.
 
-  Tämän tutkielman tavoitteena on selvittää, miten luotettavasti ja johdonmukaisesti semanttista näkymää hyödyntävä autoregressiivinen kielimalli kykenee tulkitsemaan luonnollisen kielen tiedontarpeita suhteessa kysymysten toistoihin sekä niiden merkityksen säilyttäviin kielellisiin variaatioihin. Työn kontribuutio muodostuu teoreettisesta ja empiirisestä osasta. Teoreettisessa osassa jäsennetään se matemaattinen ja arkkitehtuurinen jatkumo, jolla diskreeteistä tekstiesityksistä, optimointimenetelmistä ja itsehuomiomekanismista rakentuu symbolista koodia tuottava autoregressiivinen todennäköisyysmalli. Teoria tarjoaa käsitteellisen perustan kielimallin toiminnalle ja havaitun vaihtelun ymmärtämiselle.
+  Teoreettisessa osassa jäsennetään se matemaattinen ja arkkitehtuurinen jatkumo, jolla diskreeteistä tekstiesityksistä, optimointimenetelmistä ja itsehuomiomekanismista rakentuu symbolista koodia tuottava autoregressiivinen todennäköisyysmalli. Teoria tarjoaa käsitteellisen perustan kielimallin toiminnalle ja havaitun vaihtelun ymmärtämiselle.
 
-  Empiirisessä osassa toteutetaan tapaustutkimus, jossa arvioidaan Snowflaken Cortex Analyst -järjestelmää aidossa puhelinkeskusympäristössä. Aineisto koostuu neljästä relaatiotaulusta, joiden rakennetta ja käsitteistöä kuvataan semanttisen näkymän avulla. Arviointi rajataan tuotettujen SQL-kyselyiden analyysiin ilman tietokanta-ajojen tulosjoukkoja aineiston luottamuksellisuuden sekä tietokannan tilasta riippuvien vääristymien välttämiseksi. Analyysissa erotetaan kyselyiden syntaktinen ja rakenteellinen vaihtelu niiden merkitystä muuttavista eroista.
+  Empiirinen osa on tapaustutkimus Snowflaken
+  Cortex Analyst -järjestel\-mästä, joka hyödyntää semanttista näkymää
+  puhelinkeskusdataa sisältävässä tietokantaympäristössä.
 
-  Tutkimuksen tulokset osoittavat, että [täydennä tähän keskeinen tulos: esim. järjestelmä saavutti hyvän semanttisen vastaavuuden peruskyselyissä, mutta toistoissa ja erityisesti parafraaseissa havaittiin vaihtelua liittyen liitoksiin / ryhmittelyihin / rajauksiin]. Tyypillisimmät virheet liittyivät [esim. aggregaattien valintaan / monimutkaisten ehtojen tulkintaan]. Tutkielma tuottaa tapauskohtaista tietoa teollisen mittakaavan Text-to-SQL-järjestelmien luotettavuudesta ja osoittaa, että semanttisen mallin tarkkuuden lisäksi järjestelmän arvioinnissa on huomioitava kielellisen robustisuuden ja toistettavuuden haasteet.
+  Tutkimuksessa esitettiin viisi kysymystä ja niiden sanamuotovariaatiot
+  kukin kymmenen kertaa. Yhteensä 250 vastausta arvioitiin manuaalisesti
+  tuotettujen SQL-kyselyiden perusteella.
+  Tiedontarpeen tulkinnan vaihtelu erotettiin saman tulkinnan
+  vaihtoehtoisista SQL-toteutuksista.
+
+  Suorituksista 173 tuotti oikean, 18 melkein oikean ja 19 väärän
+  SQL-kyselyn. SQL-kysely jäi muodostamatta 40 suorituksessa. Selkeät
+  kysymykset ja semanttisen näkymän valmiiden metriikoiden tukemat tehtävät
+  tuottivat vakaita tulkintoja. Ongelmia ilmeni erityisesti implisiittisten
+  taustaoletusten huomioimisessa, suodatuksissa ja duplikaattien
+  käsittelyssä. Sanamuodon muutoksiin liittyi myös tulkintaeroja.
+
+  Tulosten perusteella tulkinnan johdonmukaisuus ei takaa oikeellisuutta,
+  eikä SQL-toteutusten vaihtelu itsessään osoita epäluotettavuutta.
+  Järjestelmä voi tukea analytiikkatyötä rajatuissa käyttötapauksissa,
+  mutta sen tuottamat kyselyt edellyttävät kriittistä arviointia.
+  Havainnot koskevat tutkittua järjestelmää ja tutkimusasetelmaa.
 
   \vspace{1em}
   \noindent\textbf{Avainsanat:} kielimallit, Text-to-SQL, Cortex Analyst, Transformer, semanttinen näkymä, luotettavuus, autoregressiivinen mallinnus
