@@ -39,13 +39,66 @@ kysymyksen toistoissa ja silloin, kun kysymyksen esitystapaa muutetaan
 sen merkitystä muuttamatta. Nämä kysymykset motivoivat kielimallipohjaisten
 järjestelmien empiiristä arviointia.
 
-Tämän tutkielman keskeisenä tutkimuskysymyksenä on selvittää, miten luotettavasti ja johdonmukaisesti semanttista näkymää hyödyntävä autoregressiivinen kielimalli kykenee tulkitsemaan luonnollisen kielen tiedontarpeita suhteessa kysymysten toistoihin ja niiden merkityksen säilyttäviin kielellisiin variaatioihin. Tutkielman kontribuutio Text-to-SQL-tutkimukselle muodostuu kahdesta toisiaan tukevasta näkökulmasta. Teoreettisella tasolla työn tavoitteena on jäsentää se matemaattinen ja arkkitehtuurinen jatkumo, jolla diskreeteistä esityksistä, optimointimenetelmistä ja itsehuomiosta rakentuu koodia tuottava todennäköisyysmalli. Empiirisellä tasolla tutkielma tuottaa uutta tietoa teollisen mittakaavan Text-to-SQL-järjestelmän käyttäytymisestä arvioimalla tuotettujen SQL-kyselyiden vaihtelevuutta, robustisuutta ja semanttista vastaavuutta aidossa puhelinkeskusympäristössä.
+Tämän tutkielman keskeisenä tutkimuskysymyksenä on selvittää, miten
+luotettavasti semanttista näkymää hyödyntävä kielimallipohjainen
+Text-to-SQL-järjestelmä muodostaa käyttäjän tiedontarvetta vastaavia
+SQL-kyselyitä ja miten johdonmukaisena sen tulkinta säilyy saman
+kysymyksen toistoissa sekä kielellisissä variaatioissa, joiden
+tavoitteena on säilyttää kysymyksen merkitys.
 
-Tutkielman empiirisessä osassa tarkastellaan Snowflaken Cortex Analyst -järjes\-telmää \cite{CortexAnalyst}. Se muodostaa käyttäjän luonnollisen kielen kysymyksistä SQL-kyselyitä hyödyntäen tietokannan rakennetta ja käsitteitä kuvaavaa semanttista näkymää \cite{CortexAnalyst}. Tapaustutkimuksen aineistona on puhelinkeskusdataa sisältävä tietokanta, joka koostuu yhdestä keskusteludataa sisältävästä päätaulusta ja kolmesta sitä täydentävästä taulusta. Semanttinen näkymä kuvaa aineiston tauluja, kenttiä ja niiden merkityksiä ja toimii siten välittävänä kuvauksena luonnollisen kielen kysymysten ja tietokannan välillä \cite{CortexAnalyst}.
+Tutkielman kontribuutio Text-to-SQL-tutkimukselle muodostuu kahdesta toisiaan tukevasta näkökulmasta. Teoreettisella tasolla työn tavoitteena on jäsentää se matemaattinen ja arkkitehtuurinen jatkumo, jolla diskreeteistä esityksistä, optimointimenetelmistä ja itsehuomiosta rakentuu koodia tuottava todennäköisyysmalli. Empiirisellä tasolla tutkielma tuottaa tapauskohtaista tietoa
+kaupallisen Text-to-SQL-järjestelmän käyttäytymisestä aidossa
+puhelinkeskusympäristössä.
+
+Text-to-SQL-järjestelmän käyttäytymisestä aidossa
+puhelinkeskusympäristössä. Tarkastelussa arvioidaan tuotettujen
+SQL-kyselyiden vastaavuutta käyttäjän tiedontarpeeseen, tulkintojen
+johdonmukaisuutta kysymysten toistoissa ja sanamuodon muutoksissa
+sekä tulkinnan vaihtelusta erillistä toteutusvaihtelua.
+
+Tutkielman empiirinen osa toteutetaan eksploratiivisena
+pilottitutkimuksena ja tapaustutkimuksena, jossa tarkastellaan
+Snowflaken Cortex Analyst -järjestelmää \cite{CortexAnalyst}.
+Järjestelmä muodostaa luonnollisen kielen kysymyksistä SQL-kyselyitä
+hyödyntäen tietokannan rakennetta ja käsitteitä kuvaavaa semanttista
+näkymää. Aineistona on puhelinkeskusdataa sisältävä tietokanta, joka
+koostuu yhdestä keskusteludataa sisältävästä päätaulusta ja kolmesta
+sitä täydentävästä taulusta.
+
+Tarkastelu rajataan viiteen tarkoituksenmukaisesti valittuun
+tiedontarpeeseen, niiden toistuviin suorituksiin ja vaihtoehtoisiin
+kysymysmuotoiluihin. Kysymykset valittiin sovellusympäristön
+analyysitarpeiden ja semanttisen näkymän rakenteen perusteella siten,
+että mukana on sekä valmiiden metriikoiden tukemia että useiden
+kenttien ja ehtojen yhdistämistä edellyttäviä tehtäviä. Toistot ja
+sanamuotovariaatiot mahdollistavat näiden tiedontarpeiden sisäisen
+vaihtelun tarkastelun, mutta eivät laajenna tehtäväkohtaista
+kattavuutta. Tavoitteena on tuottaa tapauskohtaisia havaintoja ja
+lähtökohtia jatkotutkimukselle, ei kattavaa arviota järjestelmän
+yleisestä suorituskyvystä.
 
 Teoreettinen tarkastelu tarjoaa käsitteellisen perustan kielimallipohjaisen kyselymuodostuksen ymmärtämiselle, mutta sitä ei tule tulkita Cortex Analystin sisäisen toteutuksen kuvaukseksi. Kaupallisten kielimallijärjestelmien tarkat toteutustiedot eivät yleensä ole kokonaisuudessaan julkisia, joten tapaustutkimuksessa järjestelmää arvioidaan sen tuottamien SQL-kyselyiden perusteella. Tarkastelun kohteena on näin ollen järjestelmän havaittava toiminta, ei yksittäisten mallikomponenttien vaikutusten eristäminen.
 
-Arviointi rajataan tuotettuihin SQL-kyselyihin eikä niiden suorittamisen palauttamiin tulosjoukkoihin. Rajaus on perusteltu aineiston luottamuksellisuudella sekä sillä, että virheellisen kyselyn vaikutus tulosjoukkoon riippuu myös tietokannan sisällöstä. Toisaalta erilaiset SQL-kyselyt voivat olla merkitykseltään yhtäpitäviä, joten kyselyiden välinen vaihtelu ei sellaisenaan osoita virhettä. Tarkastelussa erotetaan siksi kyselyiden vaihtelu ja niiden vastaavuus käyttäjän tiedontarpeeseen. Tulokset kuvaavat järjestelmän toimintaa valitussa tutkimusasetelmassa, eivät sen yleistä suorituskykyä kaikissa Text-to-SQL-tehtävissä.
+Arviointi kohdistuu tuotettuihin SQL-kyselyihin eikä niiden
+suorittamisen palauttamiin tulosjoukkoihin. Lisäksi tarkastellaan
+vastauksia, joissa järjestelmä ei tuota SQL-kyselyä. Rajaus on
+perusteltu aineiston luottamuksellisuudella sekä sillä, että
+virheellisen kyselyn vaikutus tulosjoukkoon riippuu myös tietokannan
+sisällöstä.
+
+Erilaiset SQL-kyselyt voivat vastata samaan
+tiedontarpeeseen, vaikka niiden palauttamien tietojen esitysmuoto
+tai laajuus poikkeaisi toisistaan. Arviointi ei siten edellytä
+kyselyiden täydellistä semanttista ekvivalenssia, vaan siinä
+tarkastellaan, sisältäisikö kyselyn tuottama vastaus käyttäjän
+tarvitseman tiedon sovellusalueella perustelluin rajauksin ja
+taustaoletuksin.
+
+Tiedontarpeen tulkinnan vaihtelu erotetaan
+SQL-kyselyiden toteutusvaihtelusta, eikä toteutusvaihtelu itsessään
+osoita virhettä tai tulkinnan epäjohdonmukaisuutta. Tulokset kuvaavat
+järjestelmän toimintaa valitussa tutkimusasetelmassa, eivät sen
+yleistä suorituskykyä kaikissa Text-to-SQL-tehtävissä.
 
 Tutkielma jakautuu teoriaosaan ja empiiriseen osaan. Luvuissa \ref{sec:discrete}--\ref{sec:transformer} rakennetaan kielimallien matemaattinen ja arkkitehtuurinen perusta diskreeteistä esityksistä moderniin Transformer-malliin ja optimointiin, mikä luo pohjan ymmärtää todennäköisyyspohjaisen generoinnin ominaisuuksia symbolisessa päättelyssä. Luvussa \ref{sec:methodology} esitellään Cortex Analystiin pohjautuva tutkimusasetelma, arviointikriteerit ja semanttisen mallin rooli tutkimuskysymyksen operationalisoinnissa. Luvuissa \ref{sec:experiments}--\ref{sec:results} kuvataan kokeet ja analysoidaan tulokset, minkä jälkeen luvuissa \ref{sec:limitations}--\ref{sec:conclusions} pohditaan työn rajoituksia sekä esitetään johtopäätökset.
 

@@ -11,22 +11,138 @@ Neljänneksi semanttisen näkymän laatu vaikuttaa suoraan siihen, miten hyvin C
 
 Viidenneksi kielimallien toimintaa luonnehtii tietty epädeterministisyys, minkä vuoksi tulokset voivat vaihdella eri suorituskerroilla tai järjestelmäversioiden välillä. Lisäksi kaupalliset kielimallipohjaiset järjestelmät voivat muuttua ajan myötä ilman, että kaikki muutokset ovat käyttäjälle näkyviä. Tämän vuoksi tutkimuksen havainnot kuvaavat järjestelmän toimintaa tiettynä ajankohtana ja tietyssä konfiguraatiossa eivätkä välttämättä pysyvää ominaisuutta \cite{chen2024chatgpt}.
 
-Kuudenneksi tuotettujen SQL-kyselyiden oikeellisuuden arvioi yksi arvioija. Tämä heikentää luokittelun reliabiliteettia ja lisää mahdollisuutta siihen, että osa luokitteluista sisältää arvioijan tulkintaan liittyvää subjektiivisuutta.
+Kuudenneksi herkkyyskokeen kysymysvariaatiot muodosti tutkija, eikä
+niiden merkitysvastaavuutta varmennettu riippumattomasti. Osa
+muotoiluista (esim. C2) voi muuttaa tai hämärtää alkuperäistä
+tiedontarvetta, joten havaittua vaihtelua ei voida tulkita pelkästään
+merkitystä säilyttävien muotoilumuutosten vaikutukseksi.
+Toisaalta käyttäjät muotoilevat kysymyksiä käytännössä epätarkasti, joten
+tällaiset variaatiot voivat kuvata myös realistista käyttöä.
+
+Seitsemänneksi tutkimuksessa tarkasteltiin vain viittä tiedontarvetta.
+Vaikka kysymykset edustavat erilaisia puhelinkeskusdatan
+analyysitehtäviä, ne kattavat vain rajallisen osan mahdollisista
+käyttötilanteista. Kysymysten toistaminen ja sanamuotovariaatiot
+mahdollistavat valittujen tiedontarpeiden sisäisen vaihtelun
+tarkastelun, mutta eivät laajenna tutkimuksen kattavuutta uusiin
+analyysitehtäviin. Tutkimus on tämän vuoksi luonteeltaan
+eksploratiivinen pilottitutkimus, jonka havainnot kuvaavat
+järjestelmän toimintaa valituissa kyselytilanteissa ja tarjoavat
+lähtökohtia laajemmalle jatkotutkimukselle.
+
+Kahdeksanneksi tutkija osallistui semanttisen näkymän rakentamiseen,
+laati kokeissa käytetyt kysymykset ja arvioi tuotetut SQL-kyselyt.
+Tämä sovellusympäristön tuntemus tuki aineiston tulkintaa, mutta
+roolien yhdistyminen voi aiheuttaa vinoumaa sekä kysymysten valintaan
+että vastausten arviointiin. Kysymysjoukko voi esimerkiksi painottua
+tutkijalle tuttuihin analyysitarpeisiin tai semanttisen näkymän
+tunnettuihin ominaisuuksiin. Lisäksi tutkija voi pitää joitakin
+toimialaan liittyviä taustaoletuksia itsestään selvinä, vaikka ne eivät
+ilmene yksiselitteisesti kysymyksen sanamuodosta tai semanttisesta
+näkymästä. Arviointi perustuu siten tutkijan perusteltuun mutta ei
+riippumattomasti varmennettuun tulkintaan käyttäjän tiedontarpeesta.
+Koska arvioinnin suoritti yksi henkilö, arvioijien välistä
+yhtenevyyttä ei voitu tarkastella.
 
 \section{Johtopäätökset}\label{sec:conclusions}
 
-Tämän tutkielman tavoitteena oli arvioida, kuinka hyvin Snowflaken Cortex Analyst soveltuu luonnollisen kielen tietokantakyselyihin puhelinkeskusdataa sisältävässä tietokantaympäristössä. Tarkastelun kohteena olivat erityisesti järjestelmän kyky tuottaa oikeellisia SQL-kyselyitä, sen konsistenssi tilanteissa, joissa sama kysymys esitetään useita kertoja, sekä sen herkkyys sellaisille syötteen muotoilun muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä.
+Tämän eksploratiivisen pilottitutkimuksen tavoitteena oli
+tarkastella Snowflaken Cortex Analystin toimintaa viidessä
+puhelinkeskusdataan liittyvässä kyselytilanteessa. Tutkimus
+tuottaa tapauskohtaisia havaintoja SQL-kyselyiden
+oikeellisuudesta, tulkinnallisesta konsistenssista ja
+kysymysmuotoilujen vaikutuksista, mutta ei muodosta kattavaa
+arviota järjestelmän soveltuvuudesta luonnollisen kielen
+tietokantarajapinnaksi.
 
-Tulokset osoittavat, että Cortex Analyst kykenee monissa tapauksissa tuottamaan oikeellisia ja keskenään johdonmukaisia SQL-kyselyitä. Erityisesti yksinkertaisemmat kysymykset sekä sellaiset kysymykset, joihin oli määritelty valmiita metriikoita semanttisessa näkymässä, tuottivat hyvin vakaita tuloksia. Tämä viittaa siihen, että kielimallipohjainen luonnollisen kielen rajapinta voi toimia käyttökelpoisena välineenä tietokannan hyödyntämisessä silloin, kun kysymykset ovat rakenteeltaan selkeitä ja semanttinen näkymä tukee niitä riittävän hyvin.
+Tutkituissa kyselytilanteissa Cortex Analyst tuotti useissa
+suorituksissa oikeellisia SQL-kyselyitä ja säilytti tiedontarpeen
+tulkinnan johdonmukaisena. Kysymykset A ja B, joiden tiedontarpeita
+tukivat semanttiseen näkymään määritellyt valmiit metriikat,
+tuottivat oikeita ja tulkinnaltaan vakaita kyselyitä.
 
-Tutkimus osoitti kuitenkin myös merkittäviä rajoituksia. Järjestelmän suorituskyky heikkeni erityisesti silloin, kun kysymykseen sisältyi implisiittisiä taustaoletuksia tai kun oikean SQL-kyselyn muodostaminen edellytti tarkkaa suodatusta, duplikaattien hallintaa tai monitulkintaisen sanamuodon tulkintaa. Nämä havainnot ovat linjassa aiemman Text-to-SQL-tutkimuksen kanssa, jossa vastaavien monimutkaisten ehtojen ja taustatietojen yhdistämisen on todettu olevan kielimalleille huomattava haaste \cite{li2024bird,yu2018spider}. Lisäksi havaittiin, että semanttisesti lähes saman sisältöiset kysymykset saattoivat johtaa erilaisiin SQL-kyselyihin ja joissakin tapauksissa myös erilaisiin virheisiin. Tämä ilmentää kielimalleille tyypillistä syöteherkkyyttä (\textit{prompt sensitivity}), jossa pienetkin sanamuodon vaihtelut voivat muuttaa tuotettua lopputulosta merkittävästi \cite{chatterjee2024posix}, mikä heikentää luonnollisen kielen rajapinnan ennustettavuutta käyttäjän näkökulmasta.
+Tulkinnallinen konsistenssi ei kuitenkaan edellyttänyt saman
+toteutustavan käyttämistä. Esimerkiksi kysymyksessä B järjestelmä
+hyödynsi joko semanttiseen näkymään määriteltyä metriikkaa tai laski
+vastaavan arvon taulun kentistä, mutta tiedontarpeen tulkinta säilyi
+samana. Nämä havainnot antavat alustavaa näyttöä Cortex Analystin
+käyttökelpoisuudesta valituissa kyselytilanteissa, mutta niiden
+perusteella ei voida määrittää, millaisissa tehtävissä järjestelmä
+toimii yleisesti luotettavasti.
 
-Keskeinen havainto on, että järjestelmän luotettavuus ei riipu yksinomaan taustalla olevasta kielimallista, vaan myös siitä, miten hyvin semanttinen näkymä on suunniteltu. Tutkimuksessa havaitut virheet liittyivät usein tilanteisiin, joissa tietokannan kenttien merkitysten erottelu ei ollut mallin näkökulmasta riittävän selkeä. Tämän perusteella voidaan päätellä, että semanttinen näkymä ei ole pelkästään tekninen apurakenne, vaan keskeinen osa koko järjestelmän toimintaa. Sen huolellinen suunnittelu, yksiselitteinen nimeäminen ja iteratiivinen kehittäminen voivat parantaa luonnollisen kielen kyselyjärjestelmän luotettavuutta merkittävästi.
+Tutkimuksessa havaittiin myös virheellisiä kyselyitä ja
+perusteettomia kieltäytymisiä kyselyn muodostamisesta.
+Havaitut ongelmat liittyivät implisiittisten taustaoletusten
+huomioimiseen, suodatukseen, duplikaattien hallintaan ja
+monitulkintaisiin kysymysmuotoiluihin. Nämä havainnot ovat linjassa aiemman
+Text-to-SQL-tutkimuksen kanssa, jossa vastaavien monimutkaisten ehtojen
+ja taustatietojen yhdistämisen on todettu olevan kielimalleille huomattava
+haaste \cite{li2024bird,yu2018spider}.
 
-Tutkimuksen perusteella konsistenssia ei myöskään voida pitää yksinään riittävänä laadun mittarina. Järjestelmä saattoi tuottaa saman tuloksen toistuvasti myös silloin, kun tulos oli virheellinen tai kun SQL-kyselyä ei tuotettu lainkaan. Toisaalta joissakin tapauksissa samaan kysymykseen saatiin useita erilaisia SQL-kyselyitä, joista osa oli oikeellisia ja osa virheellisiä. Tämä osoittaa, että luonnollisen kielen tietokantarajapintojen arvioinnissa on tarkasteltava samanaikaisesti sekä oikeellisuutta että vaihtelua.
+Herkkyyskokeessa kysymysten eri
+muotoilut johtivat sekä saman tulkinnan vaihtoehtoisiin SQL-toteutuksiin
+että tiedontarpeen tulkinnan muutoksiin. Pelkkä toteutusvaihtelu ei
+merkinnyt virheellistä tai epäjohdonmukaista tulkintaa. Sen sijaan
+tulkinnan muutoksiin liittyi virheellisiä kyselyitä, mikä heikentää
+luonnollisen kielen rajapinnan ennustettavuutta käyttäjän näkökulmasta.
+Havainto on yhdenmukainen kielimallien syöteherkkyyttä koskevan
+tutkimuksen kanssa \cite{chatterjee2024posix}. Koska kysymysvariaatioiden
+merkitysvastaavuutta ei varmennettu riippumattomasti, havaittuja
+tulkintaeroja ei kuitenkaan voida selittää yksinomaan merkitystä
+säilyttävien sanamuodon muutosten vaikutuksella.
 
-Kokonaisuutena tutkielma tukee alan yleistä näkemystä, jonka mukaan luonnollisen kielen käyttö tietokantojen rajapintana on lupaava mutta vielä osin epävarma lähestymistapa \cite{liu2024survey,deng2022recent}. Cortex Analyst voi toimia tehokkaana työkaluna erityisesti rajatuissa käyttötapauksissa, joissa tietokannan rakenne tunnetaan hyvin ja semanttinen näkymä on laadittu huolellisesti. Sen sijaan tilanteissa, joissa kysymykset sisältävät implisiittisiä oletuksia, monitulkintaisuutta tai useita päättelyvaiheita, järjestelmän tuottamiin kyselyihin on syytä suhtautua varauksella.
+Tutkimuksessa yleisimmin havaitut suodatusvirheet liittyivät sarakkeiden
+\texttt{direction} ja \texttt{direction\_original} käyttöön. Tämä antaa
+aihetta hypoteesille, että näiden kenttien merkitysten selkeämpi erottelu
+semanttisessa näkymässä voisi parantaa järjestelmän kykyä muodostaa
+oikeellisia SQL-kyselyitä. Laajemmin voidaan olettaa, että semanttisen
+näkymän huolellinen suunnittelu, yksiselitteinen nimeäminen ja
+iteratiivinen kehittäminen voisivat tukea luonnollisen kielen
+kyselyjärjestelmän luotettavuutta. Tutkimuksessa ei kuitenkaan vertailtu
+erilaisia semanttisia näkymiä, joten niiden vaikutusta järjestelmän
+suorituskykyyn ei voida näiden tulosten perusteella osoittaa.
 
-Tutkielman tulokset viittaavat siihen, että käytännön kehitystyössä huomio kannattaa kohdistaa paitsi mallin suorituskykyyn myös siihen, miten järjestelmälle tarjottu semanttinen konteksti on rakennettu. Tulevassa tutkimuksessa olisi hyödyllistä vertailla useita erilaisia semanttisia näkymiä, testata järjestelmää muissa sovellusympäristöissä sekä tarkastella tuotettujen SQL-kyselyiden lisäksi myös niiden palauttamien vastausten oikeellisuutta. Lisäksi useamman arvioijan käyttö voisi parantaa luokittelun reliabiliteettia ja vahvistaa tulosten luotettavuutta.
+Tutkimuksen perusteella tulkinnallista konsistenssia ei voida pitää
+yksinään riittävänä laadun mittarina. Järjestelmä saattoi toistaa saman
+virheellisen tulkinnan useilla suorituskerroilla. Lisäksi kysymyksessä E
+järjestelmä kieltäytyi johdonmukaisesti SQL-kyselyn muodostamisesta,
+vaikka kysymykseen voitiin vastata käytettävissä olevan aineiston
+perusteella. Tämä osoittaa, ettei myöskään vastauskäyttäytymisen
+toistuvuus takaa oikeellisuutta. Toisaalta samaan kysymykseen tuotetut
+erilaiset SQL-toteutukset saattoivat perustua samaan oikeaan tulkintaan,
+jolloin toteutusvaihtelu ei itsessään merkinnyt luotettavuuden
+heikkenemistä. Luonnollisen kielen tietokantarajapintojen arvioinnissa
+on siten tarkasteltava oikeellisuutta ja tulkinnallista konsistenssia
+sekä raportoitava toteutusvaihtelu niistä erillään.
 
-Tämän tutkimuksen perusteella voidaan päätellä, että kielimallipohjaiset luonnollisen kielen tietokantarajapinnat eivät vielä täysin korvaa asiantuntijan laatimia kyselyitä, mutta ne voivat jo nyt toimia hyödyllisenä tukena analytiikkatyössä. Niiden käytännön arvo riippuu kuitenkin ratkaisevasti siitä, kuinka hyvin järjestelmän toimintaympäristö, semanttinen malli ja käyttötapa on sovitettu yhteen.
+Pilottitutkimuksen havainnot ovat yhdenmukaisia aiemman
+kirjallisuuden kanssa, jossa luonnollisen kielen käyttöä
+tietokantojen rajapintana pidetään lupaavana mutta edelleen
+epävarmana lähestymistapana \cite{liu2024survey,deng2022recent}.
+
+Valituissa kyselytilanteissa Cortex Analyst tuotti sekä
+oikeiksi arvioituja SQL-kyselyitä että virheellisiksi
+arvioituja kyselyitä ja perusteettomia kieltäytymisiä
+kyselyn muodostamisesta. Havaintojen perusteella erityisesti implisiittisiä oletuksia,
+monitulkintaisuutta tai useita päättelyvaiheita sisältävissä
+tutkituissa kyselytilanteissa järjestelmän tuottamien
+kyselyiden oikeellisuus on syytä varmistaa.
+
+Tutkielman tulokset viittaavat siihen, että käytännön kehitystyössä huomio kannattaa kohdistaa paitsi mallin suorituskykyyn myös siihen, miten järjestelmälle tarjottu semanttinen konteksti on rakennettu. Keskeinen jatkotutkimuksen tarve on laajentaa tarkastelua
+useampiin tiedontarpeisiin. Kysymysjoukko tulisi muodostaa
+ennalta määriteltyjen tehtävätyyppien tai todellisten
+käyttäjäkysymysten perusteella, jotta voitaisiin arvioida,
+toistuvatko tässä pilottitutkimuksessa havaitut ilmiöt
+laajemmassa aineistossa.
+
+Tulevassa tutkimuksessa olisi hyödyllistä vertailla useita erilaisia semanttisia näkymiä, testata järjestelmää muissa sovellusympäristöissä sekä tarkastella tuotettujen SQL-kyselyiden lisäksi myös niiden palauttamien vastausten oikeellisuutta. Lisäksi useamman arvioijan käyttö voisi parantaa luokittelun reliabiliteettia ja vahvistaa tulosten luotettavuutta.
+
+Tämä pilottitutkimus osoittaa, että Cortex Analyst voi tuottaa
+tiedontarvetta vastaavia SQL-kyselyitä valituissa
+puhelinkeskusdatan analyysitehtävissä, mutta oikeellisuus ei
+säilynyt kaikissa kysymysmuotoiluissa ja suorituksissa.
+Tulokset puoltavat tuotettujen kyselyiden oikeellisuuden
+varmistamista tässä sovellusympäristössä. Järjestelmän laajemman
+käyttökelpoisuuden arviointi edellyttää monipuolisempaa
+kysymysjoukkoa ja tuotettujen vastausten oikeellisuuden
+tarkastelua.

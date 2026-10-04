@@ -1,7 +1,24 @@
 \section{Metodologia}\label{sec:methodology}
 
 \subsection{Tutkimusasetelma}
-Tutkimus toteutetaan empiirisenä tapaustutkimuksena, jossa arvioidaan yhden kielimallipohjaisen järjestelmän toimintaa rajatussa sovelluskontekstissa. Tavoitteena ei ole rakentaa uutta mallia tai vertailla useita eri järjestelmiä keskenään, vaan tarkastella, miten Cortex Analyst suoriutuu käytännöllisestä tehtävästä, jossa luonnollisen kielen kysymykset muunnetaan SQL-kyselyiksi. Tapaustutkimus soveltuu tähän tarkoitukseen hyvin, koska se mahdollistaa järjestelmän toiminnan yksityiskohtaisen tarkastelun todellisessa kaupallisessa ympäristössä.
+Tutkimus toteutetaan eksploratiivisena pilottitutkimuksena ja
+empiirisenä tapaustutkimuksena, jossa arvioidaan yhden
+kielimallipohjaisen järjestelmän toimintaa rajatussa
+sovelluskontekstissa. Tarkastelu perustuu viiteen valittuun
+tiedontarpeeseen, niiden toistuviin suorituksiin ja
+vaihtoehtoisiin kysymysmuotoiluihin. Vaikka aineisto sisältää
+250 erillistä suoritusta, tutkimuksen tehtäväkohtainen
+kattavuus perustuu viiteen tiedontarpeeseen. Toistot ja
+kysymysvariaatiot kuvaavat näiden tiedontarpeiden sisäistä
+vaihtelua, eivät järjestelmän suoriutumista 250 erilaisessa
+analyysitehtävässä.
+
+Tavoitteena ei ole muodostaa kattavaa arviota Cortex Analystin
+yleisestä suorituskyvystä, vaan tarkastella sen toimintaa
+valituissa kyselytilanteissa sekä tunnistaa onnistumisia,
+virhetilanteita ja jatkotutkimuksessa tarkasteltavia ilmiöitä.
+Tapaustutkimus mahdollistaa näiden ilmiöiden yksityiskohtaisen
+analyysin todellisessa kaupallisessa ympäristössä.
 
 Tutkimuksen analyysiyksikkönä on yksittäinen käyttäjän luonnollisen kielen kysymys ja sitä vastaava Cortex Analystin tuottama SQL-kysely. Arviointi kohdistuu siihen, vastaako muodostettu kysely käyttäjän tarkoitusta, hyödyntääkö se oikeita tauluja ja kenttiä sekä noudattaako se tietokannan rakennetta. Näin tutkimus keskittyy suoraan siihen vaiheeseen, jossa kielimallin tulkinta muuttuu koneellisesti suoritettavaksi tietokantakyselyksi.
 
@@ -58,7 +75,15 @@ Cortex Analystin toiminta perustuu semanttiseen näkymään, jossa tietokannan t
   \label{tb:example_record}
 \end{table}
 
-Tutkimuksessa käytetty semanttinen näkymä on tutkijan rakentama yhteistyössä yksityisen IT-konsulttiyrityksen Knowitin ja yhden heidän asiakkaan kanssa osana hanketta, jossa pyritään hyödyntämään kielimalleja helpottamaan tietokannan käyttöä.
+Tutkimuksessa käytetty semanttinen näkymä rakennettiin tutkijan,
+IT-konsulttiyritys Knowitin ja yhden sen asiakkaan yhteistyönä osana
+hanketta, jossa pyritään hyödyntämään kielimalleja tietokannan käytön
+helpottamiseksi. Tutkija osallistui siten arvioitavan järjestelmän
+semanttisen kontekstin rakentamiseen sekä laati tutkimuksessa käytetyt
+kysymykset ja arvioi tuotetut SQL-kyselyt. Sovellusympäristön tuntemus
+tuki kysymysten laatimista ja kyselyiden arviointia, mutta kehittämis-
+ja arviointiroolien yhdistyminen on huomioitava tutkimuksen
+riippumattomuutta tarkasteltaessa.
 
 Tässä tutkimuksessa käytetty semanttinen näkymä kuvailee kaikki kuvassa \ref{fig:table_spec} esiintyvät taulut, niiden kentät ja suhteet toisiinsa sekä useita kentistä laskettuja metriikoita. Kuvassa \ref{fig:example_semantic_view} on esitetty yksinkertaistettu versio käytetystä semanttisesta näkymästä.
 
@@ -89,40 +114,107 @@ tables:
     metrics:
       - name: AVERAGE_CALL_DURATION
         description: Average call duration in seconds
-        expr: sum(conv.call_duration)
+        expr: avg(conv.call_duration)
         access_modifier: public_access
     primary_key:
       columns:
         - PARTICIPANTS_ID
         - IDENTIFIER
 \end{lstlisting}
-  \caption{Esimerkki semanttisesta näkymästä. Esimerkki on yksinkertaistettu versio tutkimuksessa käytetystä näkymästä.}
+  \caption{Esimerkki semanttisesta näkymästä.}
   \label{fig:example_semantic_view}
 \end{figure}
 
 Kokeiden aikana Cortex Analyst käytti taustallaan Anthropicin Claude Sonnet 4 -mallia \cite{anthropic2026claude4systemcard}. Tutkimuksen tulokset kuvaavat ensisijaisesti juuri tämän järjestelmän ja mallin yhdistelmän toimintaa. Huhtikuussa 2026 Cortex Analyst voi käyttää uudempaa Claude Sonnet 4.6 -mallia \cite{CortexAnalyst}. Tuloksia ei siksi voida sellaisenaan yleistää kaikkiin kielimalleihin tai muihin luonnollisen kielen tietokantarajapintoihin.
 
 \subsection{Arviointiperusteet}
-Tuotettuja SQL-kyselyitä arvioidaan useiden toisiaan täydentävien kriteerien avulla. Ensinnäkin tarkastellaan, valitseeko järjestelmä oikeat taulut ja käyttääkö se oikeita liitoksia silloin, kun käyttäjän kysymys edellyttää useamman taulun yhdistämistä. Toiseksi arvioidan suodatusehtoja, erityisesti where-lauseiden sisältöä, koska pienikin virhe niissä voi muuttaa kyselyn merkitystä olennaisesti. Lisäksi huomioidaan aggregaatiot, duplikaattien käsittely ja sarakevalinnat.
+Tuotettuja SQL-kyselyitä arvioidaan useiden toisiaan täydentävien kriteerien avulla. Ensinnäkin tarkastellaan, valitseeko järjestelmä oikeat taulut ja käyttääkö se oikeita liitoksia silloin, kun käyttäjän kysymys edellyttää useamman taulun yhdistämistä. Toiseksi arvioidaan suodatusehtoja, erityisesti \texttt{where}-lauseiden sisältöä, koska pienikin virhe niissä voi muuttaa kyselyn merkitystä olennaisesti. Lisäksi huomioidaan aggregaatiot, duplikaattien käsittely ja sarakevalinnat. Nämä kriteerit vastaavat taulukon \ref{tb:errors} virhetyyppejä.
 
 Syntaktista validiutta ei tarkastella erikseen, koska kaikki järjestelmän tuottamat kyselyt olivat syntaktisesti valideja.
 
-Arvioinnissa erotetaan toisistaan neljä poikkeamatyyppiä. Kysely luokitellaan korrektiksi, jos sen perusteella saatava vastaus vastaisi esitettyyn luonnollisen kielen kysymykseen oikein ja huomioisi ne implisiittiset taustaoletukset, jotka ovat sovellusalueen näkökulmasta perusteltuja.
+Kukin vastaus luokitellaan yhteen seuraavista neljästä luokasta: \textit{Oikein}, \textit{Melkein oikein}, \textit{Väärin} ja \textit{Ei kyselyä}. Kysely luokitellaan luokkaan \textit{Oikein}, jos sen perusteella saatava vastaus vastaisi esitettyyn luonnollisen kielen kysymykseen oikein ja huomioisi ne implisiittiset taustaoletukset, jotka ovat sovellusalueen näkökulmasta perusteltuja.
 
-Tutkittava tietokanta sisältää puhelinkeskusdataa, joten erityisesti puhelun suuntaan liittyvät taustaoletukset ovat keskeisiä. Esimerkiksi palvelutasoa koskevan kysymyksen implisiittisenä taustaoletuksena pidetään sitä, että tarkastelu kohdistuu vain saapuviin kontakteihin. Korrekti kysely huomioi tällaiset taustaoletukset ja vastaa käyttäjän tiedontarpeeseen oikein.
+Tutkittava tietokanta sisältää puhelinkeskusdataa, joten erityisesti puhelun suuntaan liittyvät taustaoletukset ovat keskeisiä. Esimerkiksi palvelutasoa koskevan kysymyksen implisiittisenä taustaoletuksena pidetään sitä, että tarkastelu kohdistuu vain saapuviin kontakteihin. Oikein-luokan kysely huomioi tällaiset taustaoletukset.
 
-Kysely merkitään melkein korrektiksi, jos generoitu SQL vastaa olennaisilta osin kysymykseen, mutta sisältää teknisen puutteen. Esimerkiksi kysely, josta puuttuu \texttt{NULLIF} -lause jakolaskun nimittäjästä, vastaa sisällöllisesti samaan kysymykseen kuin \texttt{NULLIF}-avainsanan sisältävä kysely, mutta voi erikoistapauksessa johtaa virheeseen. Tällainen kysely luokitellaan melkein korrektiksi.
+Kysely luokitellaan luokkaan \textit{Melkein oikein}, jos se tulkitsee
+käyttäjän tiedontarpeen oikein, mutta sisältää teknisen puutteen, joka voi
+vaikuttaa kyselyn suorittamiseen tai tuloksen oikeellisuuteen. Tällainen
+puute on esimerkiksi jakolaskun nimittäjästä puuttuva \texttt{NULLIF}-funktio,
+jolloin kysely voi johtaa virheeseen nimittäjän ollessa nolla. Myös
+aineistossa esiintyvien duplikaattien puutteellinen käsittely luetaan tähän
+luokkaan. Kyse on tällöin aineiston ominaisuuksien
+puutteellisesta huomioimisesta, ei tiedontarpeen virheellisestä tulkinnasta.
 
-Kysely luokitellaan virheelliseksi, jos se ei vastaa kysymykseen merkityksellisellä tavalla. Esimerkiksi kysely, joka käyttää väärää suodatusta tai josta puuttuu olennainen taulu tai kenttä, merkitään virheelliseksi.
+Kysely luokitellaan luokkaan \textit{Väärin}, jos se ei vastaa kysymykseen merkityksellisellä tavalla. Esimerkiksi kysely, joka käyttää väärää suodatusta tai josta puuttuu olennainen taulu tai kenttä, luokitellaan vääräksi.
 
-Jos malli ei tuota lainkaan SQL-kyselyä, vaan ilmoittaa, että kysymykseen ei voida vastata, tämä luokitellaan erikseen ei kyselyä -kategoriaksi. Kaikkiin tutkimuksessa käytettyihin kysymyksiin on mahdollista vastata käytettävissä olevan aineiston ja semanttisen näkymän perusteella, joten tähän kategoriaan kuuluvat vastaukset ovat virheellisiä. Ne on kuitenkin mielekästä erottaa muista virheellisistä vastauksista, koska ne eivät tuota harhaanjohtavia tuloksia.
+Jos malli ei tuota lainkaan SQL-kyselyä, vaan ilmoittaa, että kysymykseen ei voida vastata, vastaus luokitellaan luokkaan \textit{Ei kyselyä}. Kaikkiin tutkimuksessa käytettyihin kysymyksiin on mahdollista vastata käytettävissä olevan aineiston ja semanttisen näkymän perusteella, joten tähän luokkaan kuuluvat vastaukset ovat virheellisiä. Ne on kuitenkin mielekästä erottaa luokasta \textit{Väärin}, sillä vaikka ne antavat harhaanjohtavan kuvan siitä, mihin kysymyksiin tietokannan rakenteen ja semanttisen näkymän perusteella voidaan vastata, ne eivät tuota virheellisiä kyselytuloksia tietokannan sisältämistä tiedoista.
 
-Samaan luonnollisen kielen kysymykseen voi olla useita oikeellisia SQL-\\vastauksia. Esimerkiksi kysymykseen “How many contacts did we handle in January 2026?” järjestelmä voi tuottaa kyselyn, joka palauttaa yhden kokonaisluvun, tai kyselyn, joka palauttaa taulun sisältäen kontaktien määrän tammi-, helmi- ja maaliskuulle, joista käyttäjä voi poimia vastauksen. Tässä tutkielmassa kysely tulkitaan oikeellisiksi siinä tapauksessa, että sen tuottama vastaus sisältää käyttäjän tiedontarpeen.
+Samaan luonnollisen kielen kysymykseen voi olla useita oikeita SQL-vastauksia. Esimerkiksi kysymykseen \textit{”How many contacts did we handle in January 2026?”} järjestelmä voi tuottaa kyselyn, joka palauttaa yhden kokonaisluvun, tai kyselyn, joka palauttaa kontaktien määrät kuukausittain, jolloin käyttäjä voi poimia vastauksen taulusta. Tässä tutkielmassa kysely tulkitaan oikeaksi, jos sen tuottama vastaus sisältää käyttäjän tiedontarpeen.
 
-Tästä johtuen oikeellisuuden lisäksi tutkimuksen keskeinen kiinnostuksen kohde on kielimallin tuottamien kyselyiden vaihtelu. Tämän vuoksi analysoidaan myös, kuinka monta uniikkia SQL-kyselyä järjestelmä tuottaa kutakin kysymystä kohden, kun sama luonnollisen kielen kysymys tai jokin sen variaatioista esitetään useita kertoja.
+Oikeellisuuden lisäksi tarkastellaan kyselyiden vaihtelua tiedontarpeen
+tulkinnassa ja SQL-kyselyn toteutustavassa. \textit{Tulkinnan} tasolla
+kyselyt katsotaan samoiksi, jos ne toteuttavat saman käyttäjän
+tiedontarpeen samoin rajauksin ja taustaoletuksin. Tämä ei edellytä
+SQL-kyselyiden palauttamien tulosrelaatioiden täydellistä yhtäsuuruutta.
+Tulosten esitysmuoto tai laajuus voi erota, kunhan käyttäjän tarvitsema
+tieto on saatavissa samoin rajauksin ja taustaoletuksin.
+Tulkinnallinen konsistenssi tarkoittaa tiedontarpeen tulkinnan
+säilymistä samana toistuvissa suorituksissa, eikä se edellytä saman
+SQL-toteutuksen käyttämistä.
 
-Kyselyä ei pidetä uniikkina, jos semanttisesti ekvivalentti kysely on tuotettu aiemmin, paitsi siinä tapauksessa, että toinen kysely hyödyntää semanttisessa näkymässä valmiiksi määriteltyä metriikkaa ja toinen tuottaa laskukaavan, joka on ekvivalentti semanttisessa näkymässä määritellyn metriikan kanssa. Esimerkiksi jos semanttiseen näkymään ollaan määritelty metriikka \texttt{total\_calls} kaavalla \texttt{select sum(*) from conv}, niin kyselyt \texttt{select sum(*) from conv} ja  \texttt{select } \\ \texttt{total\_calls from semantic\_view} nähdään toisistaan uniikkeina.
+Tässä tutkimuksessa tulkinnaltaan samat kyselyt voivat erota \textit{toteutustavaltaan}
+kahdella tavalla. Ensinnäkin kyselyt voivat erota siinä, missä muodossa
+ja kuinka laajan tuloksen osana käyttäjän tarvitsema tieto palautetaan.
+Toiseksi kyselyt voivat hakea saman tiedon eri lähteistä. Tämä koskee
+tilanteita, joissa sama tieto on saatavilla useasta sarakkeesta tai
+taulusta, sekä tilannetta, jossa arvo voidaan laskea joko suoraan
+taulun kentistä tai käyttämällä semanttiseen näkymään määriteltyä
+metriikkaa.
 
-Päätös perustellaan sillä, että nämä kaksi lähestymistapaa ovat olennaisesti erilaiset (käytettävissä olevan kontekstin soveltaminen vs. päättely). Vaikka kyselyt ovat sisällöllisesti semanttisesti samankaltaisia, niiden muodostaminen edellyttää erilaista ongelmanratkaisua ja hyödyntää järjestelmältä eri kyvykkyyksiä. Ensimmäisessä tapauksessa malli tunnistaa valmiiksi määritellyn metriikan ja osaa käyttää sitä suoraan, kun taas jälkimmäisessä tapauksessa sen on pääteltävä tarvittava laskentatapa. Tämän vuoksi tapaukset erotellaan analyysissa toisistaan, vaikka niiden semanttinen tavoite on sama.
+Edellä esitetty esimerkki tammikuun kontaktimäärän palauttamisesta
+havainnollistaa tätä erottelua. Yhden kokonaisluvun palauttava kysely
+ja kuukausittaisen jakauman palauttava kysely edustavat samaa
+\textit{tulkintaa}, jos molemmista saadaan tammikuun kontaktimäärä
+samoin rajauksin ja taustaoletuksin. Ne edustavat kuitenkin kahta
+eri \textit{toteutustapaa}, koska käyttäjän tarvitsema tieto
+palautetaan eri laajuisen tuloksen osana. Jos nämä ovat ainoat
+havaitut vaihtoehdot, tulkintojen määrä on yksi ja toteutustapojen
+määrä kaksi.
 
-Tuotettujen SQL-kyselyiden oikeellisuus arvioitiin manuaalisesti vertaamalla niitä tutkijan tulkintaan siitä, millainen kysely vastaisi käyttäjän tiedontarvetta. Arvioinnin suoritti yksi arvioija, mikä heikentää luokittelun reliabiliteettia.
+Sama tiedontarpeen tulkinta ei takaa kyselyiden tulosten yhtäsuuruutta, sillä tulkinnan toteuttamisessa voi esiintyä teknisiä puutteita. Tällaiset puutteet arvioidaan oikeellisuuden luokittelussa, eivätkä ne tässä luokittelussa yksin muodosta uutta tulkintaa tai toteutustapaa.
+
+Pelkkiä syntaktisia eroja, kuten taulu- ja sarakealiasten nimiä,
+muotoilua tai suodatusehtojen järjestystä, ei lasketa tulkinta- tai
+toteutusvaihteluksi. Toteutuserot eivät itsessään kerro kyselyn
+oikeellisuudesta.
+Tekniset puutteet, kuten tarpeeton \texttt{distinct} tai puuttuva
+\texttt{NULLIF}, eivät muodosta uutta toteutustapaa, vaan ne huomioidaan
+oikeellisuuden luokittelussa.
+
+Toteutustavat erotellaan kunkin tulkinnan sisällä. Tulosten taulukoissa
+sarake \textit{Tulk.} ilmoittaa rivillä havaittujen erilaisten
+tulkintojen määrän ja sarake \textit{Tot.} näiden tulkintojen sisällä
+tunnistettujen toteutustapojen yhteenlasketun määrän. Esimerkiksi kaksi
+tulkintaa, joilla kummallakin on yksi toteutustapa, tuottaa arvot
+\textit{Tulk.} = 2 ja \textit{Tot.} = 2, vaikka saman tulkinnan sisällä
+ei esiinny toteutusvaihtelua. Jos yhdellä tulkinnalla on kaksi
+toteutustapaa, vastaavat arvot ovat \textit{Tulk.} = 1 ja
+\textit{Tot.} = 2.
+
+Ryhmän \textit{Yht.}-rivi ilmoittaa koko kysymysryhmässä havaittujen
+erilaisten tulkintojen määrän ja niiden sisällä tunnistettujen
+toteutustapojen yhteenlasketun määrän. Sama tulkinta ja siihen kuuluva
+sama toteutustapa lasketaan ryhmän yhteenvetoon vain kerran riippumatta
+siitä, kuinka monessa kysymysmuotoilussa tai suorituksessa ne esiintyvät.
+
+Tuotettujen SQL-kyselyiden luokittelu tehtiin manuaalisesti vertaamalla
+niitä tutkijan tulkintaan siitä, millainen kysely vastaisi käyttäjän
+tiedontarvetta. Arvioinnin suoritti tutkija yksin, eikä luokittelua
+varmennettu riippumattomalla arvioijalla. Koska tutkija oli myös
+osallistunut semanttisen näkymän rakentamiseen ja laatinut
+kokeissa käytetyt kysymykset, arvioinnissa käytetty vertailutulkinta ei ollut
+riippumaton järjestelmän kehittämisestä ja kysymysten valinnasta.
+Edellä kuvatut arviointiperusteet tekevät luokittelun lähtökohdat
+näkyviksi, mutta eivät poista arvioijan tulkintaan liittyvän
+subjektiivisuuden mahdollisuutta. Useiden arvioijien välistä yhtenevyyttä ei
+tässä tutkimuksessa voitu arvioida.

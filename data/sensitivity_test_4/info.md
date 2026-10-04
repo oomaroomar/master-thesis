@@ -1,6 +1,6 @@
 ## Q1: When do contacts most frequently arrive during the week? Break this down by weekday and hour.
 
-- Query 1, count 10, same as consistency test
+- Query 1, count 10, same as Q5q2
 
 ## Q2: Show the hourly contact-arrival distribution for every day of the week, highlighting which hours were highest on each weekday.
 
@@ -22,6 +22,6 @@
 ## Q5: For each weekday, what were our peak contact hours, and how are contacts distributed across the day (by hour)?
 
 - Query 1, doesn't filter by direction at all
-- Query 2, filters by direction_original = inbound
+- Query 2, filters by direction_original = inbound (same as consistency test, correct)
 
 By the definition of metrics, we want direction_original = inbound

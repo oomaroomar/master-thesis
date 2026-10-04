@@ -5,7 +5,7 @@ Same I'm sorry message
 ## Q2: How effective are our callbacks? Show the success rate by counting callbacks that resulted in a conversation versus no answer, and report the average time-to-callback from the initial inbound contact.
 
 - Query 1, count 9, correct
-- Query 2, count 1, almost correct deduplicates based on unique row rather than unique ID
+- Query 2, count 1, differs from Q2q1 deduplicates based on unique row rather than unique ID
 
 ## Q3: For our callback campaign, what’s the outcomes split and average response speed? Provide counts of conversations vs. no-answer callbacks, the resulting success rate, and the average elapsed time between inbound contact and callback.
 

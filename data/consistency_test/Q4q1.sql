@@ -1,4 +1,4 @@
--- 10/10. Incorrect, should be direction = inbound, not direction_original
+-- 10/10. correct
 SELECT
   cal.cal_day_of_week_name,
   DATE_PART('hour', conv.c_contact_connected_datetime) AS hour_of_day,

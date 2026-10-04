@@ -1,12 +1,44 @@
 \section{Kokeet}\label{sec:experiments}
-Ensimmäisessä kokeessa tarkastellaan Cortex Analystin konsistenssia, eli sitä, tuottaako järjestelmä saman SQL-kyselyn, kun sama luonnollisen kielen kysymys esitetään useita kertoja.
+Ensimmäisessä kokeessa tarkastellaan Cortex Analystin tulkinnallista
+konsistenssia eli sitä, säilyykö järjestelmän tulkinta käyttäjän
+tiedontarpeesta samana, kun sama luonnollisen kielen kysymys esitetään
+useita kertoja. Tästä erillään tarkastellaan toteutusvaihtelua eli sitä,
+millaisia SQL-toteutuksia järjestelmä muodostaa saman tulkinnan pohjalta.
 
-Toisessa kokeessa tarkastellaan järjestelmän herkkyyttä sellaisille syötteen muutoksille, joiden ei pitäisi muuttaa kysymyksen merkitystä. Näissä kokeissa muodostetaan useita eri sanamuotoja samasta tiedontarpeesta ja arvioidaan, tuottaako järjestelmä niistä olennaisesti saman SQL-kyselyn.
+Toisessa kokeessa tarkastellaan järjestelmän herkkyyttä kysymyksen
+sanamuodon muutoksille, joiden on tarkoitus säilyttää tiedontarpeen
+merkitys. Arvioinnissa erotetaan muutokset tiedontarpeen tulkinnassa
+muutoksista SQL-kyselyn toteutustavassa.
+
+Tutkimukseen valittiin tarkoituksenmukaisesti viisi kysymystä,
+jotka edustavat erilaisia puhelinkeskusdatan analyysitehtäviä.
+Kysymykset laati tutkija sovellusympäristön analyysitarpeiden
+ja semanttisen näkymän rakenteen perusteella. Valinnassa
+pyrittiin sisällyttämään sekä valmiiden metriikoiden tukemia
+että useiden kenttien ja ehtojen yhdistämistä edellyttäviä
+tiedontarpeita.
+
+Kysymysjoukkoon sisältyy yksinkertainen kontaktimäärän laskenta
+(A), vastausprosentin määrittäminen (B), ehdollinen
+prosenttilaskenta ja toimialan taustaoletusten huomioiminen (C),
+kontaktien ajallinen jakauma (D) sekä useita osatehtäviä
+yhdistävä takaisinsoittojen analyysi (E). Kysymykset A ja B
+tarkastelevat tilanteita, joissa semanttiseen näkymään on
+määritelty tiedontarvetta tukevia valmiita metriikoita.
+Kysymykset C--E puolestaan edellyttävät useiden kenttien,
+ehtojen tai laskentavaiheiden yhdistämistä.
+
+Kysymysjoukko mahdollistaa erilaisten kyselytilanteiden havainnollistavan tarkastelun, mutta sen perusteella ei voida erottaa esimerkiksi tehtävän monimutkaisuuden ja valmiiden metriikoiden vaikutuksia järjestelmän suoriutumiseen.
+
+Valinnan tavoitteena oli mahdollistaa erilaisten
+kyselytilanteiden yksityiskohtainen tarkastelu rajatussa
+pilottitutkimuksessa, ei muodostaa tilastollisesti edustavaa
+otosta kaikista mahdollisista käyttäjäkysymyksistä.
 
 \paragraph{Konsistenssikoe}
-Koska kielimallit ovat tilastollisia järjestelmiä, sama syöte ei välttämättä aina johda täsmälleen samaan tulosteeseen. Tietokantakyselyiden tapauksessa tämä on olennainen kysymys, koska käyttäjät odottavat järjestelmältä ennustettavaa ja toistettavaa toimintaa.
+Koska kielimallit ovat tilastollisia järjestelmiä, sama syöte ei välttämättä aina johda täsmälleen samaan tulosteeseen. Tietokantakyselyiden tapauksessa tämä on olennaista, koska käyttäjät odottavat järjestelmältä ennustettavaa ja toistettavaa toimintaa.
 
-Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmälle 10 kertaa. Jokaisesta suorituksesta tallennetaan järjestelmän tuottama SQL-kysely, joita verrataan keskenään. Käytetyt kysymykset ovat seuraavat:
+Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmälle 10 kertaa. Jokaisesta suorituksesta tallennetaan järjestelmän tuottama SQL-kysely, joita verrataan keskenään. Käytetyt kysymykset ovat seuraavat
 \begin{enumerate}[label=\Alph*.]
     \label{it:q_consistency}
   \item \textit{How many total contacts did we handle in January 2026?}
@@ -18,10 +50,29 @@ Konsistenssikokeessa sama luonnollisen kielen kysymys esitetään järjestelmäl
 
 Määritellyssä semanttisessa näkymässä on kuvattu metriikoihin SQL-kyselyt, jotka vastaavat suoraan kysymyksiin A ja B. Kysymykset C-E ovat huomattavasti monimutkaisempia, ja niihin ei ole ennalta validoituja SQL-kyselyitä semanttisessa näkymässä. Kysymys D vaatii, että kentästä \texttt{CONTACT\_CONNECTED\_DATETIME} erotetaan kellonaika tunnin tarkkuudella, ja viikonpäivä pitää hakea kalenteritaulusta. Kysymys E on rakenteeltaan monitulkintainen. Erityisesti takaisinsoiton ja alkuperäisen sisääntulevan kontaktin välisen ajan keskiarvoa koskeva osa voidaan tulkita vaativan kahden eri rivin välistä vertailua, vaikka käytetyssä aineistossa vastaus voidaan muodostaa yhdeltä takaisinsoittoa kuvaavalta riviltä.
 
-\paragraph{Sensitiivisyyskoe}
-Kokeen tavoitteena on arvioida, tulkitseeko Cortex Analyst semanttisesti saman sisältöiset kysymykset johdonmukaisesti vai johtavatko kielelliset erot erilaisiin SQL-kyselyihin. Jos järjestelmä on hyvin herkkä muotoilun vaihtelulle, luonnollisen kielen käyttö rajapintana muuttuu käyttäjän kannalta epävarmaksi. Jos taas järjestelmä tuottaa olennaisesti saman kyselyn eri sanamuodoista huolimatta, tämä tukee sen käytettävyyttä käytännön työssä.
+\paragraph{Herkkyyskoe}
+Kokeen tavoitteena on arvioida, säilyykö Cortex Analystin tulkinta
+käyttäjän tiedontarpeesta samana kysymyksen sanamuodon muuttuessa.
+Tästä erillään tarkastellaan, tuottavatko eri muotoilut saman tulkinnan
+pohjalta vaihtoehtoisia SQL-toteutuksia.
 
-Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyksestä 4 vaihtoehtoista versiota, joissa pyritään säilyttämään kysymyksen merkitys, mutta muokkaamaan sanamuotoa. Järjestelmän tuottamat SQL-kyselyt tallennetaan ja vertaillaan keskenään. Käytetyt kysymykset ovat seuraavat:
+Pelkkä toteutusvaihtelu ei
+merkitse epäjohdonmukaista tulkintaa. Jos sanamuodon muutoksiin liittyy
+tiedontarpeen tulkinnan muutoksia tai kyselyiden oikeellisuuden
+heikkenemistä, luonnollisen kielen rajapinnan toiminta on käyttäjän
+kannalta vaikeammin ennustettavaa. Tiedontarpeen tulkinnan säilyminen
+samana eri sanamuodoista huolimatta puolestaan tukee järjestelmän
+ennustettavuutta käytännön työssä.
+
+Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä
+kysymyksestä 4 vaihtoehtoista versiota, joissa pyritään säilyttämään
+kysymyksen merkitys, mutta muokkaamaan sanamuotoa. Variaatiot muodosti
+tutkija, eikä niiden merkitysvastaavuutta varmennettu riippumattomasti.
+Variaatioiden tarkoituksena ei ole ollut muodostaa formaalisti
+ekvivalentteja kysymyksiä vaan realistisia vaihtoehtoisia ilmaisutapoja
+samalle tiedontarpeelle.
+
+Käytetyt kysymykset ovat seuraavat
 \begin{enumerate}[label=\Alph*.]
     \label{it:q_sensitivity}
   \item Variaatioita kysymyksestä A:
@@ -61,6 +112,6 @@ Koe toteutetaan muodostamalla kustakin konsistenssikokeessa käytetystä kysymyk
     \end{enumerate}
 \end{enumerate}
 
-Jokainen kysymys molemmissa kokeissa esitetään järjestelmälle 10 kertaa ja jokainen yksittäinen suoritus tehdään tyhjällä sessiolla. Testit suoritettiin 23.03.2026-28.03.2026 välisenä aikana käyttäen samaa semanttista mallia.
+Konsistenssikokeessa tehtiin 50 suoritusta ja vaihtoehtoisilla kysymysmuotoiluilla 200 suoritusta. Herkkyysanalyysissa alkuperäisten kysymysten vertailuaineistona käytettiin konsistenssikokeen suorituksia. Erillisiä suorituksia oli siten yhteensä 250. Jokainen yksittäinen suoritus tehtiin tyhjällä sessiolla. Testit suoritettiin 23.03.2026-28.03.2026 välisenä aikana käyttäen samaa semanttista mallia.
 
 Kymmenen toistoa valittiin käytännöllisenä kompromissina, joka mahdollistaa vaihtelun havaitsemisen ilman kohtuuttoman suurta manuaalisen arvioinnin työmäärää.

@@ -6,12 +6,11 @@
 
   Teoreettisessa osassa jäsennetään se matemaattinen ja arkkitehtuurinen jatkumo, jolla diskreeteistä tekstiesityksistä, optimointimenetelmistä ja itsehuomiomekanismista rakentuu symbolista koodia tuottava autoregressiivinen todennäköisyysmalli. Teoria tarjoaa käsitteellisen perustan kielimallin toiminnalle ja havaitun vaihtelun ymmärtämiselle.
 
-  Empiirinen osa on tapaustutkimus Snowflaken
+  Empiirinen osa on eksploratiivinen pilottitutkimus Snowflaken
   Cortex Analyst -järjestel\-mästä, joka hyödyntää semanttista näkymää
   puhelinkeskusdataa sisältävässä tietokantaympäristössä.
 
-  Tutkimuksessa esitettiin viisi kysymystä ja niiden sanamuotovariaatiot
-  kukin kymmenen kertaa. Yhteensä 250 vastausta arvioitiin manuaalisesti
+  Tutkimukseen valittiin viisi tiedontarvetta. Kullekkin tiedontarpeelle muodostettiin viisi kysymystä ja kukin näistä esitettiin järjestelmälle kymmenen kertaa. Yhteensä 250 vastausta arvioitiin manuaalisesti
   tuotettujen SQL-kyselyiden perusteella.
   Tiedontarpeen tulkinnan vaihtelu erotettiin saman tulkinnan
   vaihtoehtoisista SQL-toteutuksista.
@@ -23,11 +22,14 @@
   taustaoletusten huomioimisessa, suodatuksissa ja duplikaattien
   käsittelyssä. Sanamuodon muutoksiin liittyi myös tulkintaeroja.
 
-  Tulosten perusteella tulkinnan johdonmukaisuus ei takaa oikeellisuutta,
-  eikä SQL-toteutusten vaihtelu itsessään osoita epäluotettavuutta.
-  Järjestelmä voi tukea analytiikkatyötä rajatuissa käyttötapauksissa,
-  mutta sen tuottamat kyselyt edellyttävät kriittistä arviointia.
-  Havainnot koskevat tutkittua järjestelmää ja tutkimusasetelmaa.
+  Tulosten perusteella tulkinnan johdonmukaisuus ei takaa
+  oikeellisuutta, eikä SQL-toteutusten vaihtelu itsessään osoita
+  epäluotettavuutta. Järjestelmä tuotti tiedontarvetta vastaavia
+  kyselyitä valituissa analyysitehtävissä, mutta oikeellisuus ei
+  säilynyt kaikissa kysymysmuotoiluissa ja suorituksissa. Havainnot
+  puoltavat kyselyiden oikeellisuuden varmistamista tutkitussa
+  sovellusympäristössä. Tulokset ovat tapauskohtaisia eivätkä
+  muodosta kattavaa arviota järjestelmän yleisestä suorituskyvystä.
 
   \vspace{1em}
   \noindent\textbf{Avainsanat:} kielimallit, Text-to-SQL, Cortex Analyst, Transformer, semanttinen näkymä, luotettavuus, autoregressiivinen mallinnus
