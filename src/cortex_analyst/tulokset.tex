@@ -7,7 +7,7 @@ vastasivat käyttäjän tiedontarpeeseen oikein.
 
 Kysymyksessä B havaittiin yksi tiedontarpeen tulkinta ja kaksi sen
 toteutustapaa. Järjestelmä joko käytti semanttisessa näkymässä
-määriteltyä metriikkaa \texttt{answer\_percentage} tai laski vastaavan
+määriteltyä metriikkaa \\ \texttt{answer\_percentage} tai laski vastaavan
 prosenttiluvun suoraan taulun kentistä. Tulkinnallista vaihtelua ei
 havaittu, vaan molemmat toteutustavat vastasivat samaan tiedontarpeeseen
 oikein.
@@ -36,16 +36,22 @@ Seuraavassa esitetään esimerkki kysymykseen E annetusta
 \begin{quote}\itshape
   I'm sorry, but this question cannot be fully answered with the available data. While we can determine how many callbacks were answered versus not answered (using the c\_answered field filtered for callback media type), the semantic model does not contain information about the original inbound contact that triggered a callback. There is no field linking a callback conversation back to its originating inbound contact, so we cannot calculate the time between the original inbound contact and the callback attempt.
 \end{quote}
-Järjestelmän vastaus perustuu virheelliseen tulkintaan käytettävissä olevasta
-tiedosta. Alkuperäisen saapuvan kontaktin ja takaisinsoiton välinen aika
-voidaan määrittää saman rivin sarakkeiden
-\texttt{c\_contact\_connected\_datetime} ja \\
-\texttt{c\_call\_answered\_datetime} aikaleimojen erotuksena, kun tarkastelu
-rajataan riveihin, joilla \texttt{direction}-sarakkeen arvo on
-\texttt{outbound} ja \texttt{direction\_original}-sarak\-keen arvo on
-\texttt{inbound}. Näin ollen aikavälin laskeminen ei edellytä vastauksessa
-mainittua erillistä yhteyttä takaisinsoiton ja sen käynnistäneen saapuvan
-kontaktin välillä.
+Järjestelmän vastaus perustuu virheelliseen tulkintaan käytettävissä
+olevasta tiedosta. Tutkimuksessa käytetyn tietomallin mukaan
+takaisinsoitto tunnistetaan rivistä, jolla \texttt{direction}-sarakkeen
+arvo on \texttt{outbound} ja \texttt{direction\_original}-sarakkeen arvo
+on \texttt{inbound}. Näillä riveillä
+\texttt{c\_contact\_connected\_datetime} ilmaisee alkuperäisen saapuvan
+soiton ajankohdan, ei takaisinsoiton alkamisajankohtaa. Alkuperäisen
+yhteydenoton aikaleima siis säilyy samalla rivillä, vaikka rivin
+kuvaaman puhelun suunta on takaisinsoiton vuoksi ulospäin.
+Sarake \texttt{c\_call\_answered\_datetime} puolestaan ilmaisee
+ajankohdan, jolloin takaisinsoiton vastaanottaja vastasi puheluun.
+Näiden aikaleimojen erotuksena voidaan siten laskea aika
+alkuperäisestä saapuvasta soitosta takaisinsoittoon vastaamiseen.
+Laskenta ei edellytä järjestelmän vastauksessa mainittua erillistä
+yhteyttä alkuperäisen kontaktin ja takaisinsoiton välillä, sillä
+molemmat tarvittavat aikaleimat sisältyvät samaan riviin.
 
 Konsistenssikokeen 50 suorituksesta 37 tuotti oikean SQL-kyselyn,
 10 ei tuottanut SQL-kyselyä lainkaan ja 3 tuotti virheellisen
@@ -86,7 +92,7 @@ Variaatiossa C1 järjestelmä tulkitsi kahdesti, että asiakkaan päättämien k
 
 Kysymysryhmissä A ja B ei havaittu virheelliseksi luokiteltuja
 SQL-kyselyitä. Variaatiossa A4 järjestelmä kuitenkin käytti
-tarpeettomasti lauseketta \texttt{distinct(identifier)}, minkä vuoksi
+tarpeettomasti lauseketta \\ \texttt{distinct(identifier)}, minkä vuoksi
 kyselyt luokiteltiin melkein oikeiksi. Kysymysryhmän B
 herkkyyskokeessa havaittiin toteutusvaihtelua, mutta tiedontarpeen
 tulkinta säilyi oikeana. Yksi toteutustapa käytti semanttiseen näkymään määriteltyä metriikkaa, ja toinen laski vastaavan arvon suoraan taulun kentistä. Kolmas käytti samaa laskentatapaa kuin toinen, mutta palautti vastausprosentin lisäksi niiden kontaktien määrän, jotka suljettiin ilman jonotusta.
@@ -120,7 +126,7 @@ muodostamisesta selittävät \textit{Ei kyselyä} -luokan suuren osuuden
 virhetyyppien jakaumassa. Taulukon \ref{tb:errors} mukaan muista
 virhetyypeistä yleisimpiä olivat suodatusvirheet ja duplikaattien
 hallintavirheet. Kaikki suodatusvirheet liittyivät sarakkeisiin
-\texttt{direction} ja \texttt{direction\_original}. Havainto antaa
+\texttt{direction} ja \\ \texttt{direction\_original}. Havainto antaa
 aihetta hypoteesille, että sarakkeiden merkitysten selkeämpi erottelu
 semanttisessa näkymässä voisi vähentää suodatusvirheitä.
 
@@ -136,10 +142,10 @@ vähentämisessä.
 Voidaan esittää hypoteesi, että semanttisen näkymän huolellinen
 suunnittelu, tietokannan metadatan rikastaminen ja mallin
 iteratiivinen ohjaaminen voisivat parantaa järjestelmän
-suorituskykyä \cite{CortexAnalyst,li2024bird}. Hypoteesin testaaminen
+suorituskykyä. Hypoteesin testaaminen
 edellyttää kuitenkin lisätutkimusta laajemmilla aineistoilla.
 
-Duplikaattien hallintavirheillä tarkoitetaan tässä virheitä, joissa \texttt{distinct}-avainsanaa on käytetty tarpeettomasti tai väärin. Tutkimusasetelmassa vain kysymystä A vastaavissa SQL-kyselyissä \texttt{distinct}-avainsanaa ei tarvita. Muiden kysymysten kohdalla duplikaattien hallinta tulisi yleensä kohdistaa \texttt{identifier}-sarakkeeseen. Duplikaattien hallintavirheitä esiintyi tutkimuksessa yhteensä 18 kertaa 250 suorituksen aikana.
+Duplikaattien hallintavirheillä tarkoitetaan tässä virheitä, joissa \texttt{distinct}-avain\-sanaa on käytetty tarpeettomasti tai väärin. Tutkimusasetelmassa vain kysymystä A vastaavissa SQL-kyselyissä \texttt{distinct}-avainsanaa ei tarvita. Muiden kysymysten kohdalla duplikaattien hallinta tulisi yleensä kohdistaa \texttt{identifier}-sarakkeeseen. Duplikaattien hallintavirheitä esiintyi tutkimuksessa yhteensä 18 kertaa 250 suorituksen aikana.
 
 Taululiitosvirheitä ei havaittu. Tämä saattaa johtua siitä, että
 tutkimusasetelmassa käytetty tietokanta sisälsi vain neljä taulua
