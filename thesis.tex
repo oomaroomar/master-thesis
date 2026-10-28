@@ -35,17 +35,18 @@
 
 \usepackage{etoolbox}
 \preto{\section}{\clearpage}
-\lstset{
-  basicstyle=\ttfamily\small,
-  breaklines=true,
-  frame=single
-}
 \usepackage{geometry}
 \geometry{
   a4paper,
   total={150mm,237mm},
   left=30mm,
   top=30mm,
+}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  keywordstyle=\color{blue}\bfseries\small,
+  frame=single
 }
 \lstdefinelanguage{yaml}{
   % Tell listings that underscore is a valid part of a word

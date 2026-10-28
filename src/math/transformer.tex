@@ -846,12 +846,62 @@ edellyttääkö kysymys järjestettyä tulosta.
 Pelkkä SQL-kyselyiden merkkijonojen yhtäsuuruus
 on liian rajoittava oikeellisuuden peruste,
 sillä eri tavoin kirjoitetut kyselyt voivat
-toteuttaa saman tiedonhaun. Toisaalta myöskään
+toteuttaa saman tiedonhaun
+(kuva~\ref{fig:eri-merkkijonot}). Toisaalta myöskään
 sama suoritustulos yhdellä tietokantainstanssilla
 ei yleisesti todista kyselyiden semanttista
-ekvivalenssia \cite{zhong2020semantic}. Virheellinen suodatusehto voi
-esimerkiksi jäädä havaitsematta, jos aineistossa
-ei ole rivejä, joihin se vaikuttaisi.
+ekvivalenssia \cite{zhong2020semantic}. Virheellinen
+suodatusehto voi esimerkiksi jäädä havaitsematta,
+jos aineistossa ei ole rivejä, joihin se vaikuttaisi
+(kuva~\ref{fig:sama-suoritustulos}).
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.47\textwidth}
+\begin{lstlisting}[language=SQL,basicstyle=\ttfamily\small]
+SELECT arvo
+FROM havainnot
+WHERE arvo > 10;
+\end{lstlisting}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.47\textwidth}
+\begin{lstlisting}[language=SQL,basicstyle=\ttfamily\small]
+SELECT arvo
+FROM havainnot
+WHERE 10 < arvo;
+\end{lstlisting}
+  \end{minipage}
+  \caption{Eri merkkijonot voivat toteuttaa saman
+    tiedonhaun: molemmat kyselyt palauttavat
+    havainnot-taulun arvo-sarakkeesta arvot,
+  jotka ovat suurempia kuin 10.}
+  \label{fig:eri-merkkijonot}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.47\textwidth}
+\begin{lstlisting}[language=SQL,basicstyle=\ttfamily\small]
+SELECT COUNT(*)
+FROM havainnot;
+\end{lstlisting}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.47\textwidth}
+\begin{lstlisting}[language=SQL,basicstyle=\ttfamily\small]
+SELECT COUNT(*)
+FROM havainnot
+WHERE color = 'blue';
+\end{lstlisting}
+  \end{minipage}
+  \caption{Sama suoritustulos ei takaa semanttista
+    ekvivalenssia. Jos taulun kaikki rivit
+    ovat sinisiä, molemmat kyselyt palauttavat saman arvon.
+    Muunvärisen rivin lisääminen kasvattaisi kuitenkin
+  vain ensimmäisen kyselyn tulosta.}
+  \label{fig:sama-suoritustulos}
+\end{figure}
 
 Luonnollisen kielen kysymys ei myöskään aina määritä
 yksikäsitteistä tavoitekyselyä. Jos keskeinen mittari
